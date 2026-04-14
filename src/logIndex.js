@@ -153,7 +153,7 @@ export function extractEntriesFromDelimitedText(fileText, relativePath, { preser
         yamlPath: key,
         comments,
         snippet,
-        codeLanguage: "text",
+        codeLanguage: "yml",
       }),
     );
   }

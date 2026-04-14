@@ -63,8 +63,8 @@ export function loadConfig() {
       model: process.env.OPENAI_MODEL?.trim() || "gpt-5-mini",
     },
     search: {
-      defaultResultLimit: Math.max(1, Math.min(10, parseInteger(process.env.DEFAULT_RESULT_LIMIT, 3))),
-      maxResultLimit: 10,
+      defaultResultLimit: Math.max(1, Math.min(15, parseInteger(process.env.DEFAULT_RESULT_LIMIT, 3))),
+      maxResultLimit: 15,
       profiles: {
         lookup: {
           name: "lookup",
@@ -101,6 +101,8 @@ export function loadConfig() {
           sourceType: "log",
           entryLabel: "material entries",
           parserType: "tokenList",
+          defaultResultLimit: 25,
+          maxResultLimit: 25,
           include: parseCsv(process.env.MATERIAL_INCLUDE_GLOBS ?? "data/materials.log"),
           exclude: parseCsv(process.env.MATERIAL_EXCLUDE_GLOBS),
         },

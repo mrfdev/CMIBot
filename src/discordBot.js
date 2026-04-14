@@ -8,14 +8,19 @@ import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 
 const COMMAND_NAME = "cmibot";
-const MAX_RESULT_LIMIT = 10;
+const MAX_RESULT_LIMIT = 15;
+const MATERIAL_MAX_RESULT_LIMIT = 25;
 const NO_MENTIONS = { parse: [] };
 
 function pluralize(count, singular, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
 }
 
-function addCommonLookupOptions(subcommand, defaultResultLimit, { includeRelated = false } = {}) {
+function addCommonLookupOptions(
+  subcommand,
+  defaultResultLimit,
+  { includeRelated = false, maxResultLimit = MAX_RESULT_LIMIT } = {},
+) {
   let builder = subcommand
     .addStringOption((option) =>
       option.setName("keyword").setDescription("Keyword, phrase, or token to search for.").setRequired(true),
@@ -35,7 +40,7 @@ function addCommonLookupOptions(subcommand, defaultResultLimit, { includeRelated
         .setName("limit")
         .setDescription(`How many results to show. Default ${defaultResultLimit}.`)
         .setMinValue(1)
-        .setMaxValue(MAX_RESULT_LIMIT),
+        .setMaxValue(maxResultLimit),
     );
 
   if (includeRelated) {
@@ -51,11 +56,14 @@ function addCommonLookupOptions(subcommand, defaultResultLimit, { includeRelated
   );
 }
 
-function buildCommandData(defaultResultLimit) {
+function buildCommandData(config) {
+  const defaultResultLimit = config.search.defaultResultLimit;
+  const materialDefaultLimit = config.search.profiles.material.defaultResultLimit ?? MATERIAL_MAX_RESULT_LIMIT;
+
   return [
     new SlashCommandBuilder()
       .setName(COMMAND_NAME)
-      .setDescription("Look up CMI or CMILib config, locale, or placeholder entries by keyword.")
+      .setDescription("Look up CMI or CMILib config, locale, or exported data entries by keyword.")
       .addSubcommand((subcommand) =>
         subcommand.setName("help").setDescription("Show available CMIBot commands and usage notes."),
       )
@@ -90,7 +98,8 @@ function buildCommandData(defaultResultLimit) {
           subcommand
             .setName("material")
             .setDescription("Search exported material names."),
-          defaultResultLimit,
+          materialDefaultLimit,
+          { maxResultLimit: MATERIAL_MAX_RESULT_LIMIT },
         ),
       )
       .addSubcommand((subcommand) =>
@@ -164,7 +173,8 @@ function formatHelpMessage(config, member) {
     "",
     "Optional lookup options:",
     "- `mode: exact|whole|broad` controls how strict the search is",
-    `- \`limit: 1-${MAX_RESULT_LIMIT}\` changes how many results are shown, with \`${config.search.defaultResultLimit}\` as the default`,
+    `- \`limit: 1-${MAX_RESULT_LIMIT}\` changes how many results are shown for most commands, with \`${config.search.defaultResultLimit}\` as the default`,
+    `- \`material\` uses a larger \`limit: 1-${MATERIAL_MAX_RESULT_LIMIT}\` window and defaults to \`${config.search.profiles.material.defaultResultLimit ?? MATERIAL_MAX_RESULT_LIMIT}\``,
     "- `related: true|false` adds nearby YAML entries for context on `lookup` and `langlookup`",
     aiEnabled
       ? "- `summary: true|false` adds an optional AI-generated summary (admin-only for now)"
@@ -305,6 +315,10 @@ function formatResultsMessage(
   options = {},
   extras = [],
 ) {
+  if (options.layout === "materialList") {
+    return formatMaterialResultsMessage(keyword, results, totalMentions, fileCount, allMatchedFiles);
+  }
+
   const mentionLabel = pluralize(totalMentions, "mention");
   const fileLabel = pluralize(fileCount, "file");
   const shownCount = results.length;
@@ -354,6 +368,32 @@ function formatResultsMessage(
   return [header, ...blocks, summaryBlock, ...extras.filter(Boolean), footer].filter(Boolean).join("\n");
 }
 
+function formatMaterialResultsMessage(keyword, results, totalMentions, fileCount, allMatchedFiles) {
+  const mentionLabel = pluralize(totalMentions, "mention");
+  const fileLabel = pluralize(fileCount, "file");
+  const safeKeyword = sanitizeForDisplay(keyword);
+  const header = `### Found [${totalMentions}] ${mentionLabel} in [${fileCount}] ${fileLabel} for \`${safeKeyword}\``;
+  const groups = new Map();
+
+  for (const result of results) {
+    if (!groups.has(result.displayPath)) {
+      groups.set(result.displayPath, []);
+    }
+
+    groups.get(result.displayPath).push(result);
+  }
+
+  const blocks = [];
+  for (const [displayPath, fileResults] of groups.entries()) {
+    const lines = fileResults.map((result) => result.lineNumber).join(", ");
+    const values = fileResults.map((result) => result.yamlPath).join("\n");
+    blocks.push(`From bot's: \`${displayPath}\`\nLines: ${lines}\n\`\`\`text\n${values}\n\`\`\``);
+  }
+
+  const footer = `_Showing ${results.length} ${pluralize(results.length, "result")}${totalMentions > results.length ? ", but there are more." : "."}_`;
+  return [header, ...blocks, footer].filter(Boolean).join("\n");
+}
+
 function truncateDiscordMessage(message) {
   if (message.length <= 2000) {
     return message;
@@ -364,7 +404,7 @@ function truncateDiscordMessage(message) {
 
 export async function registerCommands(config) {
   const rest = new REST({ version: "10" }).setToken(config.discord.token);
-  const body = buildCommandData(config.search.defaultResultLimit);
+  const body = buildCommandData(config);
 
   await rest.put(Routes.applicationGuildCommands(config.discord.applicationId, config.discord.guildId), {
     body,
@@ -527,7 +567,9 @@ export function createInteractionHandler(config, searchCache) {
 
     const keywordInput = interaction.options.getString("keyword", true);
     const mode = interaction.options.getString("mode") ?? "exact";
-    const limit = interaction.options.getInteger("limit") ?? config.search.defaultResultLimit;
+    const profileDefaultLimit = profile.defaultResultLimit ?? config.search.defaultResultLimit;
+    const profileMaxResultLimit = profile.maxResultLimit ?? config.search.maxResultLimit;
+    const limit = Math.min(interaction.options.getInteger("limit") ?? profileDefaultLimit, profileMaxResultLimit);
     const related = interaction.options.getBoolean("related") ?? false;
     const summary = interaction.options.getBoolean("summary") ?? false;
     const profile = config.search.profiles[subcommand];
@@ -663,7 +705,11 @@ export function createInteractionHandler(config, searchCache) {
         limit,
         aiSummary,
         allMatchedFiles,
-        { preferShortPath: subcommand === "langlookup", showFileHints: subcommand === "lookup" },
+        {
+          preferShortPath: subcommand === "langlookup",
+          showFileHints: subcommand === "lookup",
+          layout: subcommand === "material" ? "materialList" : "default",
+        },
       );
 
       await logEvent(interaction, {

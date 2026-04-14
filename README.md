@@ -357,7 +357,7 @@ npm run lookup -- placeholder --mode whole %cmi_user_balance%
 npm run lookup -- material shulker
 npm run lookup -- command balance
 npm run lookup -- permission cmi.command.balance
-npm run lookup -- tabcomplete [playername]
+npm run lookup -- tabcomplete "[playername]"
 npm run lookup -- langstats
 ```
 
