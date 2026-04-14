@@ -2,13 +2,14 @@ const UNSUPPORTED_QUERY_PATTERN = /[`@]/;
 const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001f\u007f]/;
 const BRACE_TOKEN_PATTERN = /^\{[^{}\s]+\}$/;
 const PERCENT_TOKEN_PATTERN = /^%[^%\s]+%$/;
+const BRACKET_TOKEN_PATTERN = /^\[[^\]\s]+\]$/;
 
 function normalizeWhitespace(value) {
   return value.replace(/\s+/g, " ").trim();
 }
 
 function isSpecialSearchToken(token) {
-  return BRACE_TOKEN_PATTERN.test(token) || PERCENT_TOKEN_PATTERN.test(token);
+  return BRACE_TOKEN_PATTERN.test(token) || PERCENT_TOKEN_PATTERN.test(token) || BRACKET_TOKEN_PATTERN.test(token);
 }
 
 function isSpecialSearchQuery(query) {

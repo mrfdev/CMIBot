@@ -1,8 +1,9 @@
 import "dotenv/config";
 import { loadConfig } from "./config.js";
 import { buildLanguageCategoryStats, formatLanguageCategoryStats } from "./langStats.js";
+import { loadEntriesForProfile } from "./profileIndex.js";
 import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
-import { findRelatedEntries, loadEntriesForProfile, makeDisplayContext } from "./yamlIndex.js";
+import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 
 async function main() {
   const config = loadConfig();
@@ -44,7 +45,7 @@ async function main() {
 
   if (!subcommand || !config.search.profiles[subcommand]) {
     console.error(
-      "Usage: npm run lookup -- <lookup|langlookup|langstats> [--mode exact|whole|broad] [--related] [--summary] <keyword>",
+      "Usage: npm run lookup -- <lookup|langlookup|placeholder|material|command|permission|tabcomplete|langstats> [--mode exact|whole|broad] [--related] [--summary] <keyword>",
     );
     process.exitCode = 1;
     return;
@@ -69,7 +70,8 @@ async function main() {
   const matches = orderMatchesForDisplay(rerankedMatches);
 
   if (!matches.length) {
-    console.log(`No YAML entries matched "${keyword}" in profile "${subcommand}".`);
+    const entryLabel = config.search.profiles[subcommand].entryLabel ?? "entries";
+    console.log(`No ${entryLabel} matched "${keyword}" in profile "${subcommand}".`);
     return;
   }
 

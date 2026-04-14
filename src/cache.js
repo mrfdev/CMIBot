@@ -1,4 +1,4 @@
-import { loadEntriesForProfile } from "./yamlIndex.js";
+import { loadEntriesForProfile } from "./profileIndex.js";
 import { buildLanguageCategoryStats } from "./langStats.js";
 
 function summarizeEntries(entries) {

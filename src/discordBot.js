@@ -15,79 +15,107 @@ function pluralize(count, singular, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
 }
 
+function addCommonLookupOptions(subcommand, defaultResultLimit, { includeRelated = false } = {}) {
+  let builder = subcommand
+    .addStringOption((option) =>
+      option.setName("keyword").setDescription("Keyword, phrase, or token to search for.").setRequired(true),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("mode")
+        .setDescription("Search mode. Defaults to exact.")
+        .addChoices(
+          { name: "exact", value: "exact" },
+          { name: "whole", value: "whole" },
+          { name: "broad", value: "broad" },
+        ),
+    )
+    .addIntegerOption((option) =>
+      option
+        .setName("limit")
+        .setDescription(`How many results to show. Default ${defaultResultLimit}.`)
+        .setMinValue(1)
+        .setMaxValue(MAX_RESULT_LIMIT),
+    );
+
+  if (includeRelated) {
+    builder = builder.addBooleanOption((option) =>
+      option
+        .setName("related")
+        .setDescription("Include up to two nearby related YAML entries. Defaults to false."),
+    );
+  }
+
+  return builder.addBooleanOption((option) =>
+    option.setName("summary").setDescription("Include an optional AI-generated summary. Defaults to false."),
+  );
+}
+
 function buildCommandData(defaultResultLimit) {
   return [
     new SlashCommandBuilder()
       .setName(COMMAND_NAME)
-      .setDescription("Look up CMI or CMILib YAML entries by keyword.")
+      .setDescription("Look up CMI or CMILib config, locale, or placeholder entries by keyword.")
       .addSubcommand((subcommand) =>
         subcommand.setName("help").setDescription("Show available CMIBot commands and usage notes."),
       )
       .addSubcommand((subcommand) =>
-        subcommand
-          .setName("lookup")
-          .setDescription("Search regular CMI and CMILib config files.")
-          .addStringOption((option) =>
-            option.setName("keyword").setDescription("Keyword or phrase to search for.").setRequired(true),
-          )
-          .addStringOption((option) =>
-            option
-              .setName("mode")
-              .setDescription("Search mode. Defaults to exact.")
-              .addChoices(
-                { name: "exact", value: "exact" },
-                { name: "whole", value: "whole" },
-                { name: "broad", value: "broad" },
-              ),
-          )
-          .addIntegerOption((option) =>
-            option
-              .setName("limit")
-              .setDescription(`How many results to show. Default ${defaultResultLimit}.`)
-              .setMinValue(1)
-              .setMaxValue(MAX_RESULT_LIMIT),
-          )
-          .addBooleanOption((option) =>
-            option
-              .setName("related")
-              .setDescription("Include up to two nearby related YAML entries. Defaults to false."),
-          )
-          .addBooleanOption((option) =>
-            option.setName("summary").setDescription("Include an optional AI-generated summary. Defaults to false."),
-          ),
+        addCommonLookupOptions(
+          subcommand
+            .setName("lookup")
+            .setDescription("Search regular CMI and CMILib config files."),
+          defaultResultLimit,
+          { includeRelated: true },
+        ),
       )
       .addSubcommand((subcommand) =>
-        subcommand
-          .setName("langlookup")
-          .setDescription("Search English locale and translation YAML files.")
-          .addStringOption((option) =>
-            option.setName("keyword").setDescription("Keyword or phrase to search for.").setRequired(true),
-          )
-          .addStringOption((option) =>
-            option
-              .setName("mode")
-              .setDescription("Search mode. Defaults to exact.")
-              .addChoices(
-                { name: "exact", value: "exact" },
-                { name: "whole", value: "whole" },
-                { name: "broad", value: "broad" },
-              ),
-          )
-          .addIntegerOption((option) =>
-            option
-              .setName("limit")
-              .setDescription(`How many results to show. Default ${defaultResultLimit}.`)
-              .setMinValue(1)
-              .setMaxValue(MAX_RESULT_LIMIT),
-          )
-          .addBooleanOption((option) =>
-            option
-              .setName("related")
-              .setDescription("Include up to two nearby related YAML entries. Defaults to false."),
-          )
-          .addBooleanOption((option) =>
-            option.setName("summary").setDescription("Include an optional AI-generated summary. Defaults to false."),
-          ),
+        addCommonLookupOptions(
+          subcommand
+            .setName("langlookup")
+            .setDescription("Search English locale and translation YAML files."),
+          defaultResultLimit,
+          { includeRelated: true },
+        ),
+      )
+      .addSubcommand((subcommand) =>
+        addCommonLookupOptions(
+          subcommand
+            .setName("placeholder")
+            .setDescription("Search exported CMI placeholder entries."),
+          defaultResultLimit,
+        ),
+      )
+      .addSubcommand((subcommand) =>
+        addCommonLookupOptions(
+          subcommand
+            .setName("material")
+            .setDescription("Search exported material names."),
+          defaultResultLimit,
+        ),
+      )
+      .addSubcommand((subcommand) =>
+        addCommonLookupOptions(
+          subcommand
+            .setName("command")
+            .setDescription("Search exported CMI command usage entries."),
+          defaultResultLimit,
+        ),
+      )
+      .addSubcommand((subcommand) =>
+        addCommonLookupOptions(
+          subcommand
+            .setName("permission")
+            .setDescription("Search exported permission nodes and command permissions."),
+          defaultResultLimit,
+        ),
+      )
+      .addSubcommand((subcommand) =>
+        addCommonLookupOptions(
+          subcommand
+            .setName("tabcomplete")
+            .setDescription("Search exported tab-complete token entries."),
+          defaultResultLimit,
+        ),
       )
       .addSubcommand((subcommand) =>
         subcommand
@@ -95,7 +123,7 @@ function buildCommandData(defaultResultLimit) {
           .setDescription("Show English locale categories, English file paths, and available language codes."),
       )
       .addSubcommand((subcommand) =>
-        subcommand.setName("reload").setDescription("Reload the in-memory YAML search cache."),
+        subcommand.setName("reload").setDescription("Reload the in-memory search cache."),
       )
       .toJSON(),
   ];
@@ -126,13 +154,18 @@ function formatHelpMessage(config, member) {
     "- `/cmibot help` shows this help message",
     "- `/cmibot lookup <keyword>` searches regular CMI and CMILib config files",
     "- `/cmibot langlookup <keyword>` searches English locale and translation files",
+    "- `/cmibot placeholder <keyword>` searches exported placeholder entries",
+    "- `/cmibot material <keyword>` searches exported material names",
+    "- `/cmibot command <keyword>` searches exported command entries",
+    "- `/cmibot permission <keyword>` searches exported permission entries",
+    "- `/cmibot tabcomplete <keyword>` searches exported tab-complete entries",
     "- `/cmibot langstats` shows English locale categories and available language codes",
-    "- `/cmibot reload` refreshes the in-memory YAML cache from disk",
+    "- `/cmibot reload` refreshes the in-memory search cache from disk",
     "",
     "Optional lookup options:",
     "- `mode: exact|whole|broad` controls how strict the search is",
     `- \`limit: 1-${MAX_RESULT_LIMIT}\` changes how many results are shown, with \`${config.search.defaultResultLimit}\` as the default`,
-    "- `related: true|false` adds nearby YAML entries for context",
+    "- `related: true|false` adds nearby YAML entries for context on `lookup` and `langlookup`",
     aiEnabled
       ? "- `summary: true|false` adds an optional AI-generated summary (admin-only for now)"
       : "- `summary: true|false` is currently disabled in bot config",
@@ -145,11 +178,20 @@ function formatHelpMessage(config, member) {
     "- `/cmibot lookup bluemap related:true`",
     "- `/cmibot lookup dynmap summary:true`",
     "- `/cmibot langlookup home`",
+    "- `/cmibot placeholder balance`",
+    "- `/cmibot placeholder %cmi_user_balance% mode:whole`",
+    "- `/cmibot material shulker`",
+    "- `/cmibot command balance`",
+    "- `/cmibot permission cmi.command.balance`",
+    "- `/cmibot tabcomplete [playername] mode:whole`",
     "- `/cmibot langstats`",
   ];
 
   if (!canLookup) {
-    lines.push("", "Notice: lookup, langlookup, langstats, and reload are limited to certain support/admin groups.");
+    lines.push(
+      "",
+      "Notice: lookup, langlookup, placeholder, material, command, permission, tabcomplete, langstats, and reload are limited to certain support/admin groups.",
+    );
   } else if (aiEnabled && !canReload && !canUseAi) {
     lines.push(
       "",
@@ -158,14 +200,17 @@ function formatHelpMessage(config, member) {
   } else if (!canReload) {
     lines.push("", "Notice: you can use lookup commands here, but `/cmibot reload` is admin-only.");
   } else {
-    lines.push("", "Notice: you can use lookup, langlookup, langstats, and reload in this channel.");
+    lines.push(
+      "",
+      "Notice: you can use lookup, langlookup, placeholder, material, command, permission, tabcomplete, langstats, and reload in this channel.",
+    );
   }
 
   lines.push(
     "",
     `Safety note: lookups are rate-limited per user, broad filler words can be rejected, and \`summary:true\` is currently limited to configured AI role IDs.`,
     "",
-    "Cache note: when YAML files are added, removed, renamed, or edited on disk, use `/cmibot reload` or restart the bot to refresh the in-memory cache.",
+    "Cache note: when indexed YAML or log files are added, removed, renamed, or edited on disk, use `/cmibot reload` or restart the bot to refresh the in-memory cache.",
   );
 
   return lines.join("\n");
@@ -276,7 +321,9 @@ function formatResultsMessage(
   const blocks = [];
 
   for (const [displayPath, fileResults] of groupedResults.entries()) {
-    blocks.push(`In \`${displayPath}\`:`);
+    const heading =
+      fileResults[0]?.sourceType === "log" ? `From bot's: \`${displayPath}\`` : `In \`${displayPath}\`:`;
+    blocks.push(heading);
 
     for (const result of fileResults) {
       const relatedLine = result.related?.length
@@ -286,7 +333,7 @@ function formatResultsMessage(
         : "";
 
       blocks.push(
-        `Look around line ${result.lineNumber} -> \`${result.yamlPath}\`\n${relatedLine}\`\`\`yml\n${result.snippet}\n\`\`\``,
+        `Look around line ${result.lineNumber} -> \`${result.yamlPath}\`\n${relatedLine}\`\`\`${result.codeLanguage}\n${result.snippet}\n\`\`\``,
       );
     }
   }
@@ -591,7 +638,7 @@ export function createInteractionHandler(config, searchCache) {
           outcome: "empty",
         });
         await interaction.editReply({
-          content: `No YAML entries matched \`${sanitizeForDisplay(keyword)}\` in the \`${subcommand}\` profile.`,
+          content: `No ${profile.entryLabel ?? "entries"} matched \`${sanitizeForDisplay(keyword)}\` in the \`${subcommand}\` profile.`,
           allowedMentions: NO_MENTIONS,
         });
         return;
@@ -616,7 +663,7 @@ export function createInteractionHandler(config, searchCache) {
         limit,
         aiSummary,
         allMatchedFiles,
-        { preferShortPath: subcommand === "langlookup", showFileHints: subcommand !== "langlookup" },
+        { preferShortPath: subcommand === "langlookup", showFileHints: subcommand === "lookup" },
       );
 
       await logEvent(interaction, {

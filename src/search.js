@@ -1,5 +1,9 @@
 import OpenAI from "openai";
 
+const BRACE_TOKEN_PATTERN = /^\{[^{}\s]+\}$/;
+const PERCENT_TOKEN_PATTERN = /^%[^%\s]+%$/;
+const BRACKET_TOKEN_PATTERN = /^\[[^\]\s]+\]$/;
+
 function normalize(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
@@ -10,6 +14,11 @@ function compact(value) {
 
 function tokenize(value) {
   return normalize(value).split(/\s+/).filter(Boolean);
+}
+
+function isSpecialTokenQuery(query) {
+  const trimmed = query.trim();
+  return BRACE_TOKEN_PATTERN.test(trimmed) || PERCENT_TOKEN_PATTERN.test(trimmed) || BRACKET_TOKEN_PATTERN.test(trimmed);
 }
 
 function escapeRegExp(value) {
@@ -67,6 +76,7 @@ function diceCoefficient(left, right) {
 
 function scoreEntry(query, entry) {
   const normalizedQuery = normalize(query);
+  const rawQuery = query.trim().toLowerCase();
   const compactQuery = compact(query);
   const tokens = tokenize(query);
   const text = entry.searchText;
@@ -83,6 +93,10 @@ function scoreEntry(query, entry) {
   score += countOccurrences(key, normalizedQuery) * 50;
   score += countOccurrences(path, normalizedQuery) * 35;
   score += countOccurrences(comments, normalizedQuery) * 60;
+
+  if (rawQuery && entry.key.toLowerCase() === rawQuery) {
+    score += 300;
+  }
 
   if (tokens.length > 1 && compactQuery && compactText.includes(compactQuery)) {
     score += 120;
@@ -161,13 +175,23 @@ function matchesWholeEntry(entry, normalizedQuery) {
 
 export function lexicalSearch(query, entries, { limit = 20, mode = "exact" } = {}) {
   const normalizedQuery = normalize(query);
+  const rawQuery = query.trim().toLowerCase();
   const tokens = tokenize(query).filter((token) => token.length >= 3);
   const compactQuery = compact(query);
   const isPhraseQuery = tokens.length > 1;
+  const specialTokenQuery = isSpecialTokenQuery(query);
 
   let candidatePool = entries;
 
-  if (mode === "broad") {
+  if (specialTokenQuery) {
+    const exactTokenMatches = entries.filter((entry) => entry.key.toLowerCase() === rawQuery);
+    if (exactTokenMatches.length) {
+      candidatePool = exactTokenMatches;
+    } else {
+      const tokenMatches = entries.filter((entry) => entry.searchText.includes(rawQuery));
+      candidatePool = tokenMatches.length ? tokenMatches : entries;
+    }
+  } else if (mode === "broad") {
     const broadMatches = entries.filter((entry) => {
       if (entry.searchText.includes(normalizedQuery)) {
         return true;

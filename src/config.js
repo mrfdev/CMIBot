@@ -68,6 +68,8 @@ export function loadConfig() {
       profiles: {
         lookup: {
           name: "lookup",
+          sourceType: "yaml",
+          entryLabel: "YAML entries",
           include: parseCsv(
             process.env.LOOKUP_INCLUDE_GLOBS ?? "CMI/config.yml,CMI/Settings/**/*.yml,CMILib/config.yml",
           ),
@@ -78,11 +80,53 @@ export function loadConfig() {
         },
         langlookup: {
           name: "langlookup",
+          sourceType: "yaml",
+          entryLabel: "YAML entries",
           include: parseCsv(
             process.env.LANGLOOKUP_INCLUDE_GLOBS ??
               "CMI/Translations/**/Locale_EN.yml,CMILib/Translations/**/*_EN.yml",
           ),
           exclude: parseCsv(process.env.LANGLOOKUP_EXCLUDE_GLOBS),
+        },
+        placeholder: {
+          name: "placeholder",
+          sourceType: "log",
+          entryLabel: "placeholder entries",
+          parserType: "commentBlocks",
+          include: parseCsv(process.env.PLACEHOLDER_INCLUDE_GLOBS ?? "data/placeholders.log"),
+          exclude: parseCsv(process.env.PLACEHOLDER_EXCLUDE_GLOBS),
+        },
+        material: {
+          name: "material",
+          sourceType: "log",
+          entryLabel: "material entries",
+          parserType: "tokenList",
+          include: parseCsv(process.env.MATERIAL_INCLUDE_GLOBS ?? "data/materials.log"),
+          exclude: parseCsv(process.env.MATERIAL_EXCLUDE_GLOBS),
+        },
+        command: {
+          name: "command",
+          sourceType: "log",
+          entryLabel: "command entries",
+          parserType: "delimited",
+          include: parseCsv(process.env.COMMAND_INCLUDE_GLOBS ?? "data/commands.log"),
+          exclude: parseCsv(process.env.COMMAND_EXCLUDE_GLOBS),
+        },
+        permission: {
+          name: "permission",
+          sourceType: "log",
+          entryLabel: "permission entries",
+          parserType: "permissionMixed",
+          include: parseCsv(process.env.PERMISSION_INCLUDE_GLOBS ?? "data/permissions.log,data/cmdperms.log"),
+          exclude: parseCsv(process.env.PERMISSION_EXCLUDE_GLOBS),
+        },
+        tabcomplete: {
+          name: "tabcomplete",
+          sourceType: "log",
+          entryLabel: "tab-complete entries",
+          parserType: "delimited",
+          include: parseCsv(process.env.TABCOMPLETE_INCLUDE_GLOBS ?? "data/tabcompletes.log"),
+          exclude: parseCsv(process.env.TABCOMPLETE_EXCLUDE_GLOBS),
         },
       },
     },
@@ -98,6 +142,10 @@ export function loadConfig() {
     },
     formatDisplayPath(relativePath) {
       const normalizedRelativePath = toPosixPath(relativePath);
+      if (normalizedRelativePath.startsWith("data/")) {
+        return normalizedRelativePath;
+      }
+
       return path.posix.join(displayPathPrefix, normalizedRelativePath);
     },
   };
