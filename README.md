@@ -17,6 +17,8 @@ It is designed for support workflows like:
 
 The bot builds an in-memory cache from the YAML files in this folder. When you add, replace, rename, or remove YAML files later, refresh the cache with `/cmibot reload` or by restarting the bot.
 
+Git note: the live SQLite database at `CMI/cmi.sqlite.db` is runtime data and is intentionally kept out of Git.
+
 ## What It Does
 
 - Registers a `/cmibot` slash command with `lookup` and `langlookup` subcommands

@@ -6,3 +6,7 @@ node_modules/
 npm-debug.log*
 logs/
 .DS_Store
+CMI/cmi.sqlite.db
+*.sqlite-shm
+*.sqlite-wal
+security.key
