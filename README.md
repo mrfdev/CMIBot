@@ -11,7 +11,10 @@ It is designed for support workflows like:
 /cmibot lookup bluemap related:true
 /cmibot lookup dynmap summary:true
 /cmibot lookup "mini message" mode:broad
+/cmibot lookup "mini message" mode:whole
 /cmibot langlookup home
+/cmibot langlookup home stats:true
+/cmibot langstats
 /cmibot reload
 ```
 
@@ -21,18 +24,18 @@ Git note: the live SQLite database at `CMI/cmi.sqlite.db` is runtime data and is
 
 ## What It Does
 
-- Registers a `/cmibot` slash command with `lookup` and `langlookup` subcommands
+- Registers a `/cmibot` slash command with `lookup`, `langlookup`, and `langstats` subcommands
 - Registers a `/cmibot help` command for channel-local usage guidance
 - Registers an admin-only `/cmibot reload` command for rebuilding the in-memory search cache
 - Restricts usage to your configured guild, channel, and allowed roles
 - Pairs YAML comment blocks with the setting line directly below them
 - Uses lexical search first and optionally uses OpenAI to rerank the best candidates
 - Groups visible results by file and shows them top-to-bottom inside each file
-- Supports `mode: exact|broad` for tighter or looser matching
+- Supports `mode: exact|whole|broad` for tighter or looser matching
 - Supports `related: true|false` for nearby context entries
+- Supports `stats: true|false` on `langlookup` for locale category and language availability details
 - Supports `summary: true|false` for an optional AI-generated explanation, restricted to configured AI role IDs
 - Applies per-user cooldowns, query validation, no-mention replies, and audit logging for safer operation
-- Adds matched filename hints to the header when results span multiple files
 - Separates regular config search from translation search through include/exclude globs
 
 ## Quick Start
@@ -60,7 +63,6 @@ The bot reads its settings from `.env`.
 - `DISCORD_APPLICATION_ID`: Discord application ID
 - `DISCORD_GUILD_ID`: Guild/server ID
 - `DISCORD_ALLOWED_CHANNEL_IDS`: Comma-separated channel IDs allowed to use the bot
-- `ALLOWED_ROLE_NAMES`: Optional fallback role names allowed to use lookup commands
 - `ALLOWED_ROLE_IDS`: Comma-separated role IDs allowed to use lookup commands
 - `ADMIN_ROLE_IDS`: Comma-separated role IDs allowed to use `/cmibot reload`
 - `AI_ROLE_IDS`: Comma-separated role IDs allowed to use AI-backed features like reranking and `summary:true`
@@ -115,7 +117,9 @@ With the current recommended setup, keep `OPENAI_ENABLED=false` until API billin
 Regular lookup and language lookup are kept separate on purpose.
 
 - `/cmibot lookup <keyword>` searches regular config files
-- `/cmibot langlookup <keyword>` searches locale/translation files
+- `/cmibot langlookup <keyword>` searches English locale/translation files
+- `/cmibot langlookup <keyword> stats:true` also shows locale categories and available languages
+- `/cmibot langstats` shows locale categories and available languages without requiring a keyword
 - `/cmibot help` shows command usage in the configured channel
 
 You can adjust the file scopes in `.env` without changing code.
@@ -137,7 +141,7 @@ Searches regular config files such as `CMI/config.yml`, `CMI/Settings/**/*.yml`,
 Options:
 
 - `keyword`: required search phrase
-- `mode`: optional, `exact` or `broad`
+- `mode`: optional, `exact`, `whole`, or `broad`
 - `limit`: optional number of visible results
 - `related`: optional, `true` or `false`
 - `summary`: optional, `true` or `false`, limited to configured AI role IDs when OpenAI features are enabled
@@ -147,8 +151,10 @@ Examples:
 ```text
 /cmibot help
 /cmibot lookup dynmap
+/cmibot lookup tho mode:whole
 /cmibot lookup bluemap limit:5
 /cmibot lookup "mini message" mode:exact
+/cmibot lookup "mini message" mode:whole
 /cmibot lookup "mini message" mode:broad
 /cmibot lookup bluemap related:true
 /cmibot lookup dynmap summary:true
@@ -156,15 +162,31 @@ Examples:
 
 ### `/cmibot langlookup`
 
-Searches translation and locale YAML files.
+Searches English translation and locale YAML files.
 
 Options:
 
 - `keyword`: required search phrase
-- `mode`: optional, `exact` or `broad`
+- `mode`: optional, `exact`, `whole`, or `broad`
 - `limit`: optional number of visible results
 - `related`: optional, `true` or `false`
+- `stats`: optional, `true` or `false`
 - `summary`: optional, `true` or `false`, limited to configured AI role IDs when OpenAI features are enabled
+
+By default this is scoped to the English locale files, such as `Locale_EN.yml`, English death-message locale files, and English CMILib translation files like `items_EN.yml`.
+
+When `stats:true` is used, CMIBot also lists the English file path for each locale category and shows how many language variants exist plus their language codes.
+
+### `/cmibot langstats`
+
+Shows the same language-category overview as `stats:true`, but without requiring a lookup keyword.
+
+Use this when you just want to see:
+
+- which English locale files CMIBot is indexing
+- which locale categories exist
+- how many language variants each category has
+- which language codes are available for each category
 
 ### `/cmibot reload`
 
@@ -214,9 +236,13 @@ Run a search without Discord:
 ```bash
 npm run lookup -- lookup dynmap
 npm run lookup -- lookup --mode broad "mini message"
+npm run lookup -- lookup --mode whole "mini message"
+npm run lookup -- lookup --mode whole tho
 npm run lookup -- lookup --related bluemap
 npm run lookup -- lookup --summary dynmap
 npm run lookup -- langlookup home
+npm run lookup -- langlookup --stats home
+npm run lookup -- langstats
 ```
 
 ## Notes
@@ -224,8 +250,10 @@ npm run lookup -- langlookup home
 - The bot builds an in-memory search cache at startup.
 - When you update, add, or remove YAML files, use `/cmibot reload` or restart the bot.
 - `/cmibot help` should be kept in sync with new features as the bot evolves.
-- Search results can show a strict default search or a broader search, depending on `mode`.
+- Search results can use the default exact search, a stricter whole-word or whole-phrase search, or a broader search, depending on `mode`.
 - Search results can include nearby related entries when `related:true` is used.
+- `langlookup` can optionally show category stats and available language codes with `stats:true`.
+- `langstats` shows the language-category overview without needing a search keyword.
 - Search results can include an AI-generated explanation when `summary:true` is used.
 - AI-backed features are currently restricted by `AI_ROLE_IDS`.
 - If `OPENAI_ENABLED=false`, `summary:true` stays visible as an option but no AI output is generated.
