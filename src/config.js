@@ -53,7 +53,6 @@ export function loadConfig() {
       applicationId: process.env.DISCORD_APPLICATION_ID?.trim() || "",
       guildId: process.env.DISCORD_GUILD_ID?.trim() || "",
       allowedChannelIds: parseCsv(process.env.DISCORD_ALLOWED_CHANNEL_IDS),
-      allowedRoleNames: parseCsv(process.env.ALLOWED_ROLE_NAMES),
       allowedRoleIds: parseCsv(process.env.ALLOWED_ROLE_IDS),
       adminRoleIds: parseCsv(process.env.ADMIN_ROLE_IDS),
       aiRoleIds: parseCsv(process.env.AI_ROLE_IDS ?? process.env.ADMIN_ROLE_IDS),
@@ -80,7 +79,8 @@ export function loadConfig() {
         langlookup: {
           name: "langlookup",
           include: parseCsv(
-            process.env.LANGLOOKUP_INCLUDE_GLOBS ?? "CMI/Translations/**/*.yml,CMILib/Translations/**/*.yml",
+            process.env.LANGLOOKUP_INCLUDE_GLOBS ??
+              "CMI/Translations/**/Locale_EN.yml,CMILib/Translations/**/*_EN.yml",
           ),
           exclude: parseCsv(process.env.LANGLOOKUP_EXCLUDE_GLOBS),
         },
@@ -110,8 +110,8 @@ export function validateBotConfig(config) {
   if (!config.discord.allowedChannelIds.length) {
     throw new Error("At least one DISCORD_ALLOWED_CHANNEL_IDS entry is required.");
   }
-  if (!config.discord.allowedRoleNames.length && !config.discord.allowedRoleIds.length) {
-    throw new Error("Define ALLOWED_ROLE_NAMES or ALLOWED_ROLE_IDS so the bot can guard command access.");
+  if (!config.discord.allowedRoleIds.length) {
+    throw new Error("Define ALLOWED_ROLE_IDS so the bot can guard command access.");
   }
   if (!config.discord.adminRoleIds.length) {
     throw new Error("Define ADMIN_ROLE_IDS so the bot can guard the reload command.");
