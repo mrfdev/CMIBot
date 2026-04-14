@@ -25,11 +25,42 @@ function getLeadingSpaceCount(line) {
   return match ? match[0].length : 0;
 }
 
-function buildSnippet(lines, lineNumber, commentBuffer) {
+function collectContinuationLines(lines, startIndex, entryIndent) {
+  const collected = [];
+
+  for (let index = startIndex + 1; index < lines.length; index += 1) {
+    const candidate = lines[index];
+    const trimmed = candidate.trim();
+
+    if (!trimmed) {
+      break;
+    }
+
+    if (trimmed.startsWith("#")) {
+      break;
+    }
+
+    if (KEY_LINE_PATTERN.test(candidate)) {
+      break;
+    }
+
+    const candidateIndent = getLeadingSpaceCount(candidate);
+    if (candidateIndent < entryIndent) {
+      break;
+    }
+
+    collected.push(candidate);
+  }
+
+  return collected;
+}
+
+function buildSnippet(lines, lineNumber, commentBuffer, continuationLines = []) {
   const startLine = commentBuffer.length ? commentBuffer[0].lineNumber : lineNumber;
   const snippetLines = [
     ...commentBuffer.map((comment) => lines[comment.lineNumber - 1]),
     lines[lineNumber - 1],
+    ...continuationLines,
   ];
 
   return {
@@ -38,9 +69,10 @@ function buildSnippet(lines, lineNumber, commentBuffer) {
   };
 }
 
-function extractTextForSearch(comments, yamlPath, key, value, relativePath) {
+function extractTextForSearch(comments, yamlPath, key, value, relativePath, continuationLines = []) {
   const commentText = comments.map((line) => normalizeCommentLine(line)).join("\n");
-  return [relativePath, yamlPath, key, value, commentText].join("\n").toLowerCase();
+  const continuationText = continuationLines.join("\n");
+  return [relativePath, yamlPath, key, value, continuationText, commentText].join("\n").toLowerCase();
 }
 
 export function extractEntriesFromText(fileText, relativePath) {
@@ -73,13 +105,14 @@ export function extractEntriesFromText(fileText, relativePath) {
     const indent = keyMatch[1].length;
     const rawKey = keyMatch[2].trim();
     const value = stripInlineComment(keyMatch[3] ?? "");
+    const continuationLines = value ? [] : collectContinuationLines(lines, index, indent);
 
     while (stack.length && stack[stack.length - 1].indent >= indent) {
       stack.pop();
     }
 
     const yamlPath = [...stack.map((item) => item.key), rawKey].join(".");
-    const { startLine, snippet } = buildSnippet(lines, lineNumber, commentBuffer);
+    const { startLine, snippet } = buildSnippet(lines, lineNumber, commentBuffer, continuationLines);
 
     entries.push({
       relativePath: toPosixPath(relativePath),
@@ -96,6 +129,7 @@ export function extractEntriesFromText(fileText, relativePath) {
         rawKey,
         value,
         relativePath,
+        continuationLines,
       ),
     });
 
