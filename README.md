@@ -98,8 +98,6 @@ This project already defaults to:
 - Allowed role IDs: `526407132224946186`, `452793620471218186`, `526451949051314188`, `526452401239228416`, `893444734138322984`, `1037695349667659848`
 - Reload admin role ID: `526407132224946186`
 
-`Booster` is intentionally not included.
-
 ## OpenAI Setup
 
 1. Go to the OpenAI platform dashboard.
