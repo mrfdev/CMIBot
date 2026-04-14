@@ -567,12 +567,12 @@ export function createInteractionHandler(config, searchCache) {
 
     const keywordInput = interaction.options.getString("keyword", true);
     const mode = interaction.options.getString("mode") ?? "exact";
+    const profile = config.search.profiles[subcommand];
     const profileDefaultLimit = profile.defaultResultLimit ?? config.search.defaultResultLimit;
     const profileMaxResultLimit = profile.maxResultLimit ?? config.search.maxResultLimit;
     const limit = Math.min(interaction.options.getInteger("limit") ?? profileDefaultLimit, profileMaxResultLimit);
     const related = interaction.options.getBoolean("related") ?? false;
     const summary = interaction.options.getBoolean("summary") ?? false;
-    const profile = config.search.profiles[subcommand];
     const canUseAi = hasRole(interaction.member, { roleIds: config.discord.aiRoleIds });
     const validation = validateQuery(keywordInput, config.security);
     const keyword = validation.normalizedQuery;

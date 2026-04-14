@@ -161,7 +161,7 @@ Options:
 
 - `keyword`: required search phrase
 - `mode`: optional, `exact`, `whole`, or `broad`
-- `limit`: optional number of visible results
+- `limit`: optional number of visible results, up to `15`
 - `related`: optional, `true` or `false`
 - `summary`: optional, `true` or `false`, limited to configured AI role IDs when OpenAI features are enabled
 
@@ -187,7 +187,7 @@ Options:
 
 - `keyword`: required search phrase
 - `mode`: optional, `exact`, `whole`, or `broad`
-- `limit`: optional number of visible results
+- `limit`: optional number of visible results, up to `15`
 - `related`: optional, `true` or `false`
 - `summary`: optional, `true` or `false`, limited to configured AI role IDs when OpenAI features are enabled
 
@@ -201,7 +201,7 @@ Options:
 
 - `keyword`: required search phrase, token fragment, or full placeholder token
 - `mode`: optional, `exact`, `whole`, or `broad`
-- `limit`: optional number of visible results
+- `limit`: optional number of visible results, up to `15`
 - `summary`: optional, `true` or `false`, limited to configured AI role IDs when OpenAI features are enabled
 
 This placeholder log is currently enriched with comment descriptions based on the [Zrips CMI placeholders reference](https://www.zrips.net/cmi/placeholders/), so searches can match both the token and its explanation.
@@ -222,8 +222,10 @@ Options:
 
 - `keyword`: required search phrase or material token
 - `mode`: optional, `exact`, `whole`, or `broad`
-- `limit`: optional number of visible results
+- `limit`: optional number of visible results, up to `25`
 - `summary`: optional, `true` or `false`, limited to configured AI role IDs when OpenAI features are enabled
+
+Material lookups use a bigger default window so common grouped searches like `shulker` or `wool` can be shown in one response.
 
 Examples:
 
@@ -240,7 +242,7 @@ Options:
 
 - `keyword`: required search phrase, command name, or usage fragment
 - `mode`: optional, `exact`, `whole`, or `broad`
-- `limit`: optional number of visible results
+- `limit`: optional number of visible results, up to `15`
 - `summary`: optional, `true` or `false`, limited to configured AI role IDs when OpenAI features are enabled
 
 Examples:
@@ -258,7 +260,7 @@ Options:
 
 - `keyword`: required permission node, command-permission node, or descriptive phrase
 - `mode`: optional, `exact`, `whole`, or `broad`
-- `limit`: optional number of visible results
+- `limit`: optional number of visible results, up to `15`
 - `summary`: optional, `true` or `false`, limited to configured AI role IDs when OpenAI features are enabled
 
 Examples:
@@ -276,7 +278,7 @@ Options:
 
 - `keyword`: required token or descriptive phrase
 - `mode`: optional, `exact`, `whole`, or `broad`
-- `limit`: optional number of visible results
+- `limit`: optional number of visible results, up to `15`
 - `summary`: optional, `true` or `false`, limited to configured AI role IDs when OpenAI features are enabled
 
 Examples:
@@ -432,19 +434,33 @@ Showing 2 results.
 
 Example material response:
 
-```text
-Found [3] mentions in [1] file for shulker
+````text
+Found [19] mentions in [1] file for shulker
 
 From bot's: `data/materials.log`
 
-Look around line 340 -> BLACK_SHULKER_BOX
+Lines: 57, 74, 105, 190, 344, 356, 441, 454, 470, 485, 561, 585, 652, 693, 720, 721, 722, 833, 858
+```text
 BLACK_SHULKER_BOX
-
-Look around line 412 -> BLUE_SHULKER_BOX
 BLUE_SHULKER_BOX
-
-Look around line 955 -> SHULKER_BOX
+BROWN_SHULKER_BOX
+CYAN_SHULKER_BOX
+GRAY_SHULKER_BOX
+GREEN_SHULKER_BOX
+LIGHT_BLUE_SHULKER_BOX
+LIGHT_GRAY_SHULKER_BOX
+LIME_SHULKER_BOX
+MAGENTA_SHULKER_BOX
+ORANGE_SHULKER_BOX
+PINK_SHULKER_BOX
+PURPLE_SHULKER_BOX
+RED_SHULKER_BOX
 SHULKER_BOX
-
-Showing 3 results.
+SHULKER_SHELL
+SHULKER_SPAWN_EGG
+WHITE_SHULKER_BOX
+YELLOW_SHULKER_BOX
 ```
+
+Showing 19 results.
+````

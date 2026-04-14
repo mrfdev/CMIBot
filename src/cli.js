@@ -68,14 +68,16 @@ async function main() {
   const reranker = new AiReranker(config.openai);
   const rerankedMatches = await reranker.rerank(keyword, lexicalMatches);
   const matches = orderMatchesForDisplay(rerankedMatches);
+  const profile = config.search.profiles[subcommand];
+  const visibleLimit = profile.defaultResultLimit ?? config.search.defaultResultLimit;
 
   if (!matches.length) {
-    const entryLabel = config.search.profiles[subcommand].entryLabel ?? "entries";
+    const entryLabel = profile.entryLabel ?? "entries";
     console.log(`No ${entryLabel} matched "${keyword}" in profile "${subcommand}".`);
     return;
   }
 
-  for (const item of matches.slice(0, config.search.defaultResultLimit)) {
+  for (const item of matches.slice(0, visibleLimit)) {
     const result = makeDisplayContext(item.entry, config.formatDisplayPath);
     console.log(`${result.displayPath}:${result.lineNumber}`);
     if (related) {
@@ -92,7 +94,7 @@ async function main() {
 
   if (summary) {
     const aiSummary =
-      (await reranker.summarize(keyword, matches.slice(0, config.search.defaultResultLimit), { profileName: subcommand })) ||
+      (await reranker.summarize(keyword, matches.slice(0, visibleLimit), { profileName: subcommand })) ||
       "";
     if (aiSummary) {
       console.log(`AI summary (generated): ${aiSummary}`);
