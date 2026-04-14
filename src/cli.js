@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { loadConfig } from "./config.js";
+import { buildLanguageCategoryStats, formatLanguageCategoryStats } from "./langStats.js";
 import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
 import { findRelatedEntries, loadEntriesForProfile, makeDisplayContext } from "./yamlIndex.js";
 
@@ -7,8 +8,22 @@ async function main() {
   const config = loadConfig();
   const args = process.argv.slice(2);
   const subcommand = args.shift();
+
+  if (subcommand === "langstats") {
+    const categories = await buildLanguageCategoryStats(config.workspaceRoot, config.search.profiles.langlookup.include);
+    const statsBlock = formatLanguageCategoryStats(categories, config.formatDisplayPath);
+    if (!statsBlock) {
+      console.log("No language category stats are available right now.");
+      return;
+    }
+
+    console.log(statsBlock);
+    return;
+  }
+
   let mode = "exact";
   let related = false;
+  let stats = false;
   let summary = false;
 
   if (args[0] === "--mode") {
@@ -21,6 +36,11 @@ async function main() {
     args.splice(0, 1);
   }
 
+  if (args[0] === "--stats") {
+    stats = true;
+    args.splice(0, 1);
+  }
+
   if (args[0] === "--summary") {
     summary = true;
     args.splice(0, 1);
@@ -29,7 +49,9 @@ async function main() {
   const keyword = args.join(" ").trim();
 
   if (!subcommand || !config.search.profiles[subcommand]) {
-    console.error("Usage: npm run lookup -- <lookup|langlookup> [--mode exact|broad] [--related] [--summary] <keyword>");
+    console.error(
+      "Usage: npm run lookup -- <lookup|langlookup|langstats> [--mode exact|whole|broad] [--related] [--stats] [--summary] <keyword>",
+    );
     process.exitCode = 1;
     return;
   }
@@ -40,8 +62,8 @@ async function main() {
     return;
   }
 
-  if (!["exact", "broad"].includes(mode)) {
-    console.error('Mode must be "exact" or "broad".');
+  if (!["exact", "whole", "broad"].includes(mode)) {
+    console.error('Mode must be "exact", "whole", or "broad".');
     process.exitCode = 1;
     return;
   }
@@ -70,6 +92,15 @@ async function main() {
     }
     console.log(result.snippet);
     console.log("");
+  }
+
+  if (stats && subcommand === "langlookup") {
+    const categories = await buildLanguageCategoryStats(config.workspaceRoot, config.search.profiles.langlookup.include);
+    const statsBlock = formatLanguageCategoryStats(categories, config.formatDisplayPath);
+    if (statsBlock) {
+      console.log(statsBlock);
+      console.log("");
+    }
   }
 
   if (summary) {

@@ -1,4 +1,5 @@
 import { loadEntriesForProfile } from "./yamlIndex.js";
+import { buildLanguageCategoryStats } from "./langStats.js";
 
 function summarizeEntries(entries) {
   return {
@@ -32,10 +33,13 @@ export function createSearchCache(config) {
   async function loadProfile(profile) {
     const entries = await loadEntriesForProfile(profile, config.workspaceRoot);
     const summary = summarizeEntries(entries);
+    const languageCategories =
+      profile.name === "langlookup" ? await buildLanguageCategoryStats(config.workspaceRoot, profile.include) : null;
 
     cache.set(profile.name, {
       entries,
       loadedAt: new Date(),
+      languageCategories,
       ...summary,
     });
 
