@@ -2,6 +2,7 @@ import { MessageFlags, REST, Routes, SlashCommandBuilder } from "discord.js";
 import path from "node:path";
 import { writeAuditLog } from "./auditLog.js";
 import { formatCacheSummary } from "./cache.js";
+import { formatLanguageCategoryStats } from "./langStats.js";
 import { createCooldownManager, sanitizeForDisplay, validateQuery } from "./security.js";
 import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
@@ -35,6 +36,7 @@ function buildCommandData(defaultResultLimit) {
               .setDescription("Search mode. Defaults to exact.")
               .addChoices(
                 { name: "exact", value: "exact" },
+                { name: "whole", value: "whole" },
                 { name: "broad", value: "broad" },
               ),
           )
@@ -57,7 +59,7 @@ function buildCommandData(defaultResultLimit) {
       .addSubcommand((subcommand) =>
         subcommand
           .setName("langlookup")
-          .setDescription("Search locale and translation YAML files.")
+          .setDescription("Search English locale and translation YAML files.")
           .addStringOption((option) =>
             option.setName("keyword").setDescription("Keyword or phrase to search for.").setRequired(true),
           )
@@ -67,6 +69,7 @@ function buildCommandData(defaultResultLimit) {
               .setDescription("Search mode. Defaults to exact.")
               .addChoices(
                 { name: "exact", value: "exact" },
+                { name: "whole", value: "whole" },
                 { name: "broad", value: "broad" },
               ),
           )
@@ -83,8 +86,18 @@ function buildCommandData(defaultResultLimit) {
               .setDescription("Include up to two nearby related YAML entries. Defaults to false."),
           )
           .addBooleanOption((option) =>
+            option
+              .setName("stats")
+              .setDescription("Show language categories, English file paths, and available language codes."),
+          )
+          .addBooleanOption((option) =>
             option.setName("summary").setDescription("Include an optional AI-generated summary. Defaults to false."),
           ),
+      )
+      .addSubcommand((subcommand) =>
+        subcommand
+          .setName("langstats")
+          .setDescription("Show English locale categories, English file paths, and available language codes."),
       )
       .addSubcommand((subcommand) =>
         subcommand.setName("reload").setDescription("Reload the in-memory YAML search cache."),
@@ -93,16 +106,13 @@ function buildCommandData(defaultResultLimit) {
   ];
 }
 
-function hasRole(member, { roleIds = [], roleNames = [] } = {}) {
+function hasRole(member, { roleIds = [] } = {}) {
   const roles = member.roles?.cache;
   if (!roles) {
     return false;
   }
 
-  const hasAllowedId = roleIds.length > 0 && roles.some((role) => roleIds.includes(role.id));
-  const hasAllowedName = roleNames.length > 0 && roles.some((role) => roleNames.includes(role.name));
-
-  return hasAllowedName || hasAllowedId;
+  return roleIds.length > 0 && roles.some((role) => roleIds.includes(role.id));
 }
 
 function formatReloadMessage(summary) {
@@ -110,10 +120,7 @@ function formatReloadMessage(summary) {
 }
 
 function formatHelpMessage(config, member) {
-  const canLookup = hasRole(member, {
-    roleIds: config.discord.allowedRoleIds,
-    roleNames: config.discord.allowedRoleNames,
-  });
+  const canLookup = hasRole(member, { roleIds: config.discord.allowedRoleIds });
   const canReload = hasRole(member, { roleIds: config.discord.adminRoleIds });
   const canUseAi = hasRole(member, { roleIds: config.discord.aiRoleIds });
   const aiEnabled = config.openai.enabled;
@@ -123,27 +130,33 @@ function formatHelpMessage(config, member) {
     "Commands available through this bot in this channel:",
     "- `/cmibot help` shows this help message",
     "- `/cmibot lookup <keyword>` searches regular CMI and CMILib config files",
-    "- `/cmibot langlookup <keyword>` searches locale and translation files",
+    "- `/cmibot langlookup <keyword>` searches English locale and translation files",
+    "- `/cmibot langstats` shows English locale categories and available language codes",
     "- `/cmibot reload` refreshes the in-memory YAML cache from disk",
     "",
     "Optional lookup options:",
-    "- `mode: exact|broad` controls how strict the search is",
+    "- `mode: exact|whole|broad` controls how strict the search is",
     `- \`limit: 1-${MAX_RESULT_LIMIT}\` changes how many results are shown, with \`${config.search.defaultResultLimit}\` as the default`,
     "- `related: true|false` adds nearby YAML entries for context",
+    "- `stats: true|false` adds language category and available-language info for `/cmibot langlookup`",
     aiEnabled
       ? "- `summary: true|false` adds an optional AI-generated summary (admin-only for now)"
       : "- `summary: true|false` is currently disabled in bot config",
     "",
     "Examples:",
     "- `/cmibot lookup dynmap`",
+    "- `/cmibot lookup tho mode:whole`",
     "- `/cmibot lookup \"mini message\" mode:broad`",
+    "- `/cmibot lookup \"mini message\" mode:whole`",
     "- `/cmibot lookup bluemap related:true`",
     "- `/cmibot lookup dynmap summary:true`",
     "- `/cmibot langlookup home`",
+    "- `/cmibot langlookup home stats:true`",
+    "- `/cmibot langstats`",
   ];
 
   if (!canLookup) {
-    lines.push("", "Notice: lookup, langlookup, and reload are limited to certain support/admin groups.");
+    lines.push("", "Notice: lookup, langlookup, langstats, and reload are limited to certain support/admin groups.");
   } else if (aiEnabled && !canReload && !canUseAi) {
     lines.push(
       "",
@@ -165,21 +178,86 @@ function formatHelpMessage(config, member) {
   return lines.join("\n");
 }
 
-function formatFileList(filePaths) {
-  const fileNames = filePaths.map((filePath) => path.posix.basename(filePath));
-  if (!fileNames.length) {
+function formatCompactFileLabel(filePath, { preferShortPath = false } = {}) {
+  const baseName = path.posix.basename(filePath);
+  if (!preferShortPath) {
+    return baseName;
+  }
+
+  const segments = filePath.split("/");
+  const root = segments[0] ?? baseName;
+  const informativeParents = segments.slice(1, -1).filter((segment) => !["Translations", "Settings"].includes(segment));
+
+  if (informativeParents.length) {
+    return `${root}/${informativeParents.join("/")}/${baseName}`;
+  }
+
+  return `${root}/${baseName}`;
+}
+
+function formatFileList(filePaths, { preferShortPath = false } = {}) {
+  if (!filePaths.length) {
     return "";
   }
 
-  if (fileNames.length <= 3) {
-    return ` (${fileNames.join(" / ")})`;
+  const baseNameCounts = new Map();
+  for (const filePath of filePaths) {
+    const baseName = path.posix.basename(filePath);
+    baseNameCounts.set(baseName, (baseNameCounts.get(baseName) ?? 0) + 1);
   }
 
-  const visible = fileNames.slice(0, 3).join(" / ");
-  return ` (${visible} +${fileNames.length - 3} more)`;
+  const fileLabels = filePaths.map((filePath) => {
+    const baseName = path.posix.basename(filePath);
+    if (preferShortPath) {
+      return formatCompactFileLabel(filePath, { preferShortPath: true });
+    }
+
+    if ((baseNameCounts.get(baseName) ?? 0) <= 1) {
+      return formatCompactFileLabel(filePath);
+    }
+
+    return formatCompactFileLabel(filePath, { preferShortPath: true });
+  });
+
+  if (fileLabels.length <= 3) {
+    return ` (${fileLabels.join(" / ")})`;
+  }
+
+  const visible = fileLabels.slice(0, 3).join(" / ");
+  return ` (${visible} +${fileLabels.length - 3} more)`;
 }
 
-function formatResultsMessage(keyword, results, totalMentions, fileCount, limit, aiSummary, allMatchedFiles) {
+function formatLanguageStatsMessage(languageCategories, formatDisplayPath) {
+  const plainText = formatLanguageCategoryStats(languageCategories, formatDisplayPath);
+  return plainText
+    .split("\n")
+    .map((line) => line.replace(/^-\s(.+?) -> (.+?) \((.+)\)$/u, "- `$1` -> `$2` ($3)"))
+    .join("\n");
+}
+
+function formatLangStatsOnlyMessage(languageCategories, formatDisplayPath) {
+  const statsBody = formatLanguageStatsMessage(languageCategories, formatDisplayPath);
+  if (!statsBody) {
+    return "No language category stats are available right now.";
+  }
+
+  const count = languageCategories.length;
+  return [`### Language Stats`, `Found [${count}] ${pluralize(count, "category")} for English locale coverage.`, "", statsBody]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function formatResultsMessage(
+  keyword,
+  results,
+  totalMentions,
+  fileCount,
+  limit,
+  aiSummary,
+  allMatchedFiles,
+  options = {},
+  extras = [],
+) {
   const mentionLabel = pluralize(totalMentions, "mention");
   const fileLabel = pluralize(fileCount, "file");
   const shownCount = results.length;
@@ -212,7 +290,8 @@ function formatResultsMessage(keyword, results, totalMentions, fileCount, limit,
   }
 
   const safeKeyword = sanitizeForDisplay(keyword);
-  const header = `### Found [${totalMentions}] ${mentionLabel} in [${fileCount}] ${fileLabel} for \`${safeKeyword}\`${formatFileList(allMatchedFiles)}`;
+  const fileHint = options.showFileHints === false ? "" : formatFileList(allMatchedFiles, options);
+  const header = `### Found [${totalMentions}] ${mentionLabel} in [${fileCount}] ${fileLabel} for \`${safeKeyword}\`${fileHint}`;
 
   let footer = "";
   if (shownCount === totalMentions) {
@@ -223,7 +302,7 @@ function formatResultsMessage(keyword, results, totalMentions, fileCount, limit,
 
   const summaryBlock = aiSummary ? `AI summary (generated): ${aiSummary}` : "";
 
-  return [header, ...blocks, summaryBlock, footer].filter(Boolean).join("\n");
+  return [header, ...blocks, summaryBlock, ...extras.filter(Boolean), footer].filter(Boolean).join("\n");
 }
 
 function truncateDiscordMessage(message) {
@@ -351,12 +430,7 @@ export function createInteractionHandler(config, searchCache) {
       return;
     }
 
-    if (
-      !hasRole(interaction.member, {
-        roleIds: config.discord.allowedRoleIds,
-        roleNames: config.discord.allowedRoleNames,
-      })
-    ) {
+    if (!hasRole(interaction.member, { roleIds: config.discord.allowedRoleIds })) {
       await logEvent(interaction, {
         subcommand,
         outcome: "denied",
@@ -370,10 +444,43 @@ export function createInteractionHandler(config, searchCache) {
       return;
     }
 
+    if (subcommand === "langstats") {
+      await interaction.deferReply();
+
+      try {
+        const snapshot = searchCache.getSnapshot("langlookup");
+        const languageCategories = snapshot?.languageCategories ?? [];
+        const message = formatLangStatsOnlyMessage(languageCategories, config.formatDisplayPath);
+
+        await logEvent(interaction, {
+          subcommand,
+          outcome: "success",
+          categoryCount: languageCategories.length,
+        });
+        await interaction.editReply({
+          content: truncateDiscordMessage(message),
+          allowedMentions: NO_MENTIONS,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        await logEvent(interaction, {
+          subcommand,
+          outcome: "error",
+          reason: message,
+        });
+        await interaction.editReply({
+          content: `CMIBot hit an error while loading language stats: ${message}`,
+          allowedMentions: NO_MENTIONS,
+        });
+      }
+      return;
+    }
+
     const keywordInput = interaction.options.getString("keyword", true);
     const mode = interaction.options.getString("mode") ?? "exact";
     const limit = interaction.options.getInteger("limit") ?? config.search.defaultResultLimit;
     const related = interaction.options.getBoolean("related") ?? false;
+    const stats = subcommand === "langlookup" ? (interaction.options.getBoolean("stats") ?? false) : false;
     const summary = interaction.options.getBoolean("summary") ?? false;
     const profile = config.search.profiles[subcommand];
     const canUseAi = hasRole(interaction.member, { roleIds: config.discord.aiRoleIds });
@@ -386,6 +493,7 @@ export function createInteractionHandler(config, searchCache) {
         keyword,
         mode,
         related,
+        stats,
         summary,
         outcome: "rejected",
         reason: validation.reason,
@@ -405,6 +513,7 @@ export function createInteractionHandler(config, searchCache) {
         keyword,
         mode,
         related,
+        stats,
         summary,
         outcome: "rejected",
         reason: `lookup-cooldown:${lookupCooldown.retryAfterSeconds}`,
@@ -423,6 +532,7 @@ export function createInteractionHandler(config, searchCache) {
         keyword,
         mode,
         related,
+        stats,
         summary,
         outcome: "denied",
         reason: "ai-role",
@@ -449,6 +559,7 @@ export function createInteractionHandler(config, searchCache) {
           keyword,
           mode,
           related,
+          stats,
           summary,
           outcome: "rejected",
           reason: `summary-cooldown:${summaryCooldown.retryAfterSeconds}`,
@@ -465,7 +576,9 @@ export function createInteractionHandler(config, searchCache) {
     await interaction.deferReply();
 
     try {
+      const snapshot = searchCache.getSnapshot(profile.name);
       const entries = searchCache.getEntries(profile.name);
+      const languageStats = stats && subcommand === "langlookup" ? snapshot?.languageCategories ?? [] : [];
       const lexicalMatches = lexicalSearch(keyword, entries, { limit: 25, mode });
       const rerankedMatches = config.openai.enabled && canUseAi
         ? await reranker.rerank(keyword, lexicalMatches)
@@ -479,11 +592,20 @@ export function createInteractionHandler(config, searchCache) {
           keyword,
           mode,
           related,
+          stats,
           summary,
           outcome: "empty",
         });
+        const statsMessage = formatLanguageStatsMessage(languageStats, config.formatDisplayPath);
         await interaction.editReply({
-          content: `No YAML entries matched \`${sanitizeForDisplay(keyword)}\` in the \`${subcommand}\` profile.`,
+          content: truncateDiscordMessage(
+            [
+              `No YAML entries matched \`${sanitizeForDisplay(keyword)}\` in the \`${subcommand}\` profile.`,
+              statsMessage,
+            ]
+              .filter(Boolean)
+              .join("\n\n"),
+          ),
           allowedMentions: NO_MENTIONS,
         });
         return;
@@ -500,6 +622,7 @@ export function createInteractionHandler(config, searchCache) {
         aiSummary = (await reranker.summarize(keyword, finalMatches, { profileName: profile.name })) || "";
       }
       const allMatchedFiles = [...new Set(orderedMatches.map((item) => item.entry.relativePath))];
+      const statsMessage = formatLanguageStatsMessage(languageStats, config.formatDisplayPath);
       const message = formatResultsMessage(
         keyword,
         visibleResults,
@@ -508,6 +631,8 @@ export function createInteractionHandler(config, searchCache) {
         limit,
         aiSummary,
         allMatchedFiles,
+        { preferShortPath: subcommand === "langlookup", showFileHints: subcommand !== "langlookup" },
+        [statsMessage],
       );
 
       await logEvent(interaction, {
@@ -515,6 +640,7 @@ export function createInteractionHandler(config, searchCache) {
         keyword,
         mode,
         related,
+        stats,
         summary,
         aiEnabled: canUseAi,
         outcome: "success",
