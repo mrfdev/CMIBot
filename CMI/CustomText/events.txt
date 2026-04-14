@@ -1,0 +1,8 @@
+<AutoPage><Hidden><NoAutoAlias><NoReqPermission>
+{#cerulean} •&l&m                                                &r{#Cerulean}•
+{#orange} <3 &l 1MoreBlock 2026 Events
+{#orange} -{#gold} Current event: {#orange}none
+{#orange} -{#gold} Next: Potentially Summer Event
+{#orange} -{#gold}
+{#cerulean} •&l&m                                                &r{#Cerulean}•
+

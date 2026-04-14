@@ -1,0 +1,370 @@
+ChatFilter:
+  Enabled: true
+  # Priority of chat filter listener
+  # Changed priority will only take effect on full server restart
+  # Possible options: LOWEST, LOW, NORMAL, HIGH, HIGHEST
+  # Default: LOW
+  Priority: LOW
+  Deny:
+    ipBlock:
+      # If not set to true, this filter will not be used
+      Enabled: false
+      # Defines filter group and defines required permission node to bypass this filter: cmi.chatfilter.bypass.[groupName]
+      Group: Advertising
+      # When set to true, each time player triggers filter, console will receive information about who triggered it, which filter and with what message
+      InformConsole: true
+      # Regex expression to filter by. How to use regex https://regexone.com/
+      Regex:
+      - \b[0-9]{1,3}(\.|dot|\(dot\)|-|;|:|,|(\W|\d|_)*\s)+[0-9]{1,3}(\.|dot|\(dot\)|-|;|:|,|(\W|\d|_)*\s)+[0-9]{1,3}(\.|dot|\(dot\)|-|;|:|,|(\W|\d|_)*\s)+[0-9]{1,3}\b
+      - '[a-zA-Z0-9\-\.]+\s?(\.|dot|\(dot\)|-|;|:|,|_|/)\s?([a-zA-Z]{2,4})\b'
+      # With what we need to replace word, if not defined found expression will not be changed
+      ReplaceWith: spammySPAMSPAM
+      # possible: none, others, all
+      # Where 'none' means everyone will receive this message
+      # 'others' means that sender will get message but not other players, this is usefull to prevent advertising and silently block it
+      # 'all' means that no one will receive sent message
+      BlockType: others
+      # When enabled rule will be applied to private messages
+      includePrivateMessages: true
+      # Players with cmi.chatfilter.inform permission will receive defined message when rule is broken
+      msgToStaff: '&4!STAFF!&6 [playerName] &4is IP spamming: &r[message]'
+      # List of commands to perform when rule is broken. Use [senderName] to include message sender name. Supports global variables same as locale file
+      # Use [message] to include original players message
+      # Use [updatedmessage] to include new modified message
+      Commands:
+      - cmi msg [senderName] !&e&lPosting links is not allowed! (read /rules)
+    swearing1:
+      Enabled: true
+      Group: minechat
+      InformConsole: true
+      Regex:
+      - \bass\b|\bVerbonden
+      ReplaceWith: Connected
+      BlockType: all
+      includePrivateMessages: false
+      msgToStaff: '&r'
+      Commands:
+      - cmi msg [senderName] !&e&lDon't swear! (read /rules)
+    swearing2:
+      Enabled: true
+      Group: Swearing
+      InformConsole: true
+      Regex:
+      - (?i)(f(\W|\d|_|)+)+(u(\W|\d|_|)+)+(c(\W|\d|_|)+)+(k(\W|\d|_|)+)+
+      - \b(?i)(s(\W|\d|_|)+)+(h(\W|\d|_|)+)+(i(\W|\d|_|)+)+(t(\W|\d|_|)+)+
+      - (?i)(c(\W|\d|_|)+)+(u(\W|\d|_|)+)+(n(\W|\d|_|)+)+(t(\W|\d|_|)+)+
+      ReplaceWith: -badword-
+      BlockType: others
+      includePrivateMessages: true
+      msgToStaff: '&4!STAFF!&6 [playerName] &4is swearing: &r[message]'
+      Commands:
+      - cmi kick [senderName] Swearing not welcome
+    nword:
+      Enabled: true
+      Group: HateSpeech
+      InformConsole: true
+      Regex:
+      - (?i)(?<![A-Za-z0-9_])n(\W|\d|_)*w(\W|\d|_)*o(\W|\d|_)*r(\W|\d|_)*d(?![A-Za-z0-9_])
+      - (?i)(?<![A-Za-z0-9_])n(\W|\d|_)*i(\W|\d|_)*g(\W|\d|_)*g(\W|\d|_)*e(\W|\d|_)*r([a-z]{0,3})?(?![A-Za-z0-9_])
+      - (?i)(?<![A-Za-z0-9_])n(\W|\d|_)*i(\W|\d|_)*g(\W|\d|_)*g(\W|\d|_)*a(\W|\d|_)*h?([a-z]{0,4})?(?![A-Za-z0-9_])
+      - (?i)(?<![A-Za-z0-9_])n(\W|\d|_)*e(\W|\d|_)*g(\W|\d|_)*e(\W|\d|_)*r([a-z]{0,3})?(?![A-Za-z0-9_])
+      - (?i)(?<![A-Za-z0-9_])c(\W|\d|_)*l(\W|\d|_)*a(\W|\d|_)*n(\W|\d|_)*k(\W|\d|_)*e(\W|\d|_)*r([a-z]{0,3})?(?![A-Za-z0-9_])
+      ReplaceWith: -badword-
+      BlockType: all
+      includePrivateMessages: true
+      msgToStaff: '&4!STAFF!&6 [playerName] &4is saying hate-speech: &r[message]'
+      Commands:
+      - cmi ban [senderName] Hate speech not welcome
+      - 'discordsrv broadcast #1186634863827234836 **Chatfilter**: `[senderName]`
+        said hate speech `[message]`'
+    anarchyword:
+      Enabled: true
+      Group: Kiddiez
+      InformConsole: true
+      Regex:
+      - (?i)[a@4](\W|\d|_)*n(\W|\d|_)*[a@4](\W|\d|_)*r(\W|\d|_)*c(\W|\d|_)*[h#](\W|\d|_)*[y¥]+((\W|\d|_)*('s|s))?
+      - (?i)[a@4](\W|\d|_)*n(\W|\d|_)*r(\W|\d|_)*c(\W|\d|_)*[h#](\W|\d|_)*[y¥]+((\W|\d|_)*('s|s))?
+      ReplaceWith: -badword-
+      BlockType: all
+      includePrivateMessages: true
+      msgToStaff: '&4!STAFF!&6 [playerName] &4is saying anarchy: &r[message]'
+      Commands:
+      - cmi ban [senderName] not welcome -s
+      - 'discordsrv broadcast #1186634863827234836 **Chatfilter**: `[senderName]`
+        said anarchy `[message]`'
+    smalldick:
+      Enabled: true
+      Group: Kiddiez
+      InformConsole: true
+      Regex:
+      - (?i)(?<![A-Za-z0-9_])(sm(?:a|o)ll|big)(\W|_|\d){0,6}d(\W|_|\d){0,3}(?:i|1|!|\|)(\W|_|\d){0,3}(?:c(\W|_|\d){0,3}k|x)[a-z]{0,12}
+      ReplaceWith: -badword-
+      BlockType: all
+      includePrivateMessages: true
+      msgToStaff: '&4!STAFF!&6 [playerName] &4is saying small dick: &r[message]'
+      Commands:
+      - cmi ban [senderName] not welcome -s
+      - 'discordsrv broadcast #1186634863827234836 **Chatfilter**: `[senderName]`
+        said small dick `[message]`'
+    faggotword:
+      Enabled: true
+      Group: HateSpeech
+      InformConsole: true
+      Regex:
+      - (?i)(?<![A-Za-z0-9_])f(\W|\d|_)*[a@4](\W|\d|_)*g(\W|\d|_)*g(\W|\d|_)*[o0](\W|\d|_)*t([a-z]{0,4})?(?![A-Za-z0-9_])
+      ReplaceWith: -badword-
+      BlockType: all
+      includePrivateMessages: true
+      msgToStaff: '&4!STAFF!&6 [playerName] &4is saying faggot: &r[message]'
+      Commands:
+      - cmi ban [senderName] not welcome -s
+      - 'discordsrv broadcast #1186634863827234836 **Chatfilter**: `[senderName]`
+        said faggot `[message]`'
+    rape:
+      Enabled: true
+      Group: Swearing
+      InformConsole: true
+      Regex:
+      - (?i)\b(r[\W\d_]*a[\W\d_]*p[\W\d_]*e)\b
+      ReplaceWith: -badword-
+      BlockType: others
+      includePrivateMessages: true
+      msgToStaff: '&4!STAFF!&6 [playerName] &4is saying: &r[message]'
+      Commands:
+      - cmi ban [senderName] Topic not welcome
+      - 'discordsrv broadcast #1186634863827234836 **Chatfilter**: `[senderName]`
+        said `[message]`'
+    kys:
+      Enabled: true
+      Group: Swearing
+      InformConsole: true
+      Regex:
+      - (?i)\b(k[\W\d_]*y[\W\d_]*s)\b
+      ReplaceWith: -badword-
+      BlockType: others
+      includePrivateMessages: true
+      msgToStaff: '&4!STAFF!&6 [playerName] &4is saying: &r[message]'
+      Commands:
+      - cmi ban [senderName] Topic not welcome
+      - 'discordsrv broadcast #1186634863827234836 **Chatfilter**: `[senderName]`
+        said `[message]`'
+    filterlist:
+      Enabled: true
+      Group: DontSaytheseThings
+      InformConsole: true
+      Regex:
+      - \b(?i)(p(\W|_|)+)+(a(\W|_|)+)+(y(\W|_|)+)+2(w(\W|_|)+)+(i(\W|_|)+)+(n(\W|_|)+)+
+      - \b(?i)(p(\W|_|)+)+2(w(\W|_|)+)+
+      - \b(?i)(r(\W|_|)+)+(e(\W|_|)+)+(t(\W|_|)+)+(a(\W|_|)+)+(r(\W|_|)+)+(d(\W|_|)+)+
+      - \b(?i)(s(\W|\d|_|)+)+(k(\W|\d|_|)+)+(i(\W|\d|_|)+)+(b(\W|\d|_|)+)+(i(\W|\d|_|)+)+(d(\W|\d|_|)+)+(i(\W|\d|_|)+)+
+      - \b(?i)(z(\W|\d|_|)+)+(e(\W|\d|_|)+)+(d(\W|\d|_|)+)+(a(\W|\d|_|)+)+(r(\W|\d|_|)+)+(m(\W|\d|_|)+)+(c(\W|\d|_|)+)+
+      ReplaceWith: -nope-
+      BlockType: others
+      includePrivateMessages: true
+      msgToStaff: '&4!STAFF!&6 [playerName] &4msg filtered: &r[message]'
+      Commands:
+      - cmi shadowmute [senderName] 15m -s ChatFilter - DontSaytheseThings
+      - 'discordsrv broadcast #1186634863827234836 **Chatfilter**: `[senderName]`
+        said `[message]`'
+    repeatgroups:
+      Enabled: false
+      Group: repeatgroups
+      InformConsole: true
+      Regex:
+      - \b([\w\s']+) \1\b
+      ReplaceWith: ''
+      BlockType: others
+      includePrivateMessages: true
+      msgToStaff: '&4!Attn:!&6 [playerName] &4msg filtered (repeatgroups): &r[message]'
+      Commands:
+      - cmi shadowmute [senderName] 10 ChatFilter repeatgroups
+      - 'discordsrv broadcast #1186634863827234836 **Chatfilter** (repeatgroups):
+        `[senderName]` said `[message]`'
+    politics:
+      Enabled: true
+      Group: politics
+      InformConsole: true
+      Regex:
+      - \b(?i)(i(\W|_|)+)+(s(\W|_|)+)+(r(\W|_|)+)+(a(\W|_|)+)+(e(\W|_|)+)+(l(\W|_|)+)+
+      - \b(?i)(p(\W|_|)+)+(a(\W|_|)+)+(l(\W|_|)+)+(e(\W|_|)+)+(s(\W|_|)+)+(t(\W|_|)+)+(i(\W|_|)+)+(n(\W|_|)+)+(e(\W|_|)+)+
+      ReplaceWith: meh
+      BlockType: all
+      includePrivateMessages: true
+      msgToStaff: '&4!STAFF!&6 [playerName] &4msg filtered: &r[message]'
+      Commands:
+      - cmi shadowmute [senderName] 60 -s ChatFilter - noPolitics
+      - 'discordsrv broadcast #1186634863827234836 **Chatfilter**: `[senderName]`
+        said `[message]`'
+    cve:
+      Enabled: false
+      Group: cve
+      InformConsole: true
+      Regex:
+      - (?i)(j(\W|\d|_|)+)+(d(\W|\d|_|)+)+(n(\W|\d|_|)+)+(i(\W|\d|_|)+)+
+      - (?i)(j(\W|\d|_|)+)+(n(\W|\d|_|)+)+(d(\W|\d|_|)+)+(i(\W|\d|_|)+)+
+      - (?i)(l(\W|\d|_|)+)+(d(\W|\d|_|)+)+(a(\W|\d|_|)+)+(p(\W|\d|_|)+)+
+      ReplaceWith: ChatFiltered
+      BlockType: all
+      includePrivateMessages: true
+      msgToStaff: '&4!STAFF!&6 [playerName] &4msg filtered: &r[message]'
+      Commands:
+      - 'discordsrv broadcast #1186634863827234836 **Chatfilter**: `[senderName]`
+        said `[message]`'
+    runcommandexploit:
+      Enabled: true
+      Group: exploit
+      InformConsole: true
+      Regex:
+      - (?i)\brun_command\b
+      - (?i)\bsuggest_command\b
+      - (?i)\bopen_url\b
+      - (?i)\bopen_file\b
+      - (?i)\bcopy_to_clipboard\b
+      - (?i)\bchange_page\b
+      - (?i)\bshow_dialog\b
+      ReplaceWith: blocked
+      BlockType: all
+      includePrivateMessages: true
+      msgToStaff: '&4!STAFF!&6 [playerName] tried exploit string: &r[message]'
+      Commands:
+      - cmi kick [senderName] click this
+      - 'discordsrv broadcast #1186634863827234836 **Chatfilter**: `[senderName]`
+        said `[message]`'
+    cmiplaceholderexploit:
+      Enabled: true
+      Group: exploit
+      InformConsole: true
+      Regex:
+      - (?i)\/cmi\s+\S+\s+%
+      ReplaceWith: blocked
+      BlockType: all
+      includePrivateMessages: true
+      msgToStaff: '&4!STAFF!&6 [playerName] tried CMI placeholder exploit: &r[message]'
+      Commands:
+      - cmi kick [senderName] No -s
+      - 'discordsrv broadcast #1186634863827234836 **Chatfilter**: `[senderName]`
+        tried CMI placeholder exploit `[message]` (we kicked them out, might need
+        a ban)'
+  # List of regex filter to exlude from block list. Usefull if you want to block all ip/host address but want to allow usage of your own server.
+  WhiteList:
+  - \byoutube.\s?([a-zA-Z]{2,4})\b
+  - \btwitch.\s?([a-zA-Z]{2,4})\b
+  - \b1moreblock.\s?([a-zA-Z]{2,4})\b
+  - \bmrfloris.\s?([a-zA-Z]{2,4})\b
+  - \bomgboards.\s?([a-zA-Z]{2,4})\b
+  - \bspigotmc.\s?([a-zA-Z]{2,4})\b
+  DuplicatedMessagePrevention:
+    # When set to true, plugin will prevent spaming of same or similar messages in short time range. Can be bypased with cmi.chatfilter.spambypass permission
+    Use: true
+    # Priority of chat spam listener
+    # Changed priority will only take effect on full server restart
+    # Possible options: LOWEST, LOW, NORMAL, HIGH, HIGHEST
+    # Default: LOW
+    Priority: LOW
+    # How much in percentage message is counted as same
+    Percentage: 80
+    # Defines how often in seconds you can send same/similar message
+    Interval: 6
+    # How many commands you can repeat before stopped for cooldown
+    MinAmount: 3
+  Caps:
+    # When nebaled we will try to prevent chat messages with multiple capitalized letters by defined criteria
+    # Can be bypassed with cmi.chatfilter.capbypass permission node
+    Filter: true
+    # Priority of chat capitalization listener
+    # Changed priority will only take effect on full server restart
+    # Possible options: LOWEST, LOW, NORMAL, HIGH, HIGHEST
+    # Default: LOW
+    Priority: MONITOR
+    # Defines amount of letters we can ignore
+    # For example ':DDD' would be made of 2 letters with 3 capitalized letters which would make it 75% capitalized
+    IgnoreUnder: 6
+    # Amount in percentage of capitalized letters we should not cross over.
+    # In example 'GOOD thing' would be 4 capitalized and 5 not, spaces gets ignored, which makes it 44% capitalized and passes check
+    Percentage: 50
+    # When capitalized text is detected, should we lower case text
+    LowerCase: true
+    # Should we cancel chat event if we detect too many caps
+    CancelEvent: false
+    # List of commands you want to perform when player uses too many caps
+    Commands:
+    - asConsole! cmi titlemsg [playerName] &cdebug caps! -keep:20
+    # List of messages, excluding color codes, player can use even if it 100% capitalized
+    WhiteList:
+    - AFAIK
+    - AFK
+    - BRB
+    - IMHO
+    - OMG
+    - ROFL
+    - ROFLMAO
+    - LQTM
+    - LSMH
+    - LMHO
+  SimpleReplacer:
+    # Priority of simple replacer listener
+    # Changed priority will only take effect on full server restart
+    # Possible options: LOWEST, LOW, NORMAL, HIGH, HIGHEST
+    # Default: LOWEST
+    Priority: LOWEST
+    # Enables simpler replacer feature for public and private messages
+    Enabled: true
+    # Quick replacer for inputs like :heart: into ❤
+    Replacements:
+    - heart-❤
+    - star-★
+    - sparkles-✨
+    - sunny-☀
+    - umbrella-☂
+    - zap-⚡
+    - musical_note-♫
+    - check_mark-✓
+    - cross_mark-✗
+    - smile-☺
+    - frown-☹
+    - wink-😉
+    - grin-😁
+    - laughing-😆
+    - cool-😎
+    - cry-😢
+    - angry-😠
+    - thumbs_up-👍
+    - thumbs_down-👎
+    - clapping-👏
+    - ok_hand-👌
+    - pray-🙏
+    - fire-🔥
+    - poop-💩
+    - party_popper-🎉
+    - balloon-🎈
+    - trophy-🏆
+    - coffee-☕
+    - warning-⚠
+    - question_mark-❓
+    - exclamation_mark-❗
+    - hourglass-⌛
+    - light_bulb-💡
+    - camera-📷
+    - video_game-🎮
+    - laptop-💻
+    - rocket-🚀
+    - sparkle_heart-💖
+    - broken_heart-💔
+    - note-♪
+    - skull-☠
+    - snowman-☃
+    - shamrock-☘
+    - yin_yang-☯
+    - peace-☮
+    - star_of_david-✡
+    - cross_star-✝
+    - biohazard-☣
+    - radioactive-☢
+    - scissors-✂
+    - pencil-✏
+    - telephone-☎
+    - envelope-✉
+    - anchor-⚓
+    - recycle-♻
+  # Emojies to be used for emojipicker command
+  Emojies: 😀😃😄😁😆😅🤣😂🥹🙂🙃😉😊😇🥰😍🤩😘😗☺😚😙🥲😋😛😜🤪😝🤑🤗🫢🤭🤫🤔🫡🤐🤨😐😑😶😏😒🙄😬🤥😌😔😪😮💨🤤😴😷🤒🤕🤢🤮🤧🫠🥵🥶😶🌫🫥🥴🫨😵💫😵🤯🤠🥳🥸😎🤓🧐🫤😕😟🙁☹😮😯😲😳🫣🥺😦😧😨😰😥😢😭😱😖😣😞😓😩😫🥱😤😡😠🤬😈👿💀☠💩🤡👹👺👻👽👾🤖😺😸😹😻😼😽🙀😿😾🙈🙉🙊👋🤚🖐✋🖖👌🤌🤏✌🤞🫰🤟🤘🤙👈👉👆🖕👇☝🫵👍👎✊👊🤛🤜👏🙌👐🫶🤲🫳🫴🫱🫲🤝🫸🫷🙏✍💅🤳💪🦾🦿🦵🦶👂🦻👃🧠🫀🫁🦷🦴👀👁👅👄🫦💋👶🧒👦👧🧔🧑🦰🦱🦳🦱🦲👱🧓👴👵🙍🙎🙅🙆💁🙋🤦🙇🧏👨🤷⚕🎓🏫⚖🌾🍳🔧🏭💼🔬💻🎤🎨✈👩🚀🚒🚒👮🕵💂🥷👷🫅👸👳👲🧕🤵👰🫄🤱🍼👼🎅🤶🎄🦸🦹🧙🧚🧛🧜🧝🧞🧟🧌💆💇🚶🧍🧎🦯🦼🦽🏃💃🕺🕴👯🧖🧗🤺🏇⛷🏂🏌🏄🚣🏊⛹🏋🚴🚵🤸🤼🤽🤾🤹🧘🛀🛌🤝👭💏❤💋🗣👤👥🫂👣🐵🐒🦍🦧🐶🐕🦮🐕🦺🐩🐺🦊🦝🐱🐈🐈⬛🦁🐯🐅🐆🐴🐎🦄🫏🦓🦌🫎🦬🐮🐂🐃🐄🐷🐖🐗🐽🐏🐑🐐🐪🐫🦙🦒🐘🦣🦏🦛🐭🐁🐀🐹🐰🐇🐿🦫🦔🦇❄🐻🐨🐼🦥🦦🦨🦘🦡🐾🦃🐔🐓🐣🐤🐥🐦🐧🐦⬛🕊🦅🦆🪿🦢🦉🦤🦩🦚🦜🪽🪶🪹🪺🥚🐸🐊🐢🦎🐍🐲🐉🦕🦖🐳🐋🐬🦭🐟🐠🐡🦈🪼🐙🦑🦀🦞🦐🪸🦪🐚🐌🦋🐛🐜🐝🪲🐞🦗🪳🕷🕸🦂🦟🪰🪱🦠🍄💐💮🏵🌼🌻🌹🥀🌺🌷🌸🪷🪻🌱🪴🏕🌲🌳🌰🌴🌵🎋🎍🌾🌿☘🍀🍁🍂🍃🌍🌎🌏🌑🌒🌓🌔🌕🌖🌗🌘🌙🌚🌛🌜☀🌝🌞🪐💫⭐🌟✨🌠☄🌌☁⛅⛈🌤🌥🌦🌧🌨🌩🌪🌫🌬🌀🌈🌂☂☔⛱⚡❄☃⛄🏔⛰🗻🌋🔥💧🌊💥💦💨🍇🍈🍉🍊🍋🍌🍍🥭🍎🍏🍐🍑🍒🍓🫐🥝🍅🫒🥥🥑🍆🥔🥕🌽🌶🫑🥒🥬🥦🫛🧄🧅🫚🍄🫘🥜🌰🍞🥐🥖🫓🥨🥯🥞🧇🧀🍖🍗🥩🥓🍔🍟🍕🌭🥪🌮🌯🫔🥙🧆🥚🍳🥘🍲🫕🥣🥗🍿🧈🧂🥫🍱🍘🍙🍚🍛🍜🍝🍠🍢🍣🍤🍥🥮🍡🥟🥠🥡🍦🍧🍨🍩🍪🎂🍰🧁🥧🍫🍬🍭🍮🍯🍼🥛🫗☕🫖🍵🍶🍾🍷🍸🍹🍺🍻🥂🥃🥤🧋🧃🧉🧊🥢🍽🍴🥄🔪⚽⚾🥎🏀🏐🏈🏉🎾🥏🎳🏏🏑🏒🥍🏓🏸🥊🥋🥅⛳⛸🎣🤿🎽🎿🛷🥌🎯🪀🪁🎱🎖🏆🏅🥇🥈🥉🏔⛰🌋🗻🏕🏖🏜🏝🏟🏛🏗🧱🪨🪵🛖🏘🏚🏠🏡🏢🏣🏤🏥🏦🏨🏩🏪🏫🏬🏭🏯🏰💒🗼🗽⛪🕌🛕🕍⛩🕋⛲⛺🌁🌃🏙🌄🌅🌆🌇🌉🗾🏞🎠🎡🎢💈🎪🚂🚃🚄🚅🚆🚇🚈🚉🚊🚝🚞🚋🚌🚍🚎🚐🚑🚒🚓🚔🚕🚖🚗🚘🚙🛻🚚🚛🚜🏎🏍🛵🦽🦼🛺🚲🛴🛹🛼🚏🛣🛤🛢⛽🚨🚥🚦🛑🚧⚓⛵🛶🚤🛳⛴🛥🚢✈🛩🛫🛬🪂💺🚁🚟🚠🚡🛰🚀🛸🎆🎇🎑🗿🛎🧳⌛⏳⌚⏰⏱⏲🕰🌡🗺🧭🎃🎄🧨🎈🎉🎊🎎🪭🎏🎐🎀🎁🎗🎟🎫🔮🪄🧿🎮🕹🎰🎲♟🧩🧸🪅🪆🖼🎨🧵🪡🧶🪢👓🕶🥽🥼🦺👔👕👖🧣🧤🧥🧦👗👘🥻🩱🩲🩳👙👚👛👜👝🛍🎒🩴👞👟🥾🥿👠👡🩰👢👑👒🎩🎓🧢🪖⛑📿💄💍💎📢📣📯🎙🎚🎛🎤🎧📻🎷🪗🎸🎹🎺🎻🪕🪈🪇🥁🪘🪩📱📲☎📞📟📠🔋🪫🔌💻🖥🖨⌨🖱🖲💽💾💿📀🧮🎥🎞📽🎬📺📷📸📹📼🔍🔎🕯💡🔦🏮🪔📔📕📖📗📘📙📚📓📒📃📜📄📰🗞📑🔖🏷💰🪙💴💵💶💷💸💳🪪🧾✉💌📧🧧📨📩📤📥📦📫📪📬📭📮🗳✏✒🖋🖊🖌🖍📝📁📂🗂📅📆🗒🗓📇📈📉📊📋📌📍📎🖇📏📐✂🗃🗄🗑🔒🔓🔏🔐🔑🗝🔨🪓⛏⚒🛠🗡⚔💣🔫🪃🏹🛡🪚🔧🪛🔩⚙🗜⚖🦯🔗⛓🪝🧰🧲🪜🛝🛞🫙⚗🧪🧫🧬🔬🔭📡🩻💉🩸💊🩹🩺🩼🚪🛗🪞🪟🛏🛋🪑🪤🚽🪠🚿🛁🧼🫧🪒🪮🧴🧷🧹🧺🧻🪣🪥🧽🧯🛟🛒🚬⚰🪦⚱🏺🪧🕳💘💝💖💗💓💞💕💟❣💔❤🧡💛💚🩵💙💜🩷🤎🖤🩶🤍❤🔥❤🩹💯♨💢💬👁🗨🗯💭💤🌐♠♥♦♣🃏🀄🎴🎭🔇🔈🔉🔊🔔🔕🎼🎵🎶💹🏧🚮🚰♿🚹🚺🚻🚼🚾🛂🛃🛄🛅🛜⚠🚸⛔🚫🚳🚭🚯🚱🚷📵🔞☢☣⬆↗➡↘⬇↙⬅↖↕↔↩↪⤴⤵🔃🔄🔙🔚🔛🔜🔝☯🔀🔁🔂▶⏩⏭⏯◀⏪⏮🔼⏫🔽⏬⏸⏹⏺⏏🎦🔅🔆📶📳📴⚧✖➕➖➗🟰♾‼⁉❓❕〰💱💲⚕♻⚜🔱📛🔰⭕✅☑✔❌❎➰➿〽✳✴❇©®™#🔠🔡🔢🔣🔤🅰🆎🅱🆑🆒🆓ℹ🆔Ⓜ🆕🆖🅾🆗🅿🆘🆙🆚🈁🔴🟠🟡🟢🔵🟣🟤⚫⚪🟥🟧🟨🟩🟦🟪🟫⬛⬜◼◻◾◽▪▫🔶🔷🔸🔹🔺🔻💠🔘🔳🔲🕛🕧🕐🕜🕑🕝🕒🕞🕓🕟🕔🕠🕕🕡🕖🕢🕗🕣🕘🕤🕙🕥🕚🕦☹☻☺ツ☚☛☜☝☞☟✍✎✌❤❥♥♡❣♨☠☮☯☪☀☣☢☭♏♒♈☂☃☁♔♕♚۩♛✿❀❃❂❁♠♤♣♧⚜™®©₪★☆✮✯✪✣✤✥✲❈☄✦❉✧♱♰๑☿⋄⋅⋆⋇☼*✖✗✘✕✓✔ღ✄✂☎☏✆✉♪♩♫♬♭❝❞‘ﾟ.･‖﹉﹊﹍﹎︱︳︴﹏﹋﹌▁┠┨┯┷┏┓﹃﹄┗┛┳⊥╝╚╔╗╬═╓╩▪▫□〓≡▬▂▃▄■▀▢▅▆▇▌▐█▓▒░┇┅✚▣▧▨▤▥▦▩回ஐ⋖⋗▲△▼♢♦▽Δ►◄⇨◈◆◇◊⋘⋙⋚⋛⋜⋝⋞⋟⋩⋪⋫⋬⋭⋈⋉⋊⋋⋌⋍⋎⋏⋐⋑⋒⋓⋔⋕∵∴⋮⋯【】⊶╯ぃ↔↕↑↓→←↘↙➹ψ♆◠◡┌┐└┘∟「」◯●◕◐◑○◔⊙◎㊚㊛¤㊣∞☾☽◘◙の➀➁➂➃➄➅➆➇➈➉ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓤⓥⓦⓧⓨⓩ½⅓⅔¼¾⅛⅜⅝⅞℅

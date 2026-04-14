@@ -1,0 +1,59 @@
+# 1MoreBlock.com (c) Floris Fiedeldij Dop, add beacon command to bbox gametypes, version 0.1.1
+# valid gametypes are: bskyblock aoneblock caveblock skygrid acidisland
+
+CustomAlias:
+  skyblock beacon:
+    Cmds:
+    - asConsole! cmi ctext gametypebeacon [playerName]
+    - delay! 1
+    - ifinworld:skyblock! check:%Level_bskyblock_island_level%>=1000! asConsole! cmi
+      msg [playerName] !{#Feijoa}Your Skyblock Island Level is over {#orange}&l1000{#Feijoa},
+      you can now get the nether star to create your beacon.\n \n ... opening trade
+      in about 6 seconds ...
+    - delay! 6
+    - ifinworld:skyblock! check:%Level_bskyblock_island_level%>=1000! asConsole! genesis
+      open GameTypeBeaconTrade [playerName]
+  oneblock beacon:
+    Cmds:
+    - asConsole! cmi ctext gametypebeacon [playerName]
+    - delay! 1
+    - ifinworld:oneblock! check:%Level_aoneblock_island_level%>=1000! asConsole! cmi
+      msg [playerName] !{#Feijoa}Your Skyblock Island Level is over {#orange}&l1000{#Feijoa},
+      you can now get the nether star to create your beacon.\n \n ... opening trade
+      in about 6 seconds ...
+    - delay! 6
+    - ifinworld:oneblock! check:%Level_aoneblock_island_level%>=1000! asConsole! genesis
+      open GameTypeBeaconTrade [playerName]
+  skygrid beacon:
+    Cmds:
+    - asConsole! cmi ctext gametypebeacon [playerName]
+    - delay! 1
+    - ifinworld:skygrid! check:%Level_skygrid_island_level%>=1000! asConsole! cmi
+      msg [playerName] !{#Feijoa}Your Skyblock Island Level is over {#orange}&l1000{#Feijoa},
+      you can now get the nether star to create your beacon.\n \n ... opening trade
+      in about 6 seconds ...
+    - delay! 6
+    - ifinworld:skygrid! check:%Level_skygrid_island_level%>=1000! asConsole! genesis
+      open GameTypeBeaconTrade [playerName]
+  cave beacon:
+    Cmds:
+    - asConsole! cmi ctext gametypebeacon [playerName]
+    - delay! 1
+    - ifinworld:cave! check:%Level_caveblock_island_level%>=1000! asConsole! cmi msg
+      [playerName] !{#Feijoa}Your Skyblock Island Level is over {#orange}&l1000{#Feijoa},
+      you can now get the nether star to create your beacon.\n \n ... opening trade
+      in about 6 seconds ...
+    - delay! 6
+    - ifinworld:cave! check:%Level_caveblock_island_level%>=1000! asConsole! genesis
+      open GameTypeBeaconTrade [playerName]
+  acid beacon:
+    Cmds:
+    - asConsole! cmi ctext gametypebeacon [playerName]
+    - delay! 1
+    - ifinworld:acid! check:%Level_acidisland_island_level%>=1000! asConsole! cmi
+      msg [playerName] !{#Feijoa}Your Acid Island Level is over {#orange}&l1000{#Feijoa},
+      you can now get the nether star to create your beacon.\n \n ... opening trade
+      in about 6 seconds
+    - delay! 6
+    - ifinworld:acid! check:%Level_acidisland_island_level%>=1000! asConsole! genesis
+      open GameTypeBeaconTrade [playerName]

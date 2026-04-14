@@ -1,0 +1,302 @@
+Disabled:
+  dried_ghast: minecraft
+CRecipes:
+  26d2b753-af96-3ffb-a488-4164ef1d2e84:
+    Type: Stonecutting
+    Result: !!binary |-
+      H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxyklNLMlILWJmYE3OL80rYWBgYGUAAM733tc6AAAA
+    Recipe:
+      '0':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDIzcxLTS5KTCuxKk5MSclJZWZgTc4vzSthYGBgZAAAB2UFNzkAAAA=
+        byItem: true
+  426880b6-71d1-3d5d-bda4-c7a6f581c303:
+    Type: Shaped
+    Result: !!binary |-
+      H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxyszLji9OTGZmYE3OL80rYWBgYGQAAMw3XnY6AAAA
+    Recipe:
+      '0':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDLzcxLTS5KTCuxSs/JL4/PzMuOL05MZmZgTc4vzSthYGBgZAAA/2otXj8AAAA=
+        byItem: true
+      '1':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDLzcxLTS5KTCuxSs/JL4/PzMuOL05MZmZgTc4vzSthYGBgZAAA/2otXj8AAAA=
+        byItem: true
+      '2':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDLzcxLTS5KTCuxSs/JL4/PzMuOL05MZmZgTc4vzSthYGBgZAAA/2otXj8AAAA=
+        byItem: true
+      '3':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDLzcxLTS5KTCuxSs/JL4/PzMuOL05MZmZgTc4vzSthYGBgZAAA/2otXj8AAAA=
+        byItem: true
+      '4':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDLzcxLTS5KTCuxSs/JL4/PzMuOL05MZmZgTc4vzSthYGBgZAAA/2otXj8AAAA=
+        byItem: true
+      '5':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDLzcxLTS5KTCuxSs/JL4/PzMuOL05MZmZgTc4vzSthYGBgZAAA/2otXj8AAAA=
+        byItem: true
+      '6':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDLzcxLTS5KTCuxSs/JL4/PzMuOL05MZmZgTc4vzSthYGBgZAAA/2otXj8AAAA=
+        byItem: true
+      '7':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDLzcxLTS5KTCuxSs/JL4/PzMuOL05MZmZgTc4vzSthYGBgZAAA/2otXj8AAAA=
+        byItem: true
+      '8':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDLzcxLTS5KTCuxSs/JL4/PzMuOL05MZmZgTc4vzSthYGBgZAAA/2otXj8AAAA=
+        byItem: true
+  b6261b41-06d5-3c95-a792-fa369540b79d:
+    Type: Shaped
+    Result: !!binary |-
+      H4sIAAAAAAAA/72XTW/UMBCGZ9mWtouoVCSQ4IILBzisUJzvcMvH5oa4IW6VN/F2rU3sKnFa+mO48cv4JTg9sHup5Dmk0iraKJNHr+fNjMcLgDm8KJhmP3jXCyUBLn6ewjNRw3krJK86ttFfK7bjcziu1CA1AMwWsKhUe6Mkl7o/O4xsVMcXJuTkDI75L92x8WY2g+dCs0ZUMIPFIGveNeaN2twdrVVTw+nINq/CyUcnK9KAmjC13gx9xfRD2Mted2LH9bZTw/XWxB9pQ4cPJCU1N1yhhp6MKsmmUy2h34yMrFHV7vJ/LMATSfouK05uGlbxeknu1WB0ScKZXhIm6/HPI5LeTSVpRgCDTgvXL2zRDIfOMz+1RUsUOsl9P7JF1zh0Vvj+NLmOs9B3bNEch05LbyIbozT2rG3USDT1rG1c4tBJ6nnT2BgmnmdtIy7XYZy71jbiSiaIA9faRlzJBFHhhtPk2o9C19pGXMn4YelOZKMXxtTaRlzJeCGlyTQl4wUpnchGN/CotY24XLt+Tq1txJUM9QMnn6ZkqLdyrG3E5drxIsfaRlzJOJ75TWOj4yaOtY2PDVWTzXmXZHXLJbnbmss45Olx+NRbThrWa7IWmj+1ovdEaHInmoasOVmzakc2qiOtmYSJVG1/OAmfAjyVqs8kGzSplfxkstJxtjMql8QIOxB7bQ4SXw7kLeDt/kShlWq0uLmqRW+G6vszuNiKuubyan8CGZczgzf7d7istkzqdnxoaK8PTjJDr1V7JVnLD5d/jlj+yk8yp7Rc/vzv7z+Yr74szUZhC5+VKHQa5nRli1YodBCW9ttbh0I7kU+tWy6qea2yKKaZLfoWhQ6jjFrPVjjVNHbs93tUros89mk8yR5URHFMrQf7HIV249x+SkHtQXmRODSwRe9Q6CTx7dG4LwTdoA5b7yNtdA6v9g+E3Agp9P1D3wX4B16fKoNFEgAA
+    Recipe:
+      '0':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxSslMzM3PS2FmYE3OL80rYWBgYGQAAO7AOgU6AAAA
+      '1':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYZDKzcxLTS5KTCuxKskvSc2Nz0+LL81LqczMS2dmYE3OL80rYWBgYGQAACLfblxDAAAA
+      '2':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxSslMzM3PS2FmYE3OL80rYWBgYGQAAO7AOgU6AAAA
+      '3':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxSslMzM3PS2FmYE3OL80rYWBgYGQAAO7AOgU6AAAA
+      '4':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYeDLzcxLTS5KTCuxSk7MTmVmYE3OL80rYWBgYGQAAIOJE3U3AAAA
+      '5':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxSslMzM3PS2FmYE3OL80rYWBgYGQAAO7AOgU6AAAA
+      '6':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxSslMzM3PS2FmYE3OL80rYWBgYGQAAO7AOgU6AAAA
+      '7':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDPzcxLTS5KTCuxKs4vzYlPTswtSMssSmVmYE3OL80rYWBgYGQAACSiH49AAAAA
+      '8':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxSslMzM3PS2FmYE3OL80rYWBgYGQAAO7AOgU6AAAA
+  de9aad02-de82-3153-a8e7-78f2ce0371f8:
+    Type: Shaped
+    Result: !!binary |-
+      H4sIAAAAAAAA/73VPY/TMBgH8CfkjmuDQJwESGwGBBNC9XHNC1teN1bEVjmO25gmduU4cHwYNj4ZnwSnA82CZA+90fLjn/5+DwB8eFQQTb4wNXApAK6/LuABb+BJzwWjimz1J0r2zIdLKkehAcALIKCyP0jBhB6W88pOKhaYEn8Jl+xOKzI1PA8eck06TsGDYBQNU50Z0ZjWRS27BhaTbYbC1ZtVVqRrbMpkvR0HSvSx7PGgFd8z3So57lpTf6GNDq9RihpmXC7HAU0p0VbJHuHPJkbWSbp/9a8W4F4ivUX5tBCsQT+4bpFuTSQDDxpRSSVBNSNieH/fqd6hlqjvJoXJdVyhKVc9pfo2il3HkFaMDR9msQJ4edpVLWWn+WHT8OHQkZ9LuG550zCxOZ2CxRQfXpzGMEFbInQ/dRrt+ew0jYOW/UaQns0n/9Rh8uVtkq0qy8n7f379Bgc8T5JbvLbEvdyJLpKVPd260AWOCxza0tKJXscJjmxp6kQncYjj86Qu4o/2dOdClziqcGJLEyc6jHKc2tLaiU6jGGe2NHOiy2htTyMXurqJbnB+lttYhWGJi7NsY5WGGS5t6b0TXYUxtn37HLfR+Vmdfxj/efx9eHbqGEWtGNlzsTv+FwB/AamHCY2BCAAA
+    Recipe:
+      '0':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDNzcxLTS5KTCuxSs5Pzk+MT0pNzCtmZmBNzi/NK2FgYGBkAACQx0RhPgAAAA==
+      '1':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDNzcxLTS5KTCuxSs5Pzk+MT0pNzCtmZmBNzi/NK2FgYGBkAACQx0RhPgAAAA==
+      '2':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDNzcxLTS5KTCuxSs5Pzk+MT0pNzCtmZmBNzi/NK2FgYGBkAACQx0RhPgAAAA==
+      '3':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDNzcxLTS5KTCuxSs5Pzk+MT0pNzCtmZmBNzi/NK2FgYGBkAACQx0RhPgAAAA==
+      '4':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYeDLzcxLTS5KTCuxSk7MTmVmYE3OL80rYWBgYGQAAIOJE3U3AAAA
+      '5':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDNzcxLTS5KTCuxSs5Pzk+MT0pNzCtmZmBNzi/NK2FgYGBkAACQx0RhPgAAAA==
+      '6':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDNzcxLTS5KTCuxSs5Pzk+MT0pNzCtmZmBNzi/NK2FgYGBkAACQx0RhPgAAAA==
+      '7':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDPzcxLTS5KTCuxKs4vzYlPTswtSMssSmVmYE3OL80rYWBgYGQAACSiH49AAAAA
+      '8':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDNzcxLTS5KTCuxSs5Pzk+MT0pNzCtmZmBNzi/NK2FgYGBkAACQx0RhPgAAAA==
+  35c011fb-872e-3c1e-b231-a85dad4cc08f:
+    Type: Shaped
+    Result: !!binary |-
+      H4sIAAAAAAAA/72XS2/TQBDH101bUiMerQDBzSoSl1bIefiRSpWIH2klKlKo1JZeqrW9dbaxdyN73ZCc+BpIHDgixJ0bH6b3fgc2LSIJAroLCjd7Z+bn8dj7nx0VgBK46UEG91GWY0oAWD4sgzkcgbspJijM4Anb6FHGTSWwENKCMACAogI1pGmPEkRYvgRuj30TmiGVu8wtgQX0hmVwdKMoYBEzmOAQKEAtSISyhEdE/G4+oEkEyiM2DwU3HlcMU3c87kaDkyIPIbt0u5WzDHcR62S0iDvcf55xOniy6mWYdNc1SCItwznSAjSg/DqlGX+eFvCEo3z9hz8A/yctLc5oH5NYw0TL8RBpjGoJgmdIg0kyWoR99HR1Ii0VPBrXkFGaMNw7jnDeS+BgCSx3cBQhcjyueXlUYvBgHINI2IGEpSPjJOvq2/FIwi5N6h+MZbB4tQLuTCTTwWGXh90fL4VFzmh6TGCKJsupSZTTrDcMX7Scixcfvl58+QSu4Sv/xv88zZ8KnH7aT5jx613hFO26TCcrUTdMt+kKZqrsSqFN02v6ouiOFNoyW05FFA2l0LalOzVRNJFCN6yqY4qimRS6adUcWxRNpdCuZTiOKDqVQnuWJaxqpfO376TgvmW7umjeuRS6ZTXdqihaaj8auuW4hii6KYWuWp5rzaQgRs3y3aYoOpRC123dFRYoJIU27KrbmslWN0y75gkLVCSFtm3Dq89E+4yGbXrCAiVXkKZte42ZaJ/h2A1PWKDkdqNrO55wC5PqjoZve76wPEl1R6Nl+75wC8MyaFNv6L6wPCVS6Eqj4gu3MKk/xKw2ar6wPElpiNRJT8lmdzS79r9W/hZdOn//cWpW+M25vwTujQ0FCTIEu3wIGU06vzzAR3zuU8HKbhHwnJ2i28VsHyYF4hPdSpjiBAcbJGB86Ej5ePV95Hi42w/W1nac5+kahm20r9frZwcs3twEz45eZS/c7iFue13Pr24l2wevWSuO/XgYt2vtQoc7L8PtvYprNK2jg63B3gmre/1TdxAPT18PgtMh54NvvHWgXZEOAAA=
+    Recipe:
+      '0':
+        item: !!binary |-
+          H4sIAAAAAAAA/wXBQQ5AQAwF0M9EIqxsHcXaGcROalR00Y5U3X/eG4CEcaWgjf2TYsC092jlwqxinJ3uWN6HLIoeyno6GSd0ufwWABpUNlGCmUMAAAA=
+        byItem: true
+      '1':
+        item: !!binary |-
+          H4sIAAAAAAAA/wXBQQ5AQAwF0M9EIqxsHcXaGcROalR00Y5U3X/eG4CEcaWgjf2TYsC092jlwqxinJ3uWN6HLIoeyno6GSd0ufwWABpUNlGCmUMAAAA=
+        byItem: true
+      '2':
+        item: !!binary |-
+          H4sIAAAAAAAA/wXBQQ5AQAwF0M9EIqxsHcXaGcROalR00Y5U3X/eG4CEcaWgjf2TYsC092jlwqxinJ3uWN6HLIoeyno6GSd0ufwWABpUNlGCmUMAAAA=
+        byItem: true
+      '3':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYZDMzcxLTS5KTCuxyi9IzYtPrUxNyskvLs7PZWZgTc4vzSthYGBgZAAAd9v6UEIAAAA=
+        byItem: true
+      '4':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYZDMzcxLTS5KTCuxykstyUgtyixJjS8GChQwM7Am55fmlTAwMDAyAADNzGdmQgAAAA==
+        byItem: true
+      '5':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYZDMzcxLTS5KTCuxyi9IzYtPrUxNyskvLs7PZWZgTc4vzSthYGBgZAAAd9v6UEIAAAA=
+        byItem: true
+      '6':
+        item: !!binary |-
+          H4sIAAAAAAAA/12MQQ5AMBQFHw2RWmDpKtbOIHbSVCVd9H+pL66vYiGxnZmMBhTq0YiZXDw8E9DNFXK/og2enI1mk2FnSUqhsHySAMg0tOWwMzmSQ6P/t4tlksdVKF+C5msuIy6mzQ00vMF6fgAAAA==
+        byItem: true
+      '7':
+        item: !!binary |-
+          H4sIAAAAAAAA/12MQQ5AMBQFHw2RWmDpKtbOIHbSVCVd9H+pL66vYiGxnZmMBhTq0YiZXDw8E9DNFXK/og2enI1mk2FnSUqhsHySAMg0tOWwMzmSQ6P/t4tlksdVKF+C5msuIy6mzQ00vMF6fgAAAA==
+        byItem: true
+      '8':
+        item: !!binary |-
+          H4sIAAAAAAAA/12MQQ5AMBQFHw2RWmDpKtbOIHbSVCVd9H+pL66vYiGxnZmMBhTq0YiZXDw8E9DNFXK/og2enI1mk2FnSUqhsHySAMg0tOWwMzmSQ6P/t4tlksdVKF+C5msuIy6mzQ00vMF6fgAAAA==
+        byItem: true
+  9951199f-f260-336f-ac43-56069998658b:
+    Type: Furnace
+    Result: !!binary |-
+      H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYZDOzcxLTS5KTCuxSq0oSC3KTM1LTo1Pyi8pyUllZmBNzi/NK2FgYGBkAAAcWWa6RAAAAA==
+    Recipe:
+      '0':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYZDIzcxLTS5KTCuxSs1LzkjMK0lNiU/Kz89mZmBNzi/NK2FgYGBkAACEZBBwQQAAAA==
+    Cook: 240
+    Exp: 1.0
+  b784a398-c484-3c3f-a5be-4e12e03bc635:
+    Type: Shaped
+    Result: !!binary |-
+      H4sIAAAAAAAA/72XS2/TQBDH16QtqRGPVoDgAlY5BlEn8bNSJWKvA1Ir2iKRBi6VH5t4sb0b7DVtOfE1kDhwRIg7Nz5M7/0OOC0iKQK6Cwo3r2fm5/Hsf1czMgA1cAn6zO+hvMCUALDUr4MLOALXMkxQmPsDtjairDLVwHxIS8IAAJIM5JBmI0oQYcUiuDLxTWmO5MrlwiKYRwcs98cLSQILmPkpDoEE5JJEKE+riKhazQU0jUB9zK5CwcV7Td1QHVi50WBQFqHPTtwuFyzHCWJxTsthXPnPsYoO7qzAHJPkvuKTSCni8bMSIIJ8FissRj/8APg/6Sj7CA9jptCBMqD5kDKGiFLQPET54YOVqXRkcHtSM0ZpyvBoL8LFKPUPF8FSjKMIkb1JjevjkoKbkxhEwtgnLBsbp1mne1VFEnZikv9grIOF0zfg6lQyMQ6TKuzG5FVYFoxme8TP0HQZ7wqU0dBs3eMt48Lxh6/HXz6Bc/jSv/E/n+WfCTz7tZ8wk987xUnKeZlOV0LTDbfjcmYqbQuhDQN2PF50LIQ2ja7T5EX7QmjLVJ02L5oIoW2z5Ri8aCaEdkzNsXnRVAjtmrrj8KIzITQ0TYdXIbWjt++E4J5puypv3oUIWlfNjsutEaHzqDdN1+XWCBRCt0zPtXjRWAjdNrvubDSi61bT5b1KBbM2rBbkVojQUddNS4PcChHL2rIMqM9G1x3LhNwKEbqxdceyYWc2BXEtB3IrRGwboeV63AoZCqG7lue1ZnKHGKqtetwKcYTQTbvpmbzoXAjdstset0KQEFqkHZP2Z9c/nbuN0t+ia0fvP55p6H/TnNfA9YmhJEGO/AST4XgM+WWXHVXDmAyWt8ugytkpkwSznp+WqBqzlsMMpzhYIwGrJoOsmnm+zwW3tveDRmPT2cga2N9CPVXTXu+y4fo6ePjiaf7ETfp4CybQaz1KH+8+Z91Xgz496Gmq9syljZckXj3oZp1e+WZjEx5u9VmrXEXNHbe9SXc2Kj74BifdpUcmDgAA
+    Recipe:
+      '0':
+        item: !!binary |-
+          H4sIAAAAAAAA/wXBQQ5AQAwF0M9EIqxsHcXaGcROalR00Y5U3X/eG4CEcaWgjf2TYsC092jlwqxinJ3uWN6HLIoeyno6GSd0ufwWABpUNlGCmUMAAAA=
+        byItem: true
+      '1':
+        item: !!binary |-
+          H4sIAAAAAAAA/wXBQQ5AQAwF0M9EIqxsHcXaGcROalR00Y5U3X/eG4CEcaWgjf2TYsC092jlwqxinJ3uWN6HLIoeyno6GSd0ufwWABpUNlGCmUMAAAA=
+        byItem: true
+      '2':
+        item: !!binary |-
+          H4sIAAAAAAAA/wXBQQ5AQAwF0M9EIqxsHcXaGcROalR00Y5U3X/eG4CEcaWgjf2TYsC092jlwqxinJ3uWN6HLIoeyno6GSd0ufwWABpUNlGCmUMAAAA=
+        byItem: true
+      '3':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYZDOzcxLTS5KTCuxSs7JL05NiU+tTE0Csorzc5kZWJPzS/NKGBgYGBkAVRyQ90QAAAA=
+        byItem: true
+      '4':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYZDMzcxLTS5KTCuxykstyUgtyixJjS8GChQwM7Am55fmlTAwMDAyAADNzGdmQgAAAA==
+        byItem: true
+      '5':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYZDOzcxLTS5KTCuxSs7JL05NiU+tTE0Csorzc5kZWJPzS/NKGBgYGBkAVRyQ90QAAAA=
+        byItem: true
+      '6':
+        item: !!binary |-
+          H4sIAAAAAAAA/12MQQ5AMBQFHw2RWmDpKtbOIHbSVCVd9H+pL66vYiGxnZmMBhTq0YiZXDw8E9DNFXK/og2enI1mk2FnSUqhsHySAMg0tOWwMzmSQ6P/t4tlksdVKF+C5msuIy6mzQ00vMF6fgAAAA==
+        byItem: true
+      '7':
+        item: !!binary |-
+          H4sIAAAAAAAA/12MQQ5AMBQFHw2RWmDpKtbOIHbSVCVd9H+pL66vYiGxnZmMBhTq0YiZXDw8E9DNFXK/og2enI1mk2FnSUqhsHySAMg0tOWwMzmSQ6P/t4tlksdVKF+C5msuIy6mzQ00vMF6fgAAAA==
+        byItem: true
+      '8':
+        item: !!binary |-
+          H4sIAAAAAAAA/12MQQ5AMBQFHw2RWmDpKtbOIHbSVCVd9H+pL66vYiGxnZmMBhTq0YiZXDw8E9DNFXK/og2enI1mk2FnSUqhsHySAMg0tOWwMzmSQ6P/t4tlksdVKF+C5msuIy6mzQ00vMF6fgAAAA==
+        byItem: true
+  46cdfea5-a5d4-39a4-bce5-48cce769b2f2:
+    Type: Shaped
+    Result: !!binary |-
+      H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDLzcxLTS5KTCuxSs/JL4/PzMuOL05MZmZgTc4vzSthYGBgZAAA/2otXj8AAAA=
+    Recipe:
+      '0':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxyszLji9OTGZmYE3OL80rYWBgYGQAAMw3XnY6AAAA
+        byItem: true
+      '1':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxyszLji9OTGZmYE3OL80rYWBgYGQAAMw3XnY6AAAA
+        byItem: true
+      '2':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxyszLji9OTGZmYE3OL80rYWBgYGQAAMw3XnY6AAAA
+        byItem: true
+      '3':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxyszLji9OTGZmYE3OL80rYWBgYGQAAMw3XnY6AAAA
+        byItem: true
+      '4':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxyszLji9OTGZmYE3OL80rYWBgYGQAAMw3XnY6AAAA
+        byItem: true
+      '5':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxyszLji9OTGZmYE3OL80rYWBgYGQAAMw3XnY6AAAA
+        byItem: true
+      '6':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxyszLji9OTGZmYE3OL80rYWBgYGQAAMw3XnY6AAAA
+        byItem: true
+      '7':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxyszLji9OTGZmYE3OL80rYWBgYGQAAMw3XnY6AAAA
+        byItem: true
+      '8':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxyszLji9OTGZmYE3OL80rYWBgYGQAAMw3XnY6AAAA
+        byItem: true
+  617030e9-68f4-318d-bfa1-3709f597a2e0:
+    Type: Shapeless
+    Result: !!binary |-
+      H4sIAAAAAAAA/+2ZW2vbMBiGlR62NqVjhW2sDIZhF4OGUceScyj0wrGTHtI23dolWW6KbCuxllhKHaVt/sl+7pyOkQ7aYV1oF0PgCxt9evxh0OsHKQ/AMtjwsMBtkkwoZwBsddfAEg3By5gyEiS4L/YCzoeULIPVgE+ZAADk8iAf8HjMGWFisg5eLGpHPCH5tOTZOlgldyLB84ftHHhGBR7RAORAfspCkozSGWH6tOLzUQjW5ux0Knj+wSwWS9BOy7jfn04CLO7LNicioUMiooRPB1FavyJSOsh9AnLoMiypQldhWRXagRU1aKvowqoqtAcdVegGrClCWyZ01aChZcG6KjSEDVVoG5mq0CVUVINGVgVZqtBVBFWhawipQrtIUajaVh0pSj7baiBFyWfDIlKUfDa0kKLkK0GEFCVf+tNFipKvBMvIU4WuIEWhWoaOLZF8v28BeGg+OZk3mk69nlVP3p9xEVE2MHyCxcTAhkdxzFlouPey9q/beXcbEWbM+PRjQoxoygbJzNhhPE6vnSd60VKopVBLoZZCLYVaCrUUainUUvj4j75crWRdSdunPNUvyvp8z9gNfwlh8Dcf1A6mHUw7mHYw7WDawbSDaQf7vx0sD7YXB5WC85Gg46uQTsYjPFsHWxENQ8KuFgeba3NXA28WcwgLIsxEPB9Maa8fHJFOJ4LHVwzH5KFfbUrtt3mVzPttOU/qk5memR1N5dCukx2NJdEwOzqWQ9fc7Gguibazo5kcWmJHdik0ZNj1Utk1M68qVw5dQdnRUh87RUt0LYmuSnQ9lERLdC21HOulNBszo8kf4fhE0C2DV4uBKfMTgoeUDe6z8bEMDLHA62DjrHbp8jjGLLzP0SXw9vzWLxROas24QHGLtE2EbjpisL8PfoiDYrMwcoe3rH9s1tozJzyJqXtoe71DvzernXc7t8Xd6CLyCx26yxMkWrsXR9Vmm532nAM+bFWOC72mXW+4J5/HraPZlyhmzfFhv3Bx1rpuRmfx7NCKnPNCybmZDdsj2h2b5173qz/oVP3qxQH1+teX3+B3q3t6FzXY0WQswsvuybwzAH4CJIkepyIjAAA=
+    Recipe:
+      '0':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxSslMzM3PS2FmYE3OL80rYWBgYGQAAO7AOgU6AAAA
+        byItem: true
+      '1':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDIzcxLTS5KTCuxSs7Pz85MZWZgTc4vzSthYGBgZAAAL4GNNTkAAAA=
+        byItem: true
+  73185be5-2b4b-311e-afac-4f407c369dc4:
+    Type: Shaped
+    Result: !!binary |-
+      H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYZDMzcxLTS5KTCuxyslMzyiJT8opTY0vz8/PYWZgTc4vzSthYGBgZAAAtfhw1EIAAAA=
+    Recipe:
+      '1':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxSslMzM3PS2FmYE3OL80rYWBgYGQAAO7AOgU6AAAA
+        byItem: true
+      '3':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxSslMzM3PS2FmYE3OL80rYWBgYGQAAO7AOgU6AAAA
+        byItem: true
+      '4':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxSs1NLUrMSWFmYE3OL80rYWBgYGQAAN7MSts6AAAA
+        byItem: true
+      '5':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxSslMzM3PS2FmYE3OL80rYWBgYGQAAO7AOgU6AAAA
+        byItem: true
+      '7':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxSslMzM3PS2FmYE3OL80rYWBgYGQAAO7AOgU6AAAA
+        byItem: true
+  4592ba93-ab8c-3234-8322-e2b98bc62998:
+    Type: Shaped
+    Result: !!binary |-
+      H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDKzcxLTS5KTCuxykvMTY0vSUxnZmBNzi/NK2FgYGBkAABLdoCuOwAAAA==
+    Recipe:
+      '2':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDIzcxLTS5KTCuxKi4pysxLZ2ZgTc4vzSthYGBgZAAA6EGbDTkAAAA=
+      '4':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYRDMzcxLTS5KTCuxyszLji9OTGZmYE3OL80rYWBgYGQAAMw3XnY6AAAA
+      '6':
+        item: !!binary |-
+          H4sIAAAAAAAA/+NiYGBm4HZJLEkMSy0qzszPY2AQjOBgYMpMYeDPzcxLTS5KTCuxKkgsSC1iZmBNzi/NK2FgYGBkAABIpLceOAAAAA==

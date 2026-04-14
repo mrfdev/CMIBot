@@ -1,0 +1,22 @@
+{
+  "name": "cmibot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Discord bot for AI-assisted lookup of CMI and CMILib YAML settings.",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "lookup": "node src/cli.js",
+    "check": "node --check src/*.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "discord.js": "^14.20.0",
+    "dotenv": "^16.6.1",
+    "fast-glob": "^3.3.3",
+    "openai": "^6.6.0"
+  }
+}
