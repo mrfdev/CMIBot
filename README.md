@@ -13,7 +13,6 @@ It is designed for support workflows like:
 /cmibot lookup "mini message" mode:broad
 /cmibot lookup "mini message" mode:whole
 /cmibot langlookup home
-/cmibot langlookup home stats:true
 /cmibot langstats
 /cmibot reload
 ```
@@ -33,7 +32,6 @@ Git note: the live SQLite database at `CMI/cmi.sqlite.db` is runtime data and is
 - Groups visible results by file and shows them top-to-bottom inside each file
 - Supports `mode: exact|whole|broad` for tighter or looser matching
 - Supports `related: true|false` for nearby context entries
-- Supports `stats: true|false` on `langlookup` for locale category and language availability details
 - Supports `summary: true|false` for an optional AI-generated explanation, restricted to configured AI role IDs
 - Applies per-user cooldowns, query validation, no-mention replies, and audit logging for safer operation
 - Separates regular config search from translation search through include/exclude globs
@@ -118,7 +116,6 @@ Regular lookup and language lookup are kept separate on purpose.
 
 - `/cmibot lookup <keyword>` searches regular config files
 - `/cmibot langlookup <keyword>` searches English locale/translation files
-- `/cmibot langlookup <keyword> stats:true` also shows locale categories and available languages
 - `/cmibot langstats` shows locale categories and available languages without requiring a keyword
 - `/cmibot help` shows command usage in the configured channel
 
@@ -170,16 +167,13 @@ Options:
 - `mode`: optional, `exact`, `whole`, or `broad`
 - `limit`: optional number of visible results
 - `related`: optional, `true` or `false`
-- `stats`: optional, `true` or `false`
 - `summary`: optional, `true` or `false`, limited to configured AI role IDs when OpenAI features are enabled
 
 By default this is scoped to the English locale files, such as `Locale_EN.yml`, English death-message locale files, and English CMILib translation files like `items_EN.yml`.
 
-When `stats:true` is used, CMIBot also lists the English file path for each locale category and shows how many language variants exist plus their language codes.
-
 ### `/cmibot langstats`
 
-Shows the same language-category overview as `stats:true`, but without requiring a lookup keyword.
+Shows the language-category overview without requiring a lookup keyword.
 
 Use this when you just want to see:
 
@@ -187,6 +181,8 @@ Use this when you just want to see:
 - which locale categories exist
 - how many language variants each category has
 - which language codes are available for each category
+
+The output is grouped one category at a time so the file path stays on its own line and the language-code list is easier to scan.
 
 ### `/cmibot reload`
 
@@ -241,7 +237,6 @@ npm run lookup -- lookup --mode whole tho
 npm run lookup -- lookup --related bluemap
 npm run lookup -- lookup --summary dynmap
 npm run lookup -- langlookup home
-npm run lookup -- langlookup --stats home
 npm run lookup -- langstats
 ```
 
@@ -252,7 +247,6 @@ npm run lookup -- langstats
 - `/cmibot help` should be kept in sync with new features as the bot evolves.
 - Search results can use the default exact search, a stricter whole-word or whole-phrase search, or a broader search, depending on `mode`.
 - Search results can include nearby related entries when `related:true` is used.
-- `langlookup` can optionally show category stats and available language codes with `stats:true`.
 - `langstats` shows the language-category overview without needing a search keyword.
 - Search results can include an AI-generated explanation when `summary:true` is used.
 - AI-backed features are currently restricted by `AI_ROLE_IDS`.

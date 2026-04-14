@@ -86,11 +86,6 @@ function buildCommandData(defaultResultLimit) {
               .setDescription("Include up to two nearby related YAML entries. Defaults to false."),
           )
           .addBooleanOption((option) =>
-            option
-              .setName("stats")
-              .setDescription("Show language categories, English file paths, and available language codes."),
-          )
-          .addBooleanOption((option) =>
             option.setName("summary").setDescription("Include an optional AI-generated summary. Defaults to false."),
           ),
       )
@@ -138,7 +133,6 @@ function formatHelpMessage(config, member) {
     "- `mode: exact|whole|broad` controls how strict the search is",
     `- \`limit: 1-${MAX_RESULT_LIMIT}\` changes how many results are shown, with \`${config.search.defaultResultLimit}\` as the default`,
     "- `related: true|false` adds nearby YAML entries for context",
-    "- `stats: true|false` adds language category and available-language info for `/cmibot langlookup`",
     aiEnabled
       ? "- `summary: true|false` adds an optional AI-generated summary (admin-only for now)"
       : "- `summary: true|false` is currently disabled in bot config",
@@ -151,7 +145,6 @@ function formatHelpMessage(config, member) {
     "- `/cmibot lookup bluemap related:true`",
     "- `/cmibot lookup dynmap summary:true`",
     "- `/cmibot langlookup home`",
-    "- `/cmibot langlookup home stats:true`",
     "- `/cmibot langstats`",
   ];
 
@@ -165,7 +158,7 @@ function formatHelpMessage(config, member) {
   } else if (!canReload) {
     lines.push("", "Notice: you can use lookup commands here, but `/cmibot reload` is admin-only.");
   } else {
-    lines.push("", "Notice: you can use lookup, langlookup, and reload in this channel.");
+    lines.push("", "Notice: you can use lookup, langlookup, langstats, and reload in this channel.");
   }
 
   lines.push(
@@ -228,11 +221,20 @@ function formatFileList(filePaths, { preferShortPath = false } = {}) {
 }
 
 function formatLanguageStatsMessage(languageCategories, formatDisplayPath) {
-  const plainText = formatLanguageCategoryStats(languageCategories, formatDisplayPath);
-  return plainText
-    .split("\n")
-    .map((line) => line.replace(/^-\s(.+?) -> (.+?) \((.+)\)$/u, "- `$1` -> `$2` ($3)"))
-    .join("\n");
+  if (!languageCategories?.length) {
+    return "";
+  }
+
+  const blocks = ["Language categories:"];
+
+  for (const category of languageCategories) {
+    const displayPath = formatDisplayPath(category.englishRelativePath);
+    const languageLabel = pluralize(category.languageCount, "language");
+    const codes = category.languageCodes.map((code) => `\`${code}\``).join(", ");
+    blocks.push(`- \`${category.label}\` -> \`${displayPath}\`\n(${category.languageCount} ${languageLabel}: ${codes})`);
+  }
+
+  return blocks.join("\n\n");
 }
 
 function formatLangStatsOnlyMessage(languageCategories, formatDisplayPath) {
@@ -480,7 +482,6 @@ export function createInteractionHandler(config, searchCache) {
     const mode = interaction.options.getString("mode") ?? "exact";
     const limit = interaction.options.getInteger("limit") ?? config.search.defaultResultLimit;
     const related = interaction.options.getBoolean("related") ?? false;
-    const stats = subcommand === "langlookup" ? (interaction.options.getBoolean("stats") ?? false) : false;
     const summary = interaction.options.getBoolean("summary") ?? false;
     const profile = config.search.profiles[subcommand];
     const canUseAi = hasRole(interaction.member, { roleIds: config.discord.aiRoleIds });
@@ -493,7 +494,6 @@ export function createInteractionHandler(config, searchCache) {
         keyword,
         mode,
         related,
-        stats,
         summary,
         outcome: "rejected",
         reason: validation.reason,
@@ -513,7 +513,6 @@ export function createInteractionHandler(config, searchCache) {
         keyword,
         mode,
         related,
-        stats,
         summary,
         outcome: "rejected",
         reason: `lookup-cooldown:${lookupCooldown.retryAfterSeconds}`,
@@ -532,7 +531,6 @@ export function createInteractionHandler(config, searchCache) {
         keyword,
         mode,
         related,
-        stats,
         summary,
         outcome: "denied",
         reason: "ai-role",
@@ -559,7 +557,6 @@ export function createInteractionHandler(config, searchCache) {
           keyword,
           mode,
           related,
-          stats,
           summary,
           outcome: "rejected",
           reason: `summary-cooldown:${summaryCooldown.retryAfterSeconds}`,
@@ -576,9 +573,7 @@ export function createInteractionHandler(config, searchCache) {
     await interaction.deferReply();
 
     try {
-      const snapshot = searchCache.getSnapshot(profile.name);
       const entries = searchCache.getEntries(profile.name);
-      const languageStats = stats && subcommand === "langlookup" ? snapshot?.languageCategories ?? [] : [];
       const lexicalMatches = lexicalSearch(keyword, entries, { limit: 25, mode });
       const rerankedMatches = config.openai.enabled && canUseAi
         ? await reranker.rerank(keyword, lexicalMatches)
@@ -592,20 +587,11 @@ export function createInteractionHandler(config, searchCache) {
           keyword,
           mode,
           related,
-          stats,
           summary,
           outcome: "empty",
         });
-        const statsMessage = formatLanguageStatsMessage(languageStats, config.formatDisplayPath);
         await interaction.editReply({
-          content: truncateDiscordMessage(
-            [
-              `No YAML entries matched \`${sanitizeForDisplay(keyword)}\` in the \`${subcommand}\` profile.`,
-              statsMessage,
-            ]
-              .filter(Boolean)
-              .join("\n\n"),
-          ),
+          content: `No YAML entries matched \`${sanitizeForDisplay(keyword)}\` in the \`${subcommand}\` profile.`,
           allowedMentions: NO_MENTIONS,
         });
         return;
@@ -622,7 +608,6 @@ export function createInteractionHandler(config, searchCache) {
         aiSummary = (await reranker.summarize(keyword, finalMatches, { profileName: profile.name })) || "";
       }
       const allMatchedFiles = [...new Set(orderedMatches.map((item) => item.entry.relativePath))];
-      const statsMessage = formatLanguageStatsMessage(languageStats, config.formatDisplayPath);
       const message = formatResultsMessage(
         keyword,
         visibleResults,
@@ -632,7 +617,6 @@ export function createInteractionHandler(config, searchCache) {
         aiSummary,
         allMatchedFiles,
         { preferShortPath: subcommand === "langlookup", showFileHints: subcommand !== "langlookup" },
-        [statsMessage],
       );
 
       await logEvent(interaction, {
@@ -640,7 +624,6 @@ export function createInteractionHandler(config, searchCache) {
         keyword,
         mode,
         related,
-        stats,
         summary,
         aiEnabled: canUseAi,
         outcome: "success",
