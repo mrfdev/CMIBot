@@ -170,6 +170,7 @@ export function makeDisplayContext(entry, formatDisplayPath) {
     lineNumber: entry.lineNumber,
     yamlPath: entry.yamlPath,
     snippet: entry.snippet,
+    comments: entry.comments ?? [],
     codeLanguage: entry.codeLanguage ?? "yml",
     sourceType: entry.sourceType ?? "yaml",
   };

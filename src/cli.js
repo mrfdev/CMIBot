@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { createSearchCache, formatCacheSummary } from "./cache.js";
 import { loadConfig } from "./config.js";
 import { buildLanguageCategoryStats, formatLanguageCategoryStats } from "./langStats.js";
 import { loadEntriesForProfile } from "./profileIndex.js";
@@ -8,10 +9,18 @@ import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 async function main() {
   const config = loadConfig();
   const args = process.argv.slice(2);
-  const subcommand = args.shift();
+  const rawSubcommand = args.shift();
+  const subcommand = rawSubcommand === "lang" ? "language" : rawSubcommand;
+
+  if (subcommand === "stats") {
+    const searchCache = createSearchCache(config);
+    const summary = await searchCache.warm();
+    console.log(formatCacheSummary(summary));
+    return;
+  }
 
   if (subcommand === "langstats") {
-    const categories = await buildLanguageCategoryStats(config.workspaceRoot, config.search.profiles.langlookup.include);
+    const categories = await buildLanguageCategoryStats(config.workspaceRoot, config.search.profiles.language.include);
     const statsBlock = formatLanguageCategoryStats(categories, config.formatDisplayPath);
     if (!statsBlock) {
       console.log("No language category stats are available right now.");
@@ -45,7 +54,7 @@ async function main() {
 
   if (!subcommand || !config.search.profiles[subcommand]) {
     console.error(
-      "Usage: npm run lookup -- <lookup|langlookup|placeholder|material|command|permission|tabcomplete|langstats> [--mode exact|whole|broad] [--related] [--summary] <keyword>",
+      "Usage: npm run lookup -- <config|language|lang|placeholder|material|command|permission|faq|tabcomplete|langstats|stats> [--mode exact|whole|broad] [--related] [--summary] <keyword>",
     );
     process.exitCode = 1;
     return;

@@ -18,7 +18,7 @@ export function formatCacheSummary(summary, { verb = "Loaded", suffix = "." } = 
   const profileLines = summary.profileSummaries.map((profile) => {
     const profileEntryLabel = pluralize(profile.entryCount, "entry", "entries");
     const profileFileLabel = pluralize(profile.fileCount, "file");
-    return `- ${profile.profileName}: ${profile.entryCount} ${profileEntryLabel} from ${profile.fileCount} ${profileFileLabel}`;
+    return `- ${profile.profileDisplayName ?? profile.profileName}: ${profile.entryCount} ${profileEntryLabel} from ${profile.fileCount} ${profileFileLabel}`;
   });
 
   return [
@@ -34,7 +34,7 @@ export function createSearchCache(config) {
     const entries = await loadEntriesForProfile(profile, config.workspaceRoot);
     const summary = summarizeEntries(entries);
     const languageCategories =
-      profile.name === "langlookup" ? await buildLanguageCategoryStats(config.workspaceRoot, profile.include) : null;
+      profile.name === "language" ? await buildLanguageCategoryStats(config.workspaceRoot, profile.include) : null;
 
     cache.set(profile.name, {
       entries,
@@ -45,6 +45,7 @@ export function createSearchCache(config) {
 
     return {
       profileName: profile.name,
+      profileDisplayName: profile.displayName ?? profile.name,
       ...summary,
     };
   }

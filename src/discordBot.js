@@ -70,7 +70,7 @@ function buildCommandData(config) {
       .addSubcommand((subcommand) =>
         addCommonLookupOptions(
           subcommand
-            .setName("lookup")
+            .setName("config")
             .setDescription("Search regular CMI and CMILib config files."),
           defaultResultLimit,
           { includeRelated: true },
@@ -79,8 +79,17 @@ function buildCommandData(config) {
       .addSubcommand((subcommand) =>
         addCommonLookupOptions(
           subcommand
-            .setName("langlookup")
+            .setName("language")
             .setDescription("Search English locale and translation YAML files."),
+          defaultResultLimit,
+          { includeRelated: true },
+        ),
+      )
+      .addSubcommand((subcommand) =>
+        addCommonLookupOptions(
+          subcommand
+            .setName("lang")
+            .setDescription("Alias for the English locale and translation search."),
           defaultResultLimit,
           { includeRelated: true },
         ),
@@ -121,6 +130,14 @@ function buildCommandData(config) {
       .addSubcommand((subcommand) =>
         addCommonLookupOptions(
           subcommand
+            .setName("faq")
+            .setDescription("Search curated CMI FAQ titles, links, and pre-sales answers."),
+          defaultResultLimit,
+        ),
+      )
+      .addSubcommand((subcommand) =>
+        addCommonLookupOptions(
+          subcommand
             .setName("tabcomplete")
             .setDescription("Search exported tab-complete token entries."),
           defaultResultLimit,
@@ -130,6 +147,11 @@ function buildCommandData(config) {
         subcommand
           .setName("langstats")
           .setDescription("Show English locale categories, English file paths, and available language codes."),
+      )
+      .addSubcommand((subcommand) =>
+        subcommand
+          .setName("stats")
+          .setDescription("Show cache totals and per-profile entry/file counts."),
       )
       .addSubcommand((subcommand) =>
         subcommand.setName("reload").setDescription("Reload the in-memory search cache."),
@@ -159,71 +181,77 @@ function formatHelpMessage(config, member) {
 
   const lines = [
     "### CMIBot Help",
-    "Commands available through this bot in this channel:",
+    "Commands available through this bot:",
     "- `/cmibot help` shows this help message",
-    "- `/cmibot lookup <keyword>` searches regular CMI and CMILib config files",
-    "- `/cmibot langlookup <keyword>` searches English locale and translation files",
+    "- `/cmibot config <keyword>` searches regular CMI and CMILib config files",
+    "- `/cmibot language <keyword>` searches English locale and translation files",
+    "- `/cmibot lang <keyword>` is a short alias for `language`",
     "- `/cmibot placeholder <keyword>` searches exported placeholder entries",
     "- `/cmibot material <keyword>` searches exported material names",
     "- `/cmibot command <keyword>` searches exported command entries",
     "- `/cmibot permission <keyword>` searches exported permission entries",
+    "- `/cmibot faq <keyword>` searches curated FAQ titles and links",
     "- `/cmibot tabcomplete <keyword>` searches exported tab-complete entries",
-    "- `/cmibot langstats` shows English locale categories and available language codes",
+    "- `/cmibot langstats` shows English locale categories and language codes",
+    "- `/cmibot stats` shows cache totals and per-profile counts",
     "- `/cmibot reload` refreshes the in-memory search cache from disk",
     "",
-    "Optional lookup options:",
+    "Options:",
     "- `mode: exact|whole|broad` controls how strict the search is",
-    `- \`limit: 1-${MAX_RESULT_LIMIT}\` changes how many results are shown for most commands, with \`${config.search.defaultResultLimit}\` as the default`,
-    `- \`material\` uses a larger \`limit: 1-${MATERIAL_MAX_RESULT_LIMIT}\` window and defaults to \`${config.search.profiles.material.defaultResultLimit ?? MATERIAL_MAX_RESULT_LIMIT}\``,
-    "- `related: true|false` adds nearby YAML entries for context on `lookup` and `langlookup`",
+    `- \`limit: 1-${MAX_RESULT_LIMIT}\` is used by most commands, with \`${config.search.defaultResultLimit}\` as the default`,
+    `- \`material\` uses \`limit: 1-${MATERIAL_MAX_RESULT_LIMIT}\` and defaults to \`${config.search.profiles.material.defaultResultLimit ?? MATERIAL_MAX_RESULT_LIMIT}\``,
+    "- `related: true|false` adds nearby YAML entries for `config`, `language`, and `lang`",
     aiEnabled
       ? "- `summary: true|false` adds an optional AI-generated summary (admin-only for now)"
       : "- `summary: true|false` is currently disabled in bot config",
     "",
     "Examples:",
-    "- `/cmibot lookup dynmap`",
-    "- `/cmibot lookup tho mode:whole`",
-    "- `/cmibot lookup \"mini message\" mode:broad`",
-    "- `/cmibot lookup \"mini message\" mode:whole`",
-    "- `/cmibot lookup bluemap related:true`",
-    "- `/cmibot lookup dynmap summary:true`",
-    "- `/cmibot langlookup home`",
+    "- `/cmibot config dynmap`",
+    "- `/cmibot config \"mini message\" mode:whole`",
+    "- `/cmibot config bluemap related:true`",
+    "- `/cmibot language home`",
+    "- `/cmibot lang \"was fireballed by\"`",
     "- `/cmibot placeholder balance`",
-    "- `/cmibot placeholder %cmi_user_balance% mode:whole`",
     "- `/cmibot material shulker`",
     "- `/cmibot command balance`",
     "- `/cmibot permission cmi.command.balance`",
+    "- `/cmibot faq refund`",
     "- `/cmibot tabcomplete [playername] mode:whole`",
-    "- `/cmibot langstats`",
+    "- `/cmibot stats`",
   ];
 
   if (!canLookup) {
     lines.push(
       "",
-      "Notice: lookup, langlookup, placeholder, material, command, permission, tabcomplete, langstats, and reload are limited to certain support/admin groups.",
+      "Notice: config, language, lang, placeholder, material, command, permission, faq, tabcomplete, langstats, stats, and reload are limited to certain support/admin groups.",
     );
   } else if (aiEnabled && !canReload && !canUseAi) {
     lines.push(
       "",
-      "Notice: you can use lookup commands here, but `/cmibot reload` and AI-backed options like `summary:true` are restricted.",
+      "Notice: you can use search commands here, but `/cmibot reload` and AI-backed options like `summary:true` are restricted.",
     );
   } else if (!canReload) {
-    lines.push("", "Notice: you can use lookup commands here, but `/cmibot reload` is admin-only.");
+    lines.push("", "Notice: you can use search commands here, but `/cmibot reload` is admin-only.");
   } else {
     lines.push(
       "",
-      "Notice: you can use lookup, langlookup, placeholder, material, command, permission, tabcomplete, langstats, and reload in this channel.",
+      "Notice: you can use config, language, lang, placeholder, material, command, permission, faq, tabcomplete, langstats, stats, and reload in this channel.",
     );
   }
 
-  lines.push(
-    "",
-    `Safety note: lookups are rate-limited per user, broad filler words can be rejected, and \`summary:true\` is currently limited to configured AI role IDs.`,
-    "",
-    "Cache note: when indexed YAML or log files are added, removed, renamed, or edited on disk, use `/cmibot reload` or restart the bot to refresh the in-memory cache.",
-  );
-
   return lines.join("\n");
+}
+
+function formatStatsMessage(summary) {
+  return [`### CMIBot Stats`, formatCacheSummary(summary)].join("\n");
+}
+
+function resolveProfileName(subcommand) {
+  if (subcommand === "lang") {
+    return "language";
+  }
+
+  return subcommand;
 }
 
 function formatCompactFileLabel(filePath, { preferShortPath = false } = {}) {
@@ -292,6 +320,17 @@ function formatLanguageStatsMessage(languageCategories, formatDisplayPath) {
   return blocks.join("\n\n");
 }
 
+function extractUrlFromComments(comments = []) {
+  for (const line of comments) {
+    const match = line.match(/^\s*#\s*URL:\s*(https?:\/\/\S+)\s*$/i);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return "";
+}
+
 function formatLangStatsOnlyMessage(languageCategories, formatDisplayPath) {
   const statsBody = formatLanguageStatsMessage(languageCategories, formatDisplayPath);
   if (!statsBody) {
@@ -345,9 +384,16 @@ function formatResultsMessage(
             .map((entry) => `\`${entry.yamlPath}\` (line ${entry.lineNumber})`)
             .join(", ")}\n`
         : "";
+      const faqUrlLine =
+        options.layout === "faq"
+          ? (() => {
+              const url = extractUrlFromComments(result.comments);
+              return url ? `\n<${url}>` : "";
+            })()
+          : "";
 
       blocks.push(
-        `Look around line ${result.lineNumber} -> \`${result.yamlPath}\`\n${relatedLine}\`\`\`${result.codeLanguage}\n${result.snippet}\n\`\`\``,
+        `Look around line ${result.lineNumber} -> \`${result.yamlPath}\`\n${relatedLine}\`\`\`${result.codeLanguage}\n${result.snippet}\n\`\`\`${faqUrlLine}`,
       );
     }
   }
@@ -465,7 +511,7 @@ export function createInteractionHandler(config, searchCache) {
         outcome: "help",
       });
       await interaction.reply({
-        content: formatHelpMessage(config, interaction.member),
+        content: truncateDiscordMessage(formatHelpMessage(config, interaction.member)),
         flags: MessageFlags.Ephemeral,
         allowedMentions: NO_MENTIONS,
       });
@@ -533,11 +579,59 @@ export function createInteractionHandler(config, searchCache) {
       return;
     }
 
+    if (subcommand === "stats") {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+      try {
+        const profiles = Object.values(config.search.profiles);
+        const profileSummaries = profiles
+          .map((profile) => {
+            const snapshot = searchCache.getSnapshot(profile.name);
+            return {
+              profileName: profile.name,
+              profileDisplayName: profile.displayName ?? profile.name,
+              entryCount: snapshot?.entryCount ?? 0,
+              fileCount: snapshot?.fileCount ?? 0,
+            };
+          });
+        const totalEntries = profileSummaries.reduce((sum, item) => sum + item.entryCount, 0);
+        const totalFiles = profileSummaries.reduce((sum, item) => sum + item.fileCount, 0);
+        const summary = {
+          totalEntries,
+          totalFiles,
+          profileSummaries,
+        };
+
+        await logEvent(interaction, {
+          subcommand,
+          outcome: "success",
+          totalEntries,
+          totalFiles,
+        });
+        await interaction.editReply({
+          content: truncateDiscordMessage(formatStatsMessage(summary)),
+          allowedMentions: NO_MENTIONS,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        await logEvent(interaction, {
+          subcommand,
+          outcome: "error",
+          reason: message,
+        });
+        await interaction.editReply({
+          content: `CMIBot hit an error while loading stats: ${message}`,
+          allowedMentions: NO_MENTIONS,
+        });
+      }
+      return;
+    }
+
     if (subcommand === "langstats") {
       await interaction.deferReply();
 
       try {
-        const snapshot = searchCache.getSnapshot("langlookup");
+        const snapshot = searchCache.getSnapshot("language");
         const languageCategories = snapshot?.languageCategories ?? [];
         const message = formatLangStatsOnlyMessage(languageCategories, config.formatDisplayPath);
 
@@ -567,7 +661,7 @@ export function createInteractionHandler(config, searchCache) {
 
     const keywordInput = interaction.options.getString("keyword", true);
     const mode = interaction.options.getString("mode") ?? "exact";
-    const profile = config.search.profiles[subcommand];
+    const profile = config.search.profiles[resolveProfileName(subcommand)];
     const profileDefaultLimit = profile.defaultResultLimit ?? config.search.defaultResultLimit;
     const profileMaxResultLimit = profile.maxResultLimit ?? config.search.maxResultLimit;
     const limit = Math.min(interaction.options.getInteger("limit") ?? profileDefaultLimit, profileMaxResultLimit);
@@ -595,7 +689,11 @@ export function createInteractionHandler(config, searchCache) {
       return;
     }
 
-    const lookupCooldown = cooldowns.check(interaction.user.id, `${subcommand}:lookup`, config.security.lookupCooldownSeconds);
+    const lookupCooldown = cooldowns.check(
+      interaction.user.id,
+      `${profile.name}:lookup`,
+      config.security.lookupCooldownSeconds,
+    );
     if (!lookupCooldown.allowed) {
       await logEvent(interaction, {
         subcommand,
@@ -637,7 +735,7 @@ export function createInteractionHandler(config, searchCache) {
     if (summary) {
       const summaryCooldown = cooldowns.check(
         interaction.user.id,
-        `${subcommand}:summary`,
+        `${profile.name}:summary`,
         config.security.summaryCooldownSeconds,
       );
       if (!summaryCooldown.allowed) {
@@ -706,9 +804,9 @@ export function createInteractionHandler(config, searchCache) {
         aiSummary,
         allMatchedFiles,
         {
-          preferShortPath: subcommand === "langlookup",
-          showFileHints: subcommand === "lookup",
-          layout: subcommand === "material" ? "materialList" : "default",
+          preferShortPath: profile.name === "language",
+          showFileHints: profile.name === "config",
+          layout: subcommand === "material" ? "materialList" : subcommand === "faq" ? "faq" : "default",
         },
       );
 

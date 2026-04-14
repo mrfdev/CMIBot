@@ -66,8 +66,9 @@ export function loadConfig() {
       defaultResultLimit: Math.max(1, Math.min(15, parseInteger(process.env.DEFAULT_RESULT_LIMIT, 3))),
       maxResultLimit: 15,
       profiles: {
-        lookup: {
-          name: "lookup",
+        config: {
+          name: "config",
+          displayName: "config",
           sourceType: "yaml",
           entryLabel: "YAML entries",
           include: parseCsv(
@@ -78,8 +79,9 @@ export function loadConfig() {
               "**/Translations/**,**/DatabaseBackups/**,**/FileBackups/**,**/Logs/**,**/moneyLog/**,**/sellLogs/**",
           ),
         },
-        langlookup: {
-          name: "langlookup",
+        language: {
+          name: "language",
+          displayName: "language",
           sourceType: "yaml",
           entryLabel: "YAML entries",
           include: parseCsv(
@@ -90,6 +92,7 @@ export function loadConfig() {
         },
         placeholder: {
           name: "placeholder",
+          displayName: "placeholder",
           sourceType: "log",
           entryLabel: "placeholder entries",
           parserType: "commentBlocks",
@@ -98,6 +101,7 @@ export function loadConfig() {
         },
         material: {
           name: "material",
+          displayName: "material",
           sourceType: "log",
           entryLabel: "material entries",
           parserType: "tokenList",
@@ -108,6 +112,7 @@ export function loadConfig() {
         },
         command: {
           name: "command",
+          displayName: "command",
           sourceType: "log",
           entryLabel: "command entries",
           parserType: "delimited",
@@ -116,14 +121,25 @@ export function loadConfig() {
         },
         permission: {
           name: "permission",
+          displayName: "permission",
           sourceType: "log",
           entryLabel: "permission entries",
           parserType: "permissionMixed",
           include: parseCsv(process.env.PERMISSION_INCLUDE_GLOBS ?? "data/permissions.log,data/cmdperms.log"),
           exclude: parseCsv(process.env.PERMISSION_EXCLUDE_GLOBS),
         },
+        faq: {
+          name: "faq",
+          displayName: "faq",
+          sourceType: "log",
+          entryLabel: "FAQ entries",
+          parserType: "commentBlocks",
+          include: parseCsv(process.env.FAQ_INCLUDE_GLOBS ?? "data/faq.log"),
+          exclude: parseCsv(process.env.FAQ_EXCLUDE_GLOBS),
+        },
         tabcomplete: {
           name: "tabcomplete",
+          displayName: "tabcomplete",
           sourceType: "log",
           entryLabel: "tab-complete entries",
           parserType: "delimited",
