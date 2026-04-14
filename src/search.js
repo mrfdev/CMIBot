@@ -12,6 +12,10 @@ function tokenize(value) {
   return normalize(value).split(/\s+/).filter(Boolean);
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function countOccurrences(haystack, needle) {
   if (!needle) {
     return 0;
@@ -137,6 +141,24 @@ function matchesPhrase(entry, normalizedQuery, compactQuery) {
   return compactQuery ? compact(entry.searchText).includes(compactQuery) : false;
 }
 
+function matchesWholeText(value, normalizedQuery) {
+  if (!normalizedQuery) {
+    return false;
+  }
+
+  const normalizedValue = normalize(value);
+  if (!normalizedValue) {
+    return false;
+  }
+
+  const pattern = new RegExp(`(?:^|\\s)${escapeRegExp(normalizedQuery)}(?:\\s|$)`, "i");
+  return pattern.test(normalizedValue);
+}
+
+function matchesWholeEntry(entry, normalizedQuery) {
+  return matchesWholeText(entry.searchText, normalizedQuery);
+}
+
 export function lexicalSearch(query, entries, { limit = 20, mode = "exact" } = {}) {
   const normalizedQuery = normalize(query);
   const tokens = tokenize(query).filter((token) => token.length >= 3);
@@ -155,6 +177,13 @@ export function lexicalSearch(query, entries, { limit = 20, mode = "exact" } = {
     });
 
     candidatePool = broadMatches.length ? broadMatches : entries;
+  } else if (mode === "whole") {
+    const wholeMatches = entries.filter((entry) => matchesWholeEntry(entry, normalizedQuery));
+    if (wholeMatches.length) {
+      candidatePool = wholeMatches;
+    } else {
+      candidatePool = [];
+    }
   } else if (isPhraseQuery) {
     const phraseMatches = entries.filter((entry) => matchesPhrase(entry, normalizedQuery, compactQuery));
     if (phraseMatches.length) {
