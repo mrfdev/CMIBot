@@ -1,0 +1,23 @@
+# Category: Jobs common issues
+# URL: https://www.zrips.net/jobs/common-issues/
+# Answer: Use the block material in jobConfig.yml, not the item form. For example, use a crop block instead of a seed item for place actions.
+# Keywords: place, placing, block, item, material, seeds, crops, invalid place type
+Job place actions say the material must be a block
+
+# Category: Jobs common issues
+# URL: https://www.zrips.net/jobs/common-issues/
+# Answer: Set place values negative and break values positive for those blocks, and only reward mature crop states when needed. The official guidance treats this as a config-side balance issue.
+# Keywords: infinite money, exploit, break place, farm, crops, payout, negative value
+Players can farm infinite money by breaking and placing the same block
+
+# Category: Jobs common issues
+# URL: https://www.zrips.net/jobs/common-issues/
+# Answer: Install Vault first, then review console output and the Jobs permissions setup. The official page calls Vault and correct permissions the first things to verify.
+# Keywords: vault, startup, not working, installed everything, permissions, setup
+I installed everything and Jobs still does not work
+
+# Category: Jobs common issues
+# URL: https://www.zrips.net/jobs/common-issues/
+# Answer: The official guidance treats this as an economy/config issue. You can reduce payouts, switch to a faster economy setup, or increase economy-batch-delay to lower payout frequency.
+# Keywords: performance, lag, bufferedpaymenttask, economy-batch-delay, resources, slow economy
+Jobs uses too many resources or BufferedPaymentTask is slow

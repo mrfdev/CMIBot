@@ -6,6 +6,8 @@ const KNOWN_CATEGORY_LABELS = new Map([
   ["CMIPlugin/CMI/Translations/DeathMessages/Locale_EN.yml", "CMI (death messages locale)"],
   ["CMILibPlugin/CMILib/Translations/Locale_EN.yml", "CMILib (global locale)"],
   ["CMILibPlugin/CMILib/Translations/Items/items_EN.yml", "CMILib (items locale)"],
+  ["JobsPlugin/locale/messages_en.yml", "Jobs (plugin locale)"],
+  ["JobsPlugin/TranslatableWords/Words_en.yml", "Jobs (translatable words)"],
 ]);
 
 const KNOWN_CATEGORY_ORDER = [...KNOWN_CATEGORY_LABELS.keys()];

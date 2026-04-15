@@ -2,7 +2,7 @@
 
 CMIBot is a Discord support bot that is now moving from a single-plugin `/cmibot` workflow to a channel-aware `/lookup` workflow.
 
-Today it fully supports the CMI context and is architected to grow into other plugin contexts such as Jobs, with the active plugin decided by the Discord channel ID.
+Today it fully supports the CMI context and already includes the first working Jobs context, with the active plugin decided by the Discord channel ID.
 
 ## Current Direction
 
@@ -35,24 +35,21 @@ The CMI context is fully wired and currently supports:
 
 ### Jobs
 
-The Jobs context is partially wired now.
+The Jobs context is now wired for Jobs locale files, Jobs translatable-word files, shared CMILib YAML search, and Jobs log-based support data.
 
 Right now Jobs supports:
 
 - `config`
 - `language|lang`
+- `placeholder`
 - `command|cmd`
+- `permission|perm`
+- `faq`
 - `help`
 - `stats`
 - `langstats`
 - `debug`
 - `reload`
-
-These Jobs commands are prepared but currently reply that they are still being worked on:
-
-- `placeholder`
-- `permission|perm`
-- `faq`
 
 These are currently not part of the Jobs scope:
 
@@ -81,6 +78,19 @@ These are currently not part of the Jobs scope:
 /lookup langstats
 /lookup debug
 /lookup reload
+```
+
+### Jobs examples
+
+```text
+/lookup help
+/lookup language points
+/lookup placeholder jobsr_user_points
+/lookup cmd join
+/lookup perm jobs.use
+/lookup faq vault
+/lookup stats
+/lookup langstats
 ```
 
 ### Test-channel context switching
@@ -118,7 +128,7 @@ If a channel is not in `DISCORD_ALLOWED_CHANNEL_IDS`, the bot refuses to run the
 On `npm start`, the bot now warms a global cache and prints totals grouped by plugin context, for example:
 
 ```text
-Loaded 14056 entries from 33 files into the search cache.
+Loaded 16530 entries from 40 files into the search cache.
 CMI:
 - config: 4535 entries from 22 YAML configuration files
 - language: 6385 entries from 4 YAML locale files
@@ -129,12 +139,12 @@ CMI:
 - faq: 54 entries from 1 FAQ data file
 - tabcomplete: 77 entries from 1 tab-complete data file
 Jobs:
-- config: 0 entries from 0 YAML configuration files
-- language: 0 entries from 0 YAML locale files
-- placeholder: 0 entries from 0 placeholder data files
-- command: 0 entries from 0 command data files
-- permission: 0 entries from 0 permission data files
-- faq: 0 entries from 0 FAQ data files
+- config: 36 entries from 1 YAML configuration file
+- language: 2240 entries from 2 YAML locale files
+- placeholder: 72 entries from 1 placeholder data file
+- command: 57 entries from 1 command data file
+- permission: 65 entries from 1 permission data file
+- faq: 4 entries from 1 FAQ data file
 ```
 
 `/lookup reload` rebuilds this cache globally for every configured plugin context.
@@ -177,7 +187,11 @@ The bot already includes:
 
 Because file filtering uses the active plugin context, a Jobs channel cannot search CMI config files and vice versa.
 
-At the moment, Jobs `config` and `language` are intentionally backed by shared `CMILibPlugin/CMILib/...` data until you add more Jobs-specific YAML sources.
+At the moment, Jobs `config` is still backed by shared `CMILibPlugin/CMILib/...` data, while Jobs `language` now includes:
+
+- `JobsPlugin/locale/messages_en.yml`
+- `JobsPlugin/TranslatableWords/Words_en.yml`
+- shared `CMILibPlugin/CMILib/Translations/**/*_EN.yml`
 
 ## Environment
 
@@ -235,9 +249,9 @@ Copy `.env.example` to `.env` and fill in the values.
 - `TABCOMPLETE_INCLUDE_GLOBS`
 - `TABCOMPLETE_EXCLUDE_GLOBS`
 
-### Jobs placeholder scopes
+### Jobs data scopes
 
-These are already present so you can drop in Jobs data later without restructuring again:
+These are the current Jobs search scopes:
 
 - `JOBS_LOOKUP_INCLUDE_GLOBS`
 - `JOBS_LOOKUP_EXCLUDE_GLOBS`
@@ -270,7 +284,7 @@ That means:
 
 - CMI behavior stays stable
 - Jobs can be added incrementally
-- a later filesystem move into plugin subfolders can be done as a separate, safer step if you still want it
+- new plugin contexts can follow the same folder-and-glob pattern later
 
 ## Local CLI
 
@@ -300,6 +314,6 @@ npm start
 
 ## Next Planned Steps
 
-- populate the Jobs context with real Jobs config, language, placeholder, command, permission, and FAQ data
+- add real Jobs YAML config data when you are ready to index more than the shared CMILib files
 - decide whether to keep `/cmibot` as a long-term alias or eventually hard-redirect it to `/lookup`
-- decide later whether to physically move plugin data into subfolders like `CMIPlugin/` and `JobsPlugin/`
+- extend the multi-plugin structure to more support channels like Residence, TradeMe, or TryMe

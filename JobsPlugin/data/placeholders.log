@@ -1,0 +1,215 @@
+# Shows the player database id used by Jobs.
+%jobsr_user_id%
+
+# Shows the player brewing stand count.
+%jobsr_user_bstandcount%
+
+# Shows the player maximum brewing stand count.
+%jobsr_user_maxbstandcount%
+
+# Shows the player furnace count.
+%jobsr_user_furncount%
+
+# Shows the player maximum furnace count.
+%jobsr_user_maxfurncount%
+
+# Shows the player smoker count.
+%jobsr_user_smokercount%
+
+# Shows the player maximum smoker count.
+%jobsr_user_maxsmokercount%
+
+# Shows the player blast furnace count.
+%jobsr_user_blastcount%
+
+# Shows the player maximum blast furnace count.
+%jobsr_user_maxblastcount%
+
+# Shows how many quests the player has finished.
+%jobsr_user_doneq%
+
+# Shows how many daily quests are still pending.
+%jobsr_user_dailyquests_pending%
+
+# Shows how many daily quests are completed.
+%jobsr_user_dailyquests_completed%
+
+# Shows the total daily quest count for the player.
+%jobsr_user_dailyquests_total%
+
+# Returns the player current available quests, comma separated.
+%jobsr_user_quests%
+
+# Shows the time since the player was last seen.
+%jobsr_user_seen%
+
+# Shows the combined total of the player levels across jobs.
+%jobsr_user_totallevels%
+
+# Returns whether the player data has been saved in the last batch.
+%jobsr_user_issaved%
+
+# Shows the Jobs honorific used for chat displays.
+%jobsr_user_displayhonorific%
+
+# Shows how many jobs the player is currently in.
+%jobsr_user_joinedjobcount%
+
+# Shows the current Jobs points amount.
+%jobsr_user_points%
+
+# Shows the current Jobs points in fixed value format.
+%jobsr_user_points_fixed%
+
+# Shows the player total Jobs points amount.
+%jobsr_user_total_points%
+
+# Shows how many archived jobs the player has.
+%jobsr_user_archived_jobs%
+
+# Returns all joined jobs as a comma-separated list.
+%jobsr_user_jobs%
+
+# Returns the player jobs in a cleaned plain-text list.
+%jobsr_user_jobs_clean%
+
+# Returns the player boost amount for the selected job and payout type.
+%jobsr_user_boost_[jname/number]_[money/exp/points]%
+
+# Shows the remaining time for the player boost on the selected job and payout type.
+%jobsr_user_boost_time_[jname/number]_[money/exp/points]%
+
+# Shows the personal payout boost for the selected job and payout type.
+%jobsr_user_pboost_[jname/number]_[money/exp/points]%
+
+# Shows the global boost amount for the selected job and payout type.
+%jobsr_global_boost_[jname/number]_[money/exp/points]%
+
+# Shows the remaining time for the global boost on the selected job and payout type.
+%jobsr_global_boost_time_[jname/number]_[money/exp/points]%
+
+# Returns whether the player is in the selected job.
+%jobsr_user_isin_[jname/number]%
+
+# Returns whether the player can join the selected job.
+%jobsr_user_canjoin_[jname/number]%
+
+# Shows the player level in the selected job.
+%jobsr_user_jlevel_[jname/number]%
+
+# Shows the current exp amount for the selected job level.
+%jobsr_user_jexp_[jname/number]%
+
+# Shows the selected job exp value in the Jobs placeholder output format.
+%jobsr_user_jmexp_[jname/number]%
+
+# Shows progress through the current selected job level.
+%jobsr_user_jprogress_[jname/number]%
+
+# Shows the rounded exp amount for the selected job.
+%jobsr_user_jexp_rounded_[jname/number]%
+
+# Shows the integer exp amount for the selected job.
+%jobsr_user_jexp_int_[jname/number]%
+
+# Shows the max exp needed for the current selected job level.
+%jobsr_user_jmaxexp_[jname/number]%
+
+# Shows the unformatted exp amount for the selected job.
+%jobsr_user_jexpunf_[jname/number]%
+
+# Shows the unformatted max exp amount for the selected job.
+%jobsr_user_jmaxexpunf_[jname/number]%
+
+# Shows the maximum level for the selected job.
+%jobsr_user_jmaxlvl_[jname/number]%
+
+# Returns the player job name.
+%jobsr_user_job_[jname/number]%
+
+# Returns the full player job name.
+%jobsr_user_jobfull_[jname/number]%
+
+# Returns the short player job name.
+%jobsr_user_jobshort_[jname/number]%
+
+# Returns the player title for the selected job.
+%jobsr_user_title_[jname/number]%
+
+# Shows the archived level for the selected job.
+%jobsr_user_archived_jobs_level_[jname/number]%
+
+# Shows the archived exp for the selected job.
+%jobsr_user_archived_jobs_exp_[jname/number]%
+
+# Shows the top-list player name for the selected job and rank.
+%jobsr_jtop_name_[jname/number]_[1-15]%
+
+# Shows the top-list player name from the total Jobs ranking.
+%jobsr_jtop_name_total_[1-15]%
+
+# Shows the top-list display name for the selected job and rank.
+%jobsr_jtop_displayname_[jname/number]_[1-15]%
+
+# Shows the top-list display name from the total Jobs ranking.
+%jobsr_jtop_displayname_total_[1-15]%
+
+# Shows the top-list level for the selected job and rank.
+%jobsr_jtop_level_[jname/number]_[1-15]%
+
+# Shows the top-list level from the total Jobs ranking.
+%jobsr_jtop_level_total_[1-15]%
+
+# Shows the maximum amount of jobs the player can join.
+%jobsr_maxjobs%
+
+# Shows the total workers across all jobs.
+%jobsr_total_workers%
+
+# Shows the player limit for the selected payout type.
+%jobsr_limit_[money/exp/points]%
+
+# Shows the player payment limit for the selected payout type.
+%jobsr_plimit_[money/exp/points]%
+
+# Shows the remaining time until the selected payment limit resets.
+%jobsr_plimit_tleft_[money/exp/points]%
+
+# Returns the real job name.
+%jobsr_name_[jname/number]%
+
+# Returns the short job name.
+%jobsr_shortname_[jname/number]%
+
+# Returns the full job name.
+%jobsr_fullname_[jname/number]%
+
+# Returns the job chat color.
+%jobsr_chatcolor_[jname/number]%
+
+# Returns the job description.
+%jobsr_description_[jname/number]%
+
+# Returns the max daily quest amount for the job.
+%jobsr_maxdailyq_[jname/number]%
+
+# Returns the max level for the job.
+%jobsr_maxlvl_[jname/number]%
+
+# Returns the max VIP level for the job.
+%jobsr_maxviplvl_[jname/number]%
+
+# Shows the total workers in the selected job.
+%jobsr_totalplayers_[jname/number]%
+
+# Returns the max slots for the selected job.
+%jobsr_maxslots_[jname/number]%
+
+# Returns the quest name for the selected job and quest slot.
+%jobsr_questname_[jname/number]_[questIndicator]%
+
+# Returns the quest description for the selected job and quest slot.
+%jobsr_questdesc_[jname/number]_[questIndicator]%
+
+# Returns the job bonus from dynamic payment settings.
+%jobsr_bonus_[jname/number]%

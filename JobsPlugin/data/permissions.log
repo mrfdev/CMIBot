@@ -1,0 +1,65 @@
+jobs.tax.money.[number] - Sets the tax permission for money payouts.
+jobs.tax.points.[number] - Sets the tax permission for point payouts.
+jobs.petpay.[number] - Controls pet pay values and can allow negative values.
+jobs.all.vipmaxlevel.[number] - Sets a VIP max level override for all jobs.
+jobs.tax.bypass - Bypasses Jobs tax rules.
+jobs.command.leave.[jobName] - Allows job-specific use of the leave command.
+jobs.maxblastfurnaces.[number] - Sets the maximum allowed blast furnaces.
+jobs.maxsmokers.[number] - Sets the maximum allowed smokers.
+jobs.maxquest.[jobName].[number] - Sets the daily quest limit for a specific job.
+jobs.maxquest.all.[number] - Sets the daily quest limit for all jobs.
+jobs.maxownership.[number] - Sets the global ownership limit across tracked block types.
+jobs.maxfurnaceownership.[number] - Sets the furnace ownership limit across furnace types.
+jobs.join.[jobname] - Grants access to join a specific job.
+jobs.autojoin.[jobname] - Grants access to auto-join a specific job on login.
+jobs.* - Grants access to all Jobs commands.
+jobs.admin - Grants Jobs admin-level access.
+jobs.use - Grants ability to use the Jobs plugin.
+jobs.command.* - Grants access to all Jobs commands.
+jobs.command.browse - Grants access to the browse command.
+jobs.command.top - Grants access to the top command.
+jobs.command.stats - Grants access to the stats command.
+jobs.command.archive - Grants access to the archive command.
+jobs.command.admin.archive - Grants access to the archive command for other players.
+jobs.command.admin.stats - Grants access to the stats command for other players.
+jobs.command.join - Grants access to the join command.
+jobs.command.leave - Grants access to the leave command.
+jobs.command.leaveall - Grants access to the leaveall command.
+jobs.command.info - Grants access to the info command.
+jobs.command.playerinfo - Grants access to the playerinfo command.
+jobs.command.editjobs - Grants access to the editjobs command.
+jobs.command.fire - Grants access to the fire command.
+jobs.command.fireall - Grants access to the fireall command.
+jobs.command.employ - Grants access to the employ command.
+jobs.command.promote - Grants access to the promote command.
+jobs.command.demote - Grants access to the demote command.
+jobs.command.grantxp - Grants access to the grantxp command.
+jobs.command.removexp - Grants access to the removexp command.
+jobs.command.transfer - Grants access to the transfer command.
+jobs.command.reload - Grants access to the reload command.
+jobs.command.give - Grants access to the give command.
+jobs.command.boost - Grants access to the boost command.
+jobs.command.help - Grants access to the help command.
+jobs.command.toggle - Grants access to the toggle command.
+jobs.command.signupdate - Grants access to the signupdate command.
+jobs.command.limit - Grants access to the limit command.
+jobs.max.[number] - Allows more than the default max jobs.
+jobs.vipspawner - Allows payment from spawners while ignoring the global multiplier.
+jobs.petpay - Allows payment when a pet kills a monster.
+jobs.boost.[jobname].money.[amount] - Boosts money for a specific job by the given amount.
+jobs.boost.[jobname].exp.[amount] - Boosts exp for a specific job by the given amount.
+jobs.boost.[jobname].points.[amount] - Boosts points for a specific job by the given amount.
+jobs.boost.[jobname].all.[amount] - Boosts money, exp, and points for a specific job.
+jobs.boost.all.money.[amount] - Boosts money for all jobs by the given amount.
+jobs.boost.all.exp.[amount] - Boosts exp for all jobs by the given amount.
+jobs.boost.all.all.[amount] - Boosts money, exp, and points for all jobs.
+jobs.[jobname].vipmaxlevel - Allows a different max level for the specified job.
+jobs.[jobname].vipmaxlevel.[amount] - Allows a different max level amount for the specified job.
+jobs.command.admin.points - Allows checking another player points.
+jobs.area.select - Allows use of the Jobs area selection tool.
+jobs.area.add - Allows adding a restricted Jobs area.
+jobs.area.remove - Allows removing a restricted Jobs area.
+jobs.command.admin.quests - Allows checking another player quest progression.
+jobs.command.admin.clearownership - Allows clearing ownership for another player.
+jobs.maxbrewingstands.[amount] - Defines the maximum brewing stands a player can have.
+jobs.maxfurnaces.[amount] - Defines the maximum furnaces a player can have.

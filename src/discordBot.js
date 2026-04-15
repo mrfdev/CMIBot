@@ -450,9 +450,11 @@ function formatHelpMessage(config, member, context, commandName) {
     lines.push(`- \`${prefix} perm cmi.command.balance\``);
     lines.push(`- \`${prefix} faq refund\``);
   } else {
-    lines.push(`- \`${prefix} stats\``);
-    lines.push(`- \`${prefix} langstats\``);
-    lines.push(`- \`${prefix} debug\``);
+    lines.push(`- \`${prefix} language exp\``);
+    lines.push(`- \`${prefix} placeholder points\``);
+    lines.push(`- \`${prefix} cmd join\``);
+    lines.push(`- \`${prefix} perm jobs.use\``);
+    lines.push(`- \`${prefix} faq vault\``);
   }
 
   if (!canLookup) {
@@ -586,6 +588,18 @@ function linkedReferenceLabel(label, url) {
   return `[${label}](<${url}>)`;
 }
 
+function getReferenceLabel(profile) {
+  if (!profile?.referenceLabel) {
+    return "";
+  }
+
+  if (profile.referenceUrl) {
+    return linkedReferenceLabel(profile.referenceLabel, profile.referenceUrl);
+  }
+
+  return `\`${profile.referenceLabel}\``;
+}
+
 function formatResultLead(result, options) {
   if (options.layout === "faq") {
     const url = extractUrlFromComments(result.comments);
@@ -668,17 +682,20 @@ function formatResultsMessage(
 
   const safeKeyword = sanitizeForDisplay(keyword);
   const fileHint = options.showFileHints === false ? "" : formatFileList(allMatchedFiles, options);
+  const profileReference = getReferenceLabel(options.profile);
   const header =
-    options.layout === "faq"
-      ? `### Found [${totalMentions}] ${mentionLabel} for \`${safeKeyword}\``
+    options.layout === "faq" && profileReference
+      ? `### Found [${totalMentions}] ${mentionLabel} in ${profileReference} for \`${safeKeyword}\``
+      : options.layout === "faq"
+        ? `### Found [${totalMentions}] ${mentionLabel} for \`${safeKeyword}\``
       : options.layout === "placeholder"
-        ? `### Found [${totalMentions}] ${mentionLabel} for ${linkedReferenceLabel("placeholders", "https://www.zrips.net/cmi/placeholders/")} matching \`${safeKeyword}\``
+        ? `### Found [${totalMentions}] ${mentionLabel} for ${profileReference || "`placeholders`"} matching \`${safeKeyword}\``
         : options.layout === "tabcomplete"
           ? `### Found [${totalMentions}] ${mentionLabel} for tabcompletes matching \`${safeKeyword}\``
           : options.layout === "command"
-            ? `### Found [${totalMentions}] ${mentionLabel} for ${linkedReferenceLabel("commands", "https://www.zrips.net/cmi/commands/")} matching \`${safeKeyword}\``
+            ? `### Found [${totalMentions}] ${mentionLabel} for ${profileReference || "`commands`"} matching \`${safeKeyword}\``
             : options.layout === "permission"
-              ? `### Found [${totalMentions}] ${mentionLabel} for ${linkedReferenceLabel("permissions", "https://www.zrips.net/cmi/permissions/")} matching \`${safeKeyword}\``
+              ? `### Found [${totalMentions}] ${mentionLabel} for ${profileReference || "`permissions`"} matching \`${safeKeyword}\``
               : `### Found [${totalMentions}] ${mentionLabel} in [${fileCount}] ${fileLabel} for \`${safeKeyword}\`${fileHint}`;
 
   let footer = "";
@@ -1150,6 +1167,7 @@ export function createInteractionHandler(config, searchCache) {
       }
       const allMatchedFiles = [...new Set(orderedMatches.map((item) => item.entry.relativePath))];
       const message = formatResultsMessage(keyword, visibleResults, totalMentions, fileCount, aiSummary, allMatchedFiles, {
+        profile,
         preferShortPath: canonicalSubcommand === "language",
         showFileHints: canonicalSubcommand === "config",
         layout:
