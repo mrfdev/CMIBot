@@ -1,0 +1,601 @@
+# Language file you want to use
+Language: EN
+# Shows if there is an available new version on login with sv.versioncheck permission node
+ShowNewVersion: false
+# Enable or disable world border compatability. In case you don't want world border visualization, just set this to false and restart server
+WorldBorder: true
+PlotSquared:
+  Enter:
+    # Time in milliseconds for a particle duration when entering plot
+    # Set to 0 to disable
+    Duration: 2500
+Lands:
+  Enter:
+    # Time in milliseconds for a particle duration when entering plot
+    # Set to 0 to disable
+    Duration: 2000
+  Misc:
+    # Time in milliseconds for a particle duration when creating/deleting/add chunks to the plot
+    # Set to 0 to disable
+    Duration: 10000
+GriefPrevention:
+  # Tool used for protection modifications
+  ModificationTool: golden_shovel
+  # Tool used for protection inspections
+  InspectionTool: stick
+# Possible particle effect names: 
+Types:
+  WE:
+    Paste:
+      Effect1:
+        Effect: reddust
+        # Minimum spacing in blocks between particle effects for rows
+        # Minal value 0.1
+        RowSpacing: 1.0
+        # Minimum spacing in blocks between particle effects for collums
+        # Minimal value 0.1
+        CollumnSpacing: 1.0
+        # Max amount of particles allow to show for one player
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        # Minimum spacing in blocks between particle effects for rows
+        # Minal value 0.1
+        RowSpacing: 1.0
+        # Minimum spacing in blocks between particle effects for collums
+        # Minimal value 0.1
+        CollumnSpacing: 1.0
+        # Max amount of particles allow to show for one player
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        # Minimum spacing in blocks between particle effects for rows
+        # Minal value 0.1
+        RowSpacing: 1.0
+        # Minimum spacing in blocks between particle effects for collums
+        # Minimal value 0.1
+        CollumnSpacing: 1.0
+        # Max amount of particles allow to show for one player
+        Cap: 200
+      # How often update particles for player. 20 = 1sec
+      Interval: 3
+      # How many particles to skip. By increasing this will lower update interval but decrese particle count. Can create nice looking moving partile effects
+      SkipBy: 10
+      # Maximum range in blocks to draw particle effects for player
+      # In general view range is unlimited, but keep it at 16-32 range for best experience and performance
+      Range: 32
+      # For how long in miliseconds (30000 = 30sec) to show particle effects
+      # Defines maximum time length
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+    Cuboid:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+    Sphere:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+    Cylinder:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+    Poly:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+    Convex:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  CommandBlock:
+    Cuboid:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  Custom:
+    Point:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+    Chunk:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+    Grid:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+      Climbing: false
+    Biome:
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+      Climbing: false
+  Spawner:
+    Sphere:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  Beacon:
+    Effect1:
+      Effect: reddust
+      RowSpacing: 1.0
+      CollumnSpacing: 1.0
+      Cap: 200
+    Effect2:
+      Effect: reddust
+      RowSpacing: 1.0
+      CollumnSpacing: 1.0
+      Cap: 200
+    Interval: 3
+    SkipBy: 10
+    Range: 32
+    ShowFor: 30000
+    ByDefaultIsEnabled: true
+  Kingdoms:
+    Area:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+      Climbing: false
+  Factions:
+    Area:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect4:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect5:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+      Climbing: false
+  GriefPrevention:
+    Area:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  GriefDefender:
+    Area:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  PlotSquared:
+    Area:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  WG:
+    Cuboid:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+    Poly:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  Res:
+    Cuboid:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  Lands:
+    Cuboid:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  ResSub:
+    Cuboid:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  Towny:
+    Area:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+      Climbing: false
+  DiceFurniture:
+    Area:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  WorldBorder:
+    Area:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  ChunkyBorder:
+    Area:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  Jobs:
+    Area:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect3:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true
+  CMI:
+    Area:
+      Effect1:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Effect2:
+        Effect: reddust
+        RowSpacing: 1.0
+        CollumnSpacing: 1.0
+        Cap: 200
+      Interval: 3
+      SkipBy: 10
+      Range: 32
+      ShowFor: 30000
+      ByDefaultIsEnabled: true

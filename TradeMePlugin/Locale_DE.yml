@@ -1,0 +1,307 @@
+# Lasse die Zeile leer '' damit kein Prefix angezeigt wird
+info:
+  prefix: '[TradeMe]'
+  NoPermission: '&cDu hast keine Rechte dafür!'
+  NoTargetpermission: '&cDer Spieler hat dafür keine Rechte!'
+  Ingame: '&cDu kannst das nur im Spiel benutzen!'
+  NoInformation: '&cEs konnten keine Informationen gefunden werden!'
+  FromConsole: '&cDu kannst das nur mit der Konsole ausführen!'
+  NotOnline: '&cDer Spieler ist nicht online!'
+  NoPlayer: '&cEs wurde kein Spieler mit diesem Namen gefunden!'
+  NoCommand: '&cUnbekannter Befehl!'
+  UseInteger: '&4Bitte benutze Zahlen!'
+  UseBoolean: '&4Bitte benutze &2True&4 oder &cFalse&4!'
+  NoLessThan: '&4Nummer kann nicht weniger als [amount] sein!'
+  NoMoreThan: '&4Betrag kann nicht mehr als [amount] sein'
+  Spliter: '&e--------------------------------------------------'
+  fliperSimbols: '&e----------'
+  prevPage: '&2----<< &6Zurück '
+  prevPageOff: '&7----<< Zurück '
+  nextPage: '&6 Nächste &2>>----'
+  nextPageOff: '&7 Nächste >>----'
+  pageCount: '&2[current]/[total]'
+error:
+  CantChat: '&cDu kannst nicht im Chat schreiben, da du aktuell handlest!'
+  CantSendCommands: '&cBefehl konnte nicht ausgeführt werden, da du aktuell handlest!!'
+NoRequests: '&eDu hast keine ausstehenden Handelsanfrage!'
+CanceledTrade: '&e[playername] hat den Handel abgebrochen!'
+YouCanceledTrade: '&eDu hast den Handel abgebrochen!'
+BlockedWorldSender: '&eIn dieser Welt kannst du nicht handeln!'
+BlockedWorldTarget: '&eIn dieser Welt kann man nicht handeln!'
+DifferentGameMode: '&6Der Handel konnte nicht genehmigt werden, da der Spieler in
+  einem anderen Spielmodus ist!'
+BetweenWorlds: '&eHandel zwischen den Welten ist nicht erlaubt!'
+ToFar: '&6Der Spieler ist zuweit weg von dir! Max Entfernung &e[distance] &eBlöcke'
+StillInCombat: '&6Der Spieler &b[player]&6 befindet sich im Kampf, bitte warte &e[time]&6
+  Sekunden um zu Handeln!'
+InvIsOpen: '&e[player] &6hat sein Inventar geöffnet, du musst warten bis das Inventar
+  geschlossen ist'
+CantTradeDifGroup: '&cDu kannst nicht zwischen verschiedenen Gruppen handeln'
+MiddleMouse: '&2Nutze die mittlere Maustaste um den Scrollmodus zu aktivieren'
+CantTradeOverBungge: '&cHandeln mit Spieler über Bungee Netzwerk nicht möglich'
+CantTradeOverServers: '&cHandel zwischen diesen beiden Servern nicht möglich: [server1]
+  - > [server2]'
+NotOnline: '&&Spieler [playername] ist nicht online!'
+Vanished: '&6Spieler [playername] ist nicht online!'
+yourSelf: '&6Du kannst nicht mit dir selbst handeln!'
+NotAccepting: '&e[playername] &6akzeptiert keine Handels-Angebote!'
+BlacklistedItem: '&4Dieses Item kann nicht gehandelt werden!'
+AlreadyTrading: '&6[playername] handelt bereits mit einem anderen Spieler!'
+PendingRequest: '&6Du hast bereits eine ausstehende Handelsanfrage! Bitte warte &e[time]
+  &6Sek.'
+AlreadyRequested: '&6Jemand bietet dir schon einen Handel an! Bitte warte &e[time]
+  &6Sek'
+Successful: '&2Handel war erfolgreich!'
+Taxes:
+  Mein: ' Abgabe:'
+  BothEnabled: ' &'
+  Fixed: ' [amount]'
+  Percentage: ' [amount]% ([takenamount])'
+  Left: (&4 [amount] &e)
+Button:
+  Decline:
+    Name: '&eKlicke zum Ablehnen'
+    Lore: []
+  Accept:
+    Name: '&2Klicken zun annehmen des Angebots.'
+    Lore: []
+  Accepted:
+    Name: '&eAkzepiert dein Angebot'
+    Lore: []
+  Waiting:
+    Name: '&2Bitte warte, dein Angebot wurde noch nicht angenommen'
+    Lore: []
+Item:
+  Got: '&eItems aus Handel erhalten: &6[itemlist]'
+  YourInvFull: '&eDu hast nicht genügend Platz im Inventar'
+  TargetInvFull: '&f[player] &ehat nicht genügend Platz im Inventar'
+Regions:
+  WorldGuard:
+    YouCanttrade: '&2Du kannst in dieser Region nicht handeln!'
+    PlayerCanttrade: '&2[playername] kann in dieser Region nicht handeln!'
+  Residence:
+    YouCanttrade: '&2Du kannst in dieser Residenz nicht handeln!'
+    PlayerCanttrade: '&2[playername] kann in dieser Residenz nicht handeln!'
+TradeModes:
+  Exp:
+    Button:
+      Name: '&2Exp erhöhen um &6[amount]'
+      Lore:
+     - '&eLinks Klick zum hinzufügen'
+      - '&eRechts Klick zum entfernen'
+      - '&eHalte SHIFT um 10-fach zu erhöhen bzw zu verringern'
+      - '&6maximal Verfügbar: &6[balance]'
+      - '&6Aktuelles Exp-Angebot: &e[offer] [taxes]'
+      - '&6Du verlässt den Handel mit &e[sourcelevel] &6Leveln und &e[sourceexp] &6EXP'
+      - '&6Handelspartner verlässt den Handel mit &e[targetlevel] &6und hat &e[targetexp]
+        &6EXP'
+    OfferedButton:
+      Lore:
+      - '&6Aktuelles Exp-Angebot: &e[amount] [taxes]'
+      - '&6[player] wird den Handel mit &6[sourcelevel] &6Leveln und &6[sourceexp]
+        &eEXP verlassen'
+      - '&6Du wirst den Handel mit &6[targetlevel] &eLevel und &6[targetexp] &eEXP
+        verlassen'
+      Name: '&2[player]''s EXP-Angebot'
+    log: '&e[amount] &7EXP'
+    ChangedOffer: '&e[playername] &6hat sein EXP-Angebot geändert auf: &e[amount]'
+    ToggleButton:
+      Name: '&2Umschalten zum EXP-Angebot'
+      Lore:
+      - '&eAktuelles Exp-Angebot: &6[amount] [taxes]'
+      - '&6Du verlässt den Handel mit &e[sourcelevel] &6Leveln und &e[sourceexp] &6EXP'
+      - '&eDein Handelspartner wird den Handel mit &6[targetlevel] &e& &6[targetexp]
+        &eEXP verlassen'
+    Error: '&e[playername] hat nicht genügend EXP!'
+    Limit: '&eDu hast nicht genügend EXP! Maximal kannst du &b[amount] &eEXP anbieten.'
+    Got: '&eDu hast &6[amount] &eEXP erhalten'
+  Money:
+    Button:
+      Name: '&2Landings erhöhen um &6[amount]'
+      Lore:
+     - '&eLinks Klick zum hinzufügen'
+      - '&eRechts Klick zum entfernen'
+      - '&eHalte SHIFT um 10-fach zu erhöhen bzw zu verringern'
+      - '&6maximal Verfügbar: &6[balance]'
+      - '&6Aktuelles Landings-Angebot: &e[offer] [taxes]'
+    log: '&6[amount] &7Landings'
+    Error: '&6[playername] hat nicht genügend Landings!'
+    Got: '&6Du hast &e[amount] &6Landings aus dem Handel erhalten.'
+    OfferedButton:
+      Name: '&2[player]''s Landings-Angebot'
+      Lore:
+      - '&eAktuelles Landings-Angebot: &6[amount] [taxes]'
+    InLoanTarget: '&6Der angebotene Landingsbetrag ist zu gering um das Darlehen von
+      &6[playername] &6zu tilgen! Mindestbetrag &6[amount]'
+    ChangedOffer: '&6[playername] &ehat das Landings-Angebot geändert auf: &6[amount]'
+    ToggleButton:
+      Name: '&2Umschalten zum Landings-Angebot'
+      Lore:
+      - '&eAktuelles Landings-Angebot: &6[amount] [taxes]'
+    InLoanYou: '&6[playername] &eangebotener Landingsbetrag ist zu gering um das Darlehen
+      zu tilgen!'
+    hardLimit: '&e[playername] &6kann nicht mehr als 10,000,000,000,000 Landings besitzen!'
+    Limit: '&eDu hast nicht genügend Landings! Maximal kannst du &b[amount] &eLandings
+      anbieten.'
+    CantWidraw: '&cLandings konnten nicht vom Konto abgezogen werden! ([playername])'
+  Jobs:
+    Button:
+      Name: '&2Job-EXP erhöhen um &6[amount]'
+      Lore:
+     - '&eLinks Klick zum hinzufügen'
+      - '&eRechts Klick zum entfernen'
+      - '&eHalte SHIFT um 10-fach zu erhöhen bzw zu verringern'
+      - '&eMaximal Verfügbar: &6[balance]'
+      - '&6Aktuelles Jobs-EXP Angebot: &6[offer] [taxes]'
+      - '&6Du verlässt den Handel mit &e[sourcelevel] &6Leveln und &e[sourceexp] &6EXP'
+      - '&eDein Handelspartner wird den Handel mit &6[targetpoints] &eJob-EXP verlassen'
+    GotList: '[job] &e-> &6[amount] Job-EXP&e, &6'
+    log: '&7Jobs'
+    Got: '&eDu hast Job-EXP erhalten für: &6[list]'
+    OfferedButton:
+      Name: '&2[player]''s Job-EXP Angebot'
+      Lore:
+     - '&eAngebote Insgesamt:'
+      - '[list]'
+    TargetLimit: '&eDer Spieler kann nicht über Level &6[level]&e kommen! Maximal
+      kann er &6[amount] Job-EXP erhalten'
+    ChangedOffer: '&6[playername] &ehat sein Job-EXP Angebot für &6[jobName] &everändert
+      zu: &6[amount]'
+    ToggleButton:
+      Name: '&2Umschalten um Job-EXP zu handeln'
+      Lore:
+      - '&eAktueller Job: &6[jobname]'
+      - '&eKlick erneut um Job zu ändern'
+      - '&eAktuelles Job-EXP Angebot: &6[amount]'
+      - ''
+      - '&eAngebote Insgesamt'
+      - '[list]'
+    logList: '&e[name] -> &6[amount] Job-EXP'
+    Limit: '&eDu hast nicht genügend Job-EXP zum Handeln! Maximal kannst du &b[amount]
+      &6Job-EXP anbieten.'
+  JobsPoints:
+    Button:
+      Name: '&2Jobpunkte erhöhen um &6[amount]'
+      Lore:
+     - '&eLinks Klick zum hinzufügen'
+      - '&eRechts Klick zum entfernen'
+      - '&eHalte SHIFT um 10-fach zu erhöhen bzw zu verringern'
+      - '&eMaximal Verfügbar: &6[balance]'
+      - '&eAktuelles Jobpunkte-Angebot: &6[offer] [taxes]'
+      - '&eDu wirst den Handel mit &6[sourcepoints] &eJobpunkten verlassen'
+      - '&eDein Handelspartner wird den Handel mit &6[targetpoints] &eJobpunkten verlassen'
+    OfferedButton:
+      Lore:
+      - '&eAktuelle Jobpunkte: &6[amount] [taxes]'
+      - '&e[player] wird Handel mit &6[sourcepoints] &eJobpunkten verlassen'
+      - '&eDu wirst den Handel mit &6[targetpoints] &eJobpunkten verlassen'
+      Name: '&2[player]''s Jobpunkte Angebot'
+    log: '&e[amount] &7Jobpunkte'
+    ChangedOffer: '&6[playername] &ehat sein Jobpunkte-Angebot verändert zu: &6[amount]'
+    ToggleButton:
+      Name: '&2Umschalten um Jobpunkte zu handeln'
+      Lore:
+      - '&eAktuelles JP Angebot: &6[amount] [taxes]'
+      - '&eDu wirst den Handel mit &6[sourcepoints] &eJobpunkten verlassen'
+      - '&eDein Handelspartner wird den Handel mit &6[targetpoints] &eJobpunkten verlassen'
+    Error: '&e[playername] hat nicht genügend Jobpunkte!'
+    Limit: '&eDu hast nicht genügend Jobpunkte zum Handeln! Maximal kannst du &b[amount]
+      &6Jobpunkte anbieten.'
+    Got: '&eDu hast &6[amount] &eJobpunkte erhalten'
+command:
+  help:
+    output:
+      CommandColor: '&2'
+      VariableColor: '&6'
+      title: '&e-------&e ======= &6HomeLandings &e======= &e-------'
+      usage: '&eVerwendung: &6%usage%'
+      cmdInfoFormat: '[command] &f- &e[description]'
+      cmdFormat: '&6/[command]&f[arguments]'
+      helpPageDescription: '&e* [description]'
+      explanation: '&e * [explanation]'
+  nocmd:
+    help:
+      info: '&eZeigt alle verfügbaren Befehle'
+      args: ''
+  accept:
+    help:
+      info: '&2Handelsanfrage annehmen'
+      args: '&3(-s)'
+    info:
+      ClickToAccept: '&6Klicke hier um die Handelsanfrage anzunehmen!'
+  deny:
+    help:
+      info: '&2Handelsanfrage ablehnen'
+      args: '[playername]'
+      simbol: ' &c[x]'
+    info:
+      ClickToDeny: '&cKlick hier um die Handelsanfrage abzulehnen!'
+      simbol: '&c[x]'
+      deny: '&eHandelsanfrage wurde abgelehnt!'
+      DenyForSender: '&eDeine Handelsanfrage wurde abgelehnt!'
+  block:
+    help:
+      info: '&2Handelsanfragen von Spielern blockieren'
+      args: '[playerName]'
+    info:
+      RemovedFromBlockList: '&6[playername] &ewurde von deiner Handels-Blockliste
+        genommen!'
+      AddedToBlockList: '&6[playername] &ewurde auf deine Handels-Blockliste gesetzt!'
+      Blocked: '&6[playername] &eblockiert Handels-Angebote von dir!'
+  toggle:
+    help:
+      info: '&2Umschalten von Handelsanfragen'
+      args: ''
+    info:
+      ToggledOn: '&eDu akzepierst nun Handelsanfragen!'
+      ToggledOff: '&eDu akzepierst nun keine Handelsanfragen mehr!'
+  offer:
+    help:
+      info: '&2Handelsanfrage senden'
+      args: '[playername] &3(-s)'
+    info:
+      gotOffer: "&e[playername] &6fragt an, ob du mit ihm Handeln möchtest. \n"
+      accept: '   &2[Akzeptieren]   '
+      deny: '   &c[Ablehnen]   '
+      MadeOffer: '&6Du hast &e[playername]&6 ein Handels-Angebot gesendet. Der Spieler
+        hat nun &e[time]&6 Sekunden Zeit um anzunehmen.'
+      ClickToAccept: '&6Klicke hier um das Handels-Angebot anzunehmen!'
+  set:
+    help:
+      info: '&2Ändern Sie die Konfigurationseinstellungen'
+      args: '[path] [variable]'
+    info:
+      ConfigUpdate: '&eKonfigurationsdatei für &6[path] mit &6[variable]&e aktualisiert!'
+  reload:
+    help:
+      info: '&eLaden die Konfigurationsdatei und die Sprachdatei neu'
+      args: ''
+    info:
+      response: '&eTradeMe wurde neu geladen'
+  log:
+    help:
+      info: '&2Überprüfe deine eigenen oder Spieler Handelsprotokolle'
+      args: '[username]'
+    info:
+      tradelog: '&e[number]. &6[player1] &e--> &6[player2] &eon &6[date]'
+      dateformat: dd/MM/yyyy HH:mm:ss
+      deletedentries: '&6[amount] &eEinträge wurden aus der Datenbank gelöscht!'
+      noentries: '&eEs wurden Einträge in der Zeitspanne gefunden!'
+      noplayerlogentries: '&eKeine Log-Einträge gefunden!'
+      offered: '&3&n[playername] &6Angebote!'
+  force:
+    help:
+      info: '&2Erzwinge einen Handel zwischen zwei Spielern'
+      args: '[playername] [playername] &3(-s)'
+  purge:
+    help:
+      info: '&2Löscht die Datenbank zu einem bestimmten Punkt'
+      args: '[TimeInMinutes]'
+  logitems:
+    help:
+      info: '&2Überprüfe deine eigenen oder von Spielern gehandelten Gegenstände'
+      args: (username)
+    info:
+      offered: '&3&n[playerName] &6handelt!'
+      item: '&e[&r[itemName] &ex &6[amount]&e] '
+      noItem: '&eEs sind keine Items zum handeln vorhanden'

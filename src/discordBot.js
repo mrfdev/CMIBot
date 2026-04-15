@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { MessageFlags, REST, Routes, SlashCommandBuilder } from "discord.js";
+import { MessageFlags, REST, Routes, SlashCommandBuilder, version as discordJsVersion } from "discord.js";
 import { writeAuditLog } from "./auditLog.js";
 import { formatCacheSummary } from "./cache.js";
 import { createCooldownManager, resolveFileFilter, sanitizeForDisplay, validateQuery } from "./security.js";
@@ -259,6 +259,49 @@ function formatBytes(bytes) {
   return `${value.toFixed(digits)} ${units[index]}`;
 }
 
+function formatDuration(milliseconds) {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const parts = [];
+
+  if (days) {
+    parts.push(`${days}d`);
+  }
+  if (hours || parts.length) {
+    parts.push(`${hours}h`);
+  }
+  if (minutes || parts.length) {
+    parts.push(`${minutes}m`);
+  }
+  parts.push(`${seconds}s`);
+
+  return parts.join(" ");
+}
+
+function formatTimestamp(value) {
+  if (!value) {
+    return "not loaded yet";
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "unknown";
+  }
+
+  return date.toLocaleString("en-GB", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+}
+
 async function getDirectorySize(directoryPath) {
   let totalSize = 0;
   const entries = await fs.readdir(directoryPath, { withFileTypes: true });
@@ -281,6 +324,158 @@ async function getDirectorySize(directoryPath) {
   }
 
   return totalSize;
+}
+
+async function safeGetDirectorySize(directoryPath) {
+  try {
+    return await getDirectorySize(directoryPath);
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      return 0;
+    }
+
+    throw error;
+  }
+}
+
+function getProfileDisplayCounts(profileSummary) {
+  if (profileSummary.localEntryCount != null && profileSummary.localFileCount != null) {
+    return {
+      entryCount: profileSummary.localEntryCount,
+      fileCount: profileSummary.localFileCount,
+    };
+  }
+
+  return {
+    entryCount: profileSummary.entryCount ?? 0,
+    fileCount: profileSummary.fileCount ?? 0,
+  };
+}
+
+function formatRouteSummary(config) {
+  const routeCounts = Object.entries(config.discord.pluginChannelIds)
+    .filter(([, channelIds]) => channelIds.length)
+    .map(([pluginId, channelIds]) => `${pluginId}(${channelIds.length})`);
+
+  if (config.discord.testChannelIds.length) {
+    routeCounts.push(`test(${config.discord.testChannelIds.length})`);
+  }
+
+  return routeCounts.length ? routeCounts.join(", ") : "none";
+}
+
+function getLargestCacheBucket(globalSummary) {
+  let largestBucket = null;
+
+  for (const pluginSummary of globalSummary.pluginSummaries ?? []) {
+    for (const profileSummary of pluginSummary.profileSummaries ?? []) {
+      const counts = getProfileDisplayCounts(profileSummary);
+      if (!largestBucket || counts.entryCount > largestBucket.entryCount) {
+        largestBucket = {
+          scopeLabel: pluginSummary.pluginLabel,
+          profileLabel: profileSummary.profileDisplayName ?? profileSummary.profileName,
+          entryCount: counts.entryCount,
+          fileCount: counts.fileCount,
+        };
+      }
+    }
+  }
+
+  for (const profileSummary of globalSummary.sharedCmilibSummary?.profileSummaries ?? []) {
+    if (!largestBucket || profileSummary.entryCount > largestBucket.entryCount) {
+      largestBucket = {
+        scopeLabel: globalSummary.sharedCmilibSummary.pluginLabel,
+        profileLabel: profileSummary.profileDisplayName ?? profileSummary.profileName,
+        entryCount: profileSummary.entryCount,
+        fileCount: profileSummary.fileCount,
+      };
+    }
+  }
+
+  return largestBucket;
+}
+
+function formatContextProfileCounts(contextSummary) {
+  if (!contextSummary?.profileSummaries?.length) {
+    return "none";
+  }
+
+  return contextSummary.profileSummaries
+    .map((profileSummary) => {
+      const counts = getProfileDisplayCounts(profileSummary);
+      return `${profileSummary.profileDisplayName ?? profileSummary.profileName} ${counts.fileCount}f`;
+    })
+    .join(", ");
+}
+
+function formatCommandAvailabilitySummary(plugin) {
+  const ready = [];
+  const unavailable = [];
+
+  for (const [commandName, availability] of Object.entries(plugin.commandAvailability)) {
+    if (["help", "stats", "langstats", "debug", "reload"].includes(commandName)) {
+      continue;
+    }
+
+    if (availability === "ready") {
+      ready.push(commandName);
+      continue;
+    }
+
+    unavailable.push(commandName);
+  }
+
+  return {
+    ready: ready.join(", ") || "none",
+    unavailable: unavailable.join(", ") || "none",
+  };
+}
+
+function formatTestOverrideSummary(testChannelIds, testOverrides, config) {
+  if (!testChannelIds.length) {
+    return "no configured test channels";
+  }
+
+  if (!testOverrides.size) {
+    return "none";
+  }
+
+  const entries = [];
+  for (const channelId of testChannelIds) {
+    const pluginId = testOverrides.get(channelId);
+    if (!pluginId) {
+      continue;
+    }
+
+    const pluginLabel = config.plugins[pluginId]?.label ?? pluginId;
+    entries.push(`${channelId} -> ${pluginLabel}`);
+  }
+
+  return entries.length ? entries.join(", ") : "none";
+}
+
+async function getTrackedDiskFootprint(config) {
+  const results = [];
+
+  for (const plugin of Object.values(config.plugins)) {
+    let totalSize = 0;
+    for (const directory of plugin.debugRoots ?? []) {
+      totalSize += await safeGetDirectorySize(path.join(config.workspaceRoot, directory));
+    }
+
+    results.push(`${plugin.label} ${formatBytes(totalSize)}`);
+  }
+
+  for (const sharedRoot of config.sharedDebugRoots ?? []) {
+    let totalSize = 0;
+    for (const directory of sharedRoot.directories ?? []) {
+      totalSize += await safeGetDirectorySize(path.join(config.workspaceRoot, directory));
+    }
+
+    results.push(`${sharedRoot.label} ${formatBytes(totalSize)}`);
+  }
+
+  return results.join(" | ");
 }
 
 function resolveChannelContext(channelId, config, testOverrides) {
@@ -331,20 +526,32 @@ function resolveChannelContext(channelId, config, testOverrides) {
   };
 }
 
-async function formatDebugMessage(interaction, context, config, searchCache) {
+async function formatDebugMessage(interaction, context, config, searchCache, testOverrides) {
   const memory = process.memoryUsage();
   const workspaceSize = await getDirectorySize(config.workspaceRoot);
   const globalSummary = searchCache.getGlobalSummary();
   const contextSummary = context.plugin ? searchCache.getPluginSummary(context.plugin.id) : null;
+  const largestBucket = getLargestCacheBucket(globalSummary);
+  const diskFootprint = await getTrackedDiskFootprint(config);
+  const commandAvailability = context.plugin ? formatCommandAvailabilitySummary(context.plugin) : null;
   const lines = [
     "### Lookup Debug",
     `Detected context: \`${context.plugin?.label ?? "Unknown"}\``,
     `Channel type: \`${context.channelType}\``,
     `Channel ID: \`${interaction.channelId}\``,
+    `Tracked plugins: \`${[...Object.values(config.plugins).map((plugin) => plugin.label), "Shared CMILib"].join(", ")}\``,
+    `Known channel routes: \`${formatRouteSummary(config)}\``,
+    `Context file counts: \`${formatContextProfileCounts(contextSummary)}\``,
+    `Uptime: \`${formatDuration(process.uptime() * 1000)}\``,
+    `Runtime: \`Node ${process.version}, discord.js ${discordJsVersion}\``,
     `Project size on disk: \`${formatBytes(workspaceSize)}\``,
     `Process RAM (RSS): \`${formatBytes(memory.rss)}\``,
     `Process heap used: \`${formatBytes(memory.heapUsed)}\``,
     `Global cache: \`${globalSummary.totalEntries ?? 0}\` entries from \`${globalSummary.totalFiles ?? 0}\` files`,
+    `Last cache reload: \`${formatTimestamp(globalSummary.lastReloadedAt)}\``,
+    `Largest cache bucket: \`${largestBucket ? `${largestBucket.scopeLabel} ${largestBucket.profileLabel} (${largestBucket.entryCount} entries / ${largestBucket.fileCount} files)` : "unknown"}\``,
+    `Active test overrides: \`${formatTestOverrideSummary(config.discord.testChannelIds, testOverrides, config)}\``,
+    `Disk footprint: \`${diskFootprint}\``,
   ];
 
   if (contextSummary) {
@@ -353,10 +560,9 @@ async function formatDebugMessage(interaction, context, config, searchCache) {
     );
   }
 
-  if (context.isTestChannel) {
-    lines.push(
-      `Test override: \`${context.overridePluginId || "auto"}\`${context.overridePluginId ? " (active)" : ""}`,
-    );
+  if (commandAvailability) {
+    lines.push(`Available here: \`${commandAvailability.ready}\``);
+    lines.push(`Not supported here: \`${commandAvailability.unavailable}\``);
   }
 
   lines.push("", context.routingNote);
@@ -494,12 +700,32 @@ function formatHelpMessage(config, member, context, commandName) {
     lines.push(`- \`${prefix} cmd balance\``);
     lines.push(`- \`${prefix} perm cmi.command.balance\``);
     lines.push(`- \`${prefix} faq refund\``);
-  } else {
+  } else if (plugin.id === "jobs") {
     lines.push(`- \`${prefix} language exp\``);
     lines.push(`- \`${prefix} placeholder points\``);
     lines.push(`- \`${prefix} cmd join\``);
     lines.push(`- \`${prefix} perm jobs.use\``);
     lines.push(`- \`${prefix} faq vault\``);
+  } else if (plugin.id === "svis") {
+    lines.push(`- \`${prefix} config selection\``);
+    lines.push(`- \`${prefix} language particle\``);
+    lines.push(`- \`${prefix} langstats\``);
+  } else if (plugin.id === "mfm") {
+    lines.push(`- \`${prefix} config farm\``);
+    lines.push(`- \`${prefix} language mob\``);
+    lines.push(`- \`${prefix} langstats\``);
+  } else if (plugin.id === "tryme") {
+    lines.push(`- \`${prefix} config tryme\``);
+    lines.push(`- \`${prefix} language message\``);
+    lines.push(`- \`${prefix} langstats\``);
+  } else if (plugin.id === "trademe") {
+    lines.push(`- \`${prefix} config trade\``);
+    lines.push(`- \`${prefix} language seller\``);
+    lines.push(`- \`${prefix} langstats\``);
+  } else {
+    lines.push(`- \`${prefix} config setting\``);
+    lines.push(`- \`${prefix} language message\``);
+    lines.push(`- \`${prefix} langstats\``);
   }
 
   if (!canLookup) {
@@ -575,13 +801,108 @@ function formatLanguageStatsMessage(languageCategories, pluginId, formatDisplayP
     return "";
   }
 
-  const blocks = ["Language categories:"];
+  const groupDefinitions =
+    pluginId === "jobs"
+      ? [
+          {
+            title: "Jobs language data:",
+            matcher: (category) =>
+              category.englishRelativePath.startsWith("JobsPlugin/locale/") ||
+              category.englishRelativePath.startsWith("JobsPlugin/TranslatableWords/"),
+          },
+          {
+            title: "Shared CMILib language data:",
+            matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+          },
+        ]
+      : pluginId === "svis"
+        ? [
+            {
+              title: "SVIS language data:",
+              matcher: (category) => category.englishRelativePath.startsWith("SVISPlugin/"),
+            },
+            {
+              title: "Shared CMILib language data:",
+              matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+            },
+          ]
+        : pluginId === "mfm"
+          ? [
+              {
+                title: "MFM language data:",
+                matcher: (category) => category.englishRelativePath.startsWith("MFMPlugin/"),
+              },
+              {
+                title: "Shared CMILib language data:",
+                matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+              },
+            ]
+          : pluginId === "tryme"
+            ? [
+                {
+                  title: "TryMe language data:",
+                  matcher: (category) => category.englishRelativePath.startsWith("TryMePlugin/"),
+                },
+                {
+                  title: "Shared CMILib language data:",
+                  matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+                },
+              ]
+            : pluginId === "trademe"
+              ? [
+                  {
+                    title: "TradeMe language data:",
+                    matcher: (category) => category.englishRelativePath.startsWith("TradeMePlugin/"),
+                  },
+                  {
+                    title: "Shared CMILib language data:",
+                    matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+                  },
+                ]
+      : [
+          {
+            title: "CMI language data:",
+            matcher: (category) => category.englishRelativePath.startsWith("CMIPlugin/CMI/"),
+          },
+          {
+            title: "Shared CMILib language data:",
+            matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+          },
+        ];
 
-  for (const category of languageCategories) {
-    const displayPath = formatDisplayPath(pluginId, category.englishRelativePath);
-    const languageLabel = pluralize(category.languageCount, "language");
-    const codes = category.languageCodes.map((code) => `\`${code}\``).join(", ");
-    blocks.push(`- \`${category.label}\` -> \`${displayPath}\`\n(${category.languageCount} ${languageLabel}: ${codes})`);
+  const blocks = [];
+
+  for (const groupDefinition of groupDefinitions) {
+    const categories = languageCategories.filter(groupDefinition.matcher);
+    if (!categories.length) {
+      continue;
+    }
+
+    const lines = [groupDefinition.title];
+    for (const category of categories) {
+      const displayPath = formatDisplayPath(pluginId, category.englishRelativePath);
+      const languageLabel = pluralize(category.languageCount, "language");
+      const codes = category.languageCodes.map((code) => `\`${code}\``).join(", ");
+      lines.push(`- \`${category.label}\` -> \`${displayPath}\`\n(${category.languageCount} ${languageLabel}: ${codes})`);
+    }
+    blocks.push(lines.join("\n\n"));
+  }
+
+  const groupedKeys = new Set(
+    groupDefinitions.flatMap((groupDefinition) =>
+      languageCategories.filter(groupDefinition.matcher).map((category) => category.key),
+    ),
+  );
+  const ungroupedCategories = languageCategories.filter((category) => !groupedKeys.has(category.key));
+  if (ungroupedCategories.length) {
+    const lines = ["Other language data:"];
+    for (const category of ungroupedCategories) {
+      const displayPath = formatDisplayPath(pluginId, category.englishRelativePath);
+      const languageLabel = pluralize(category.languageCount, "language");
+      const codes = category.languageCodes.map((code) => `\`${code}\``).join(", ");
+      lines.push(`- \`${category.label}\` -> \`${displayPath}\`\n(${category.languageCount} ${languageLabel}: ${codes})`);
+    }
+    blocks.push(lines.join("\n\n"));
   }
 
   return blocks.join("\n\n");
@@ -862,7 +1183,7 @@ export function createInteractionHandler(config, searchCache) {
         override: context.overridePluginId || "auto",
       });
       await interaction.reply({
-        content: await formatDebugMessage(interaction, context, config, searchCache),
+        content: truncateDiscordMessage(await formatDebugMessage(interaction, context, config, searchCache, testOverrides)),
         flags: MessageFlags.Ephemeral,
         allowedMentions: NO_MENTIONS,
       });

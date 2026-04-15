@@ -1,0 +1,209 @@
+# Set line to empty one like '' so it will not be displayed
+info:
+  prefix: '&e[&aTradeMe&e] '
+  NoTargetpermission: '&4Ціль не має на це дозволу!'
+  CantTrade: '&cНеможливо розпочати торгівлю, коли один із гравців спить'
+  # Use [playerDisplayName] to show lpayers custom name in gui title
+  # If you want to show original name, then use [playerName]
+  guiTradeTitle: '[playerDisplayName]'
+error:
+  CantChat: '&cНе можна спілкуватися під час торгівлі!'
+  CantSendCommands: '&cНе можна виконувати команди під час торгівлі!'
+NoRequests: '&eУ вас немає торгових запитів, що очікують на розгляд!'
+CanceledTrade: '&e[playername] скасував торгівлю!'
+YouCanceledTrade: '&eВи скасували торгівлю!'
+BlockedWorldSender: '&eВаш світ у чорному списку для торгівлі!'
+BlockedWorldTarget: '&eЦільовий світ у чорному списку для торгівлі!'
+DifferentGameMode: '&eВи не можете торгувати з гравцями, які знаходяться в інших режимах гри!'
+BetweenWorlds: '&eНе можна торгувати між світами!'
+ToFar: '&eГравець надто далеко від вас! Максимальна відстань становить &6[distance] &eблоків'
+StillInCombat: '&eГравець [player] все ще перебуває в бою, зачекайте [time] секунд перед
+  обміном!'
+InvIsOpen: '&6[player] &aвідкрив свій інвентар, зачекайте, доки він його
+  закриє'
+CantTradeDifGroup: '&cНеможливо торгувати з іншою групою гравців'
+MiddleMouse: '&2Використовуйте середню кнопку миші для прокручування режимів'
+CantTradeOverBungge: '&cНе можна торгувати з цим гравцем через мережу банжі'
+CantTradeOverServers: '&cНе можна торгувати між цими 2 серверами: [server1] - > [server2]'
+Vanished: '&eГравець [playername] не в мережі!'
+yourSelf: '&6Ви не можете торгувати з самим собою!'
+NotAccepting: '&6[playername] &eне приймає жодних торгів!'
+BlacklistedItem: '&4Цей предмет у чорному списку!'
+AlreadyTrading: '&e[playername] вже торгує з кимось!'
+PendingRequest: '&eУ вас уже є запит, що очікує на розгляд! Зачекайте &6[time] &eсек.'
+AlreadyRequested: '&eХтось вже пропонує їм обмін! Зачекайте &6[time] &eсек'
+Successful: '&2Торгівля пройшла успішно!'
+Failed: '&cТоргівля не відбулася!'
+Taxes:
+  Mein: ' Податок:'
+  BothEnabled: ' &'
+  Fixed: ' [amount]'
+  Percentage: ' [amount]% ([takenamount])'
+  Left: (&4 [amount] &e)
+Button:
+  Decline:
+    Name: '&eНатисніть, щоб відмовитися'
+    Lore: []
+  Accept:
+    Name: '&2Натисніть, щоб прийняти'
+    Lore: []
+  Accepted:
+    Name: '&eПрийняв вашу пропозицію'
+    Lore: []
+  Waiting:
+    Name: '&2Все ще не прийняв вашу пропозицію'
+    Lore: []
+Item:
+  Got: '&eВи отримали: &6[itemlist]'
+  ListFormat: '&6[type]&ex&7[amount]'
+  YourInvFull: '&eУ вашому інвентарі недостатньо вільного місця'
+  TargetInvFull: '&f[player] &eінвентарі недостатньо вільного місця'
+Regions:
+  WorldGuard:
+    YouCanttrade: '&2Ви не можете торгувати в цьому регіоні!'
+    PlayerCanttrade: '&2[playername] не може торгувати в цьому регіоні!'
+  Residence:
+    YouCanttrade: '&2Ви не можете обміняти цю резиденцію!'
+    PlayerCanttrade: '&2[playername] не може обмінювати в цій резиденції!'
+TradeModes:
+  Exp:
+    Button:
+      Name: '&2Приріст досвіду на &6[amount]'
+      Lore:
+      - '&eЛКМ, щоб додати'
+      - '&eПКМ, щоб взяти'
+      - '&eУтримуйте shift, щоб збільшити в 10 разів'
+      - '&eМаксимально доступно: &6[balance]'
+      - '&eПоточна пропозиція: &6[offer] [taxes]'
+      - '&eУ вас залишаться рівні &6[sourcelevel] &eі &6[sourceexp] &eдосвіду'
+      - '&eЦільовий гравець буде на рівні &6[targetlevel] &eі матиме &6[targetexp] &eдосвіду'
+    OfferedButton:
+      Lore:
+      - '&eПоточна пропозиція досвіду: &6[amount] [taxes]'
+      - '&e[player] залишиться з &6[sourcelevel] &eрівнів і &6[sourceexp] &eдосвіду'
+      - '&eВи будете на &6[targetlevel] &eі матимете &6[targetexp] &eдосвіду'
+      Name: '&2[player] пропозиція досвіду'
+    log: '&e[amount] &7Досвід'
+    ChangedOffer: '&6[playername] &eзмінив свою пропозицію досвіду на: &6[amount]'
+    ToggleButton:
+      Name: '&2Перемкнути на пропозицію досвіду'
+      Lore:
+      - '&eПоточна пропозиція досвіду: &6[amount] [taxes]'
+      - '&eУ вас залишаться рівні &6[sourcelevel] &eі &6[sourceexp] &eдосвіду'
+      - '&eЦільовий гравець буде на рівні &6[targetlevel] &eі матиме &6[targetexp] &eдосвіду'
+    Error: '&e[playername] не має достатньо досвіду!'
+    Limit: '&eУ вас недостатньо досвіду! Максимальна сума, якою ви можете торгувати: &6[amount]'
+    Got: '&eВи отримали &6[amount] &eдосвіду'
+    ChangedOfferTitle: '&8Пропонований &0[amount] &8досвід'
+command:
+  help:
+    output:
+      CommandColor: '&2'
+      VariableColor: '&6'
+      title: '&e-------&e ======= &6TradeMe &e======= &e-------'
+      usage: '&eВикористання: %usage%'
+      cmdInfoFormat: '[command] &f- &e[description]'
+      cmdFormat: '&6/[command]&f[arguments]'
+      helpPageDescription: '&e* [description]'
+      explanation: '&e * [explanation]'
+  nocmd:
+    help:
+      info: '&eПоказує всі доступні команди'
+      args: ''
+  accept:
+    help:
+      info: '&2Прийняти пропозицію'
+      args: '&3(-s)'
+    info:
+      ClickToAccept: '&6Натисніть, щоб прийняти пропозицію!'
+  deny:
+    help:
+      info: '&2Відхилити пропозицію'
+      args: '[playername]'
+      simbol: ' &c[x]'
+    info:
+      ClickToDeny: '&cНатисніть, щоб відхилити пропозицію!'
+      simbol: '&c[x]'
+      deny: '&eТорговий запит відхилено!'
+      DenyForSender: '&eВаш торговий запит відхилено!'
+  block:
+    help:
+      info: '&2Заблокувати грався'
+      args: '[playerName]'
+    info:
+      RemovedFromBlockList: '&6[playername] &eбуло видалено з вашого списку блокування торгівлі!'
+      AddedToBlockList: '&6[playername] &eбуло додано до вашого списку блокування торгівлі!'
+      Blocked: '&6[playername] &eдодав вас до свого списку блокування!'
+  toggle:
+    help:
+      info: '&2Перемикання торгів'
+      args: ''
+    info:
+      ToggledOn: '&eТепер ви можете приймати торгові пропозиції!'
+      ToggledOff: '&eТепер ви не можете приймати жодних торгових пропозицій!'
+  checkperm:
+    help:
+      info: '&eПеревірте можливі вузли дозволів'
+      args: (key word)
+    info:
+      list: '&e[place]. [permission]'
+      hover: '&e[desc]'
+      others: |-
+        &4
+        ---->Коли команда використовується на іншому гравцеві<----
+        &cПотрібна базова команда
+      permissionColor: '&6'
+      cmdPermissionColor: '&2'
+      variableColor: '&f'
+      noPermissionFound: '&7За цим ключовим словом не знайдено дозволів'
+  force:
+    help:
+      info: '&2За цим ключовим словом не знайдено дозволів на торгівлю між 2 гравцями'
+      args: '[playername] [playername] &3(-s)'
+  log:
+    help:
+      info: '&2Перевірте свій власний журнал торгівлі або журнал торгівлі гравців'
+      args: '[username]'
+    info:
+      tradelog: '&e[number]. &6[player1] &e--> &6[player2] &eon &6[date]'
+      dateformat: dd/MM/yyyy HH:mm:ss
+      deletedentries: '&6[amount] &eзаписів було видалено з бази даних!'
+      noentries: '&eУ цьому часовому діапазоні немає заявок!'
+      noplayerlogentries: '&eНемає жодних записів у журналі!'
+      offered: '&3&n[playername] &6запропоновано!'
+  logitems:
+    help:
+      info: '&2Перевірте власні предмети або предмети, якими торгують гравці'
+      args: (username)
+    info:
+      offered: '&3&n[playerName] &6торгується!'
+      item: '&e[&r[itemName] &досвід &6[amount]&e] '
+      noItem: '&eНе було предметів торгівлі'
+  offer:
+    help:
+      info: '&2Надіслати торгову пропозицію'
+      args: '[playername] &3(-s)'
+    info:
+      gotOffer: "&6[playername] &eхоче торгувати з тобою. \n"
+      accept: '   &2[Прийняти]   '
+      deny: '   &c[Відмовити]   '
+      MadeOffer: '&eВи надіслали торгову пропозицію &6[playername]&e. У нього є &6[time]&e
+        секунд, щоб прийняти.'
+      somethingWrong: '&eЩось пішло не так з вашою торгівлею, будь ласка, спробуйте ще раз'
+      ClickToAccept: '&6Натисніть, щоб прийняти пропозицію!'
+  purge:
+    help:
+      info: '&2Очищає базу даних до певного часу'
+      args: '[TimeInMinutes]'
+  reload:
+    help:
+      info: '&eПерезавантажте файл конфігурації та перекладу'
+      args: ''
+    info:
+      response: '&eПерезавантажено конфігураційні файли'
+  set:
+    help:
+      info: '&2Зміна налаштувань конфігурації'
+      args: '[path] [variable]'
+    info:
+      ConfigUpdate: '&eКонфігураційний файл оновлено для &6[path] &eіз &6[variable]&e!'

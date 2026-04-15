@@ -1,0 +1,382 @@
+# Set line to empty one like '' so it will not be displayed
+info:
+  prefix: '&e[&a1MB Trading&e] '
+  NoTargetpermission: '&4Target doesn''t have permission for this!'
+  CantTrade: '&cCant initiate trade while one of the players is sleeping'
+  # Variable options [playerName] [playerDisplayName] will show players name who has this GUI open
+  # [secondPlayerName] [secondPlayerDisplayName] will show players name this player is trading with
+  # [spaces] will attempt to add correct amount of spaces in between name variables to properly space them out
+  guiTitle:
+    First: '&7[{#brown}[playerDisplayName]&7][spaces][&8[secondPlayerDisplayName]&7]'
+    Second: '&7[&8[playerDisplayName]&7][spaces][{#brown}[secondPlayerDisplayName]&7]'
+error:
+  CantChat: '&cCan''t chat while trading!'
+  CantSendCommands: '&cCan''t perform commands while trading!'
+NoRequests: '&eYou dont have any pending trade requests!'
+CanceledTrade: '&e[playername] canceled the trade!'
+YouCanceledTrade: '&eYou canceled trade!'
+BlockedWorldSender: '&eYour world is blacklisted for trading!'
+BlockedWorldTarget: '&eTarget world is blacklisted for trading!'
+DifferentGameMode: '&eYou cannot trade with player that are in other gamemodes!'
+BetweenWorlds: '&eCant trade between worlds!'
+ToFar: '&ePlayer is to far away from you! Max distance is &6[distance] &eblocks'
+StillInCombat: '&ePlayer [player] is still in combat, please wait [time] seconds before
+  trading!'
+InvIsOpen: '&6[player] &ahas their inventory opened, please wait until they close
+  it'
+SameIP: '&cCan''t trade with player who has the same IP as you do!'
+CantTradeDifGroup: '&cCant trade with different player group'
+MiddleMouse: '&2Use middle mouse button to scroll through modes'
+CantTradeOverBungge: '&cCant trade with this player over bungee network'
+CantTradeOverServers: '&cCan''t trade between these 2 servers: [server1] - > [server2]'
+Vanished: '&ePlayer [playername] is not online!'
+yourSelf: '&6You cant trade with your self!'
+NotAccepting: '&6[playername] &eis not accepting any trades!'
+BlacklistedItem: '&4This item is blacklisted!'
+AlreadyTrading: '&e[playername] is already trading with someone!'
+PendingRequest: '&eYou already have a pending request! Wait &6[time] &esec.'
+AlreadyRequested: '&eSomeone is already offering them a trade! Wait &6[time] &esec'
+Successful: '&2Trade was successful!'
+Failed: '&cTrade failed!'
+Taxes:
+  Mein: ' Taxes:'
+  BothEnabled: ' &'
+  Fixed: ' [amount]'
+  Percentage: ' [amount]% ([takenamount])'
+  Left: (&4 [amount] &e)
+Button:
+  Decline:
+    Name: '&eClick to decline'
+    Lore: []
+  Accept:
+    Name: '&2Click to Accept offer'
+    Lore: []
+  Accepted:
+    Name: '&eAccepted your offer'
+    Lore: []
+  Waiting:
+    Name: '&2Still hasn''t accepted your offer'
+    Lore: []
+Item:
+  Got: '&eYou have received: &6[itemlist]'
+  # Use [type] to include material name, use [displayName] to use items display name if present, if not it will show items translated material name
+  ListFormat: '&6[type]&ex&7[amount]'
+  YourInvFull: '&eYour inventory doesn''t have enough free space'
+  TargetInvFull: '&f[player] &einventory doesn''t have enough free space'
+Regions:
+  WorldGuard:
+    YouCanttrade: '&2You can''t trade in this region!'
+    PlayerCanttrade: '&2[playername] can''t trade in this region!'
+  Residence:
+    YouCanttrade: '&2You can''t trade in this residence!'
+    PlayerCanttrade: '&2[playername] can''t trade in this residence!'
+TradeModes:
+  Exp:
+    Button:
+      Name: '&2Exp increment by &6[amount]'
+      Lore:
+      - '&eLeft click to add'
+      - '&eRight click to take'
+      - '&eHold shift to increase 10 times'
+      - '&eMaximum available: &6[balance]'
+      - '&eCurrent exp offer: &6[offer] [taxes]'
+      - '&eYou will be left with &6[sourcelevel] &elevels and &6[sourceexp] &eexp'
+      - '&eTarget player will be at &6[targetlevel] &eand have &6[targetexp] &eexp'
+    OfferedButton:
+      Lore:
+      - '&eCurent exp offer: &6[amount] [taxes]'
+      - '&e[player] will be left with &6[sourcelevel] &elevels and &6[sourceexp] &eexp'
+      - '&eYou will be at &6[targetlevel] &eand have &6[targetexp] &eexp'
+      Name: '&2[player]''s exp offer'
+    log: '&e[amount] &7Exp'
+    ChangedOffer: '&6[playername] &ehas changed their exp offer to: &6[amount]'
+    ToggleButton:
+      Name: '&2Toggle to exp offer'
+      Lore:
+      - '&eCurent exp offer: &6[amount] [taxes]'
+      - '&eYou will be left with &6[sourcelevel] &elevels and &6[sourceexp] &eexp'
+      - '&eTarget player will be at &6[targetlevel] &eand have &6[targetexp] &eexp'
+    Error: '&e[playername] doesn''t have enough exp!'
+    Limit: '&eYou dont have enough exp! Amount was set to maximum you can trade: &6[amount]'
+    Got: '&eYou have received &6[amount] &eexp'
+    ChangedOfferTitle: '&8Offered &0[amount] &8exp'
+  McMMO:
+    Button:
+      Name: '&2McMMO Exp increment by &6[amount]'
+      Lore:
+      - '&eLeft click to add'
+      - '&eRight click to take'
+      - '&eHold shift to increase 10 times'
+      - '&eMaximum available: &6[balance]'
+      - '&eCurrent exp offer: &6[offer] [taxes]'
+      - '&eYou will be left with &6[sourcelevel] &elevel and &6[sourceexp] &eexp'
+      - '&eTarget player will be at &6[targetlevel] &eand have &6[targetexp] &eexp'
+    GotList: '[skill] &e-> &6[amount] Exp&e, &6'
+    log: '&7McMMO'
+    Got: '&eYou have received McMMO exp for: &6[list]'
+    listString: '&e[skillname]: &6[exp]exp [taxesstring]'
+    OfferedButton:
+      Name: '&2[player]''s McMMO exp offer'
+      Lore:
+      - '&eTotal McMMO offer'
+      - '[list]'
+    ChangedOfferTitle: '&8Offered &0[amount] &8McMMO exp for &0[skillname]'
+    TargetLimit: '&ePlayer cant receive that many levels! Amount was set to maximum
+      he may receive: &6[amount]'
+    ChangedOffer: '&6[playername] &ehas changed their McMMO exp offer to: &6[amount]
+      &e for &6[skillname]'
+    ToggleButton:
+      Name: '&2Toggle to McMMO exp offer'
+      Lore:
+      - '&eCurrent skill: &6[skillname]'
+      - '&eClick again to switch to another'
+      - '&eCurent exp offer: &6[amount]'
+      - ''
+      - '&eTotal McMMO offer'
+      - '[list]'
+    logList: '&e[name] -> &6[amount] exp'
+    Limit: '&eYou dont have enough exp! Amount was set to maximum you can trade: &6[amount]'
+  Money:
+    Button:
+      Name: '&2Money increment by &6[amount]'
+      Lore:
+      - '&eLeft click to add'
+      - '&eRight click to take'
+      - '&eHold shift to increase 10 times'
+      - '&eMaximum available: &6[balance]'
+      - '&eCurrent money offer: &6[offer] [taxes]'
+    log: '&e[amount] &7Money'
+    Error: '&e[playername] doesn''t have enough money!'
+    Got: '&eYou have received &6[amount] &emoney'
+    OfferedButton:
+      Name: '&2[player]''s money offer'
+      Lore:
+      - '&eCurent money offer: &6[amount] [taxes]'
+    InLoanTarget: '&eYour offered money amount is to low to get &6[playername] &eout
+      of loan! offer atleast &6[amount]'
+    ChangedOfferTitle: '&8Offered &0[amount] &8money'
+    ChangedOffer: '&6[playername] &ehas changed their money offer to: &6[amount]'
+    ToggleButton:
+      Name: '&2Toggle to money offer'
+      Lore:
+      - '&eCurent money offer: &6[amount] [taxes]'
+    InLoanYou: '&6[playername] &eoffered money amount is to low to get you out of
+      loan!'
+    hardLimit: '&6[playername] &ecant have more than 10,000,000,000,000 money!'
+    Limit: '&eYou dont have enough money! Amount was set to maximum you can trade:
+      &6[amount]'
+    CantWidraw: '&cCan''t widraw money from player! ([playername])'
+  Jobs:
+    Button:
+      Name: '&2Jobs Exp increment by &6[amount]'
+      Lore:
+      - '&eLeft click to add'
+      - '&eRight click to take'
+      - '&eHold shift to increase 10 times'
+      - '&eMaximum available: &6[balance]'
+      - '&eCurrent Jobs exp offer: &6[offer] [taxes]'
+      - '&eYou will be left with &6[sourcelevel] &elevels and &6[sourceexp] &eexp'
+      - '&eTarget player will be at &6[targetlevel] &eand have &6[targetexp] &eexp'
+    GotList: '[job] &e-> &6[amount] Exp&e, &6'
+    log: '&7Jobs'
+    Got: '&eYou have got Jobs exp for: &6[list]'
+    OfferedButton:
+      Name: '&2[player]''s jobs exp offer'
+      Lore:
+      - '&eTotal Jobs exp offer:'
+      - '[list]'
+      List: '&e[jobname]: &6[exp]exp '
+    ChangedOfferTitle: '&8Jobs: &0[amount] &8-> &0[jobName]'
+    TargetLimit: '&ePlayer cant get over level &6[level]&e! Amount was set to maximum
+      he may receive: &6[amount]'
+    ChangedOffer: '&6[playername] &ehas changed their Jobs exp offer to: &6[amount]
+      &e for &6[jobName]'
+    ToggleButton:
+      Name: '&2Toggle to Jobs exp offer'
+      Lore:
+      - '&eCurrent job: &6[jobname]'
+      - '&eClick again to switch to another'
+      - '&eCurent job exp offer: &6[amount]'
+      - ''
+      - '&eTotal Jobs offer'
+      - '[list]'
+    logList: '&e[name] -> &6[amount] exp'
+    Limit: '&eYou dont have enough exp! Amount was set to maximum you can trade: &6[amount]'
+  JobsPoints:
+    Button:
+      Name: '&2JP increment by &6[amount]'
+      Lore:
+      - '&eLeft click to add'
+      - '&eRight click to take'
+      - '&eHold shift to increase 10 times'
+      - '&eMaximum available: &6[balance]'
+      - '&eCurrent JP offer: &6[offer] [taxes]'
+      - '&eYou will be left with &6[sourcepoints] &epoints'
+      - '&eTarget player will be at &6[targetpoints] &epoints'
+    OfferedButton:
+      Lore:
+      - '&eCurent JP offer: &6[amount] [taxes]'
+      - '&e[player] will be left with &6[sourcepoints] &epoints'
+      - '&eYou will be at &6[targetpoints] &epoints'
+      Name: '&2[player]''s JP offer'
+    log: '&e[amount] &7Jobs points'
+    ChangedOffer: '&6[playername] &ehas changed their Jobs points offer to: &6[amount]'
+    ToggleButton:
+      Name: '&2Toggle to Jobs Points offer'
+      Lore:
+      - '&eCurent JP offer: &6[amount] [taxes]'
+      - '&eYou will be left with &6[sourcepoints] &epoints'
+      - '&eTarget player will be at &6[targetpoints] &epoints'
+    Error: '&e[playername] doesn''t have enough Jobs Points!'
+    Limit: '&eYou dont have enough Jobs points! Amount was set to maximum you can
+      trade: &6[amount]'
+    Got: '&eYou have received &6[amount] &eJobs points'
+    ChangedOfferTitle: '&8Offered &0[amount] &8Jobs points'
+  Residence:
+    Button:
+      Name: '&2Currently offering &6[residence]'
+      LoreConfirmed:
+      - '&2Residence confirmed for trade!'
+      LoreSecondConfirm:
+      - '&6Right click to finish confirmation'
+      LoreFirstConfirm:
+      - '&eLeft click to initiate confirm'
+    GotList: '[resname]&e, &6'
+    OfferedButton:
+      Size: '&eSize X: &6[x] &eY: &6[y] &eZ: &6[z]'
+      seperator: '&e-----------------'
+      World: '&eWorld: &6[world]'
+      Name: '&2[player]''s residence offer'
+      Cost: '&eEstimated cost: &6[cost]'
+      Lore:
+      - '&eFull list of offer:'
+      - '[list]'
+      TotalSize: '&eTotal size: &6[totalSize]'
+      ResidenceName: '&2Currently offering &6[residence]'
+    log: '&7Residence'
+    Got: '&eYou have got residence: &6[list]'
+    ChangedOfferTitle: '&8Offered &0[residence] &8residence'
+    ChangedOffer: '&6[playername] &eoffered &c[residence] &eresidence to you'
+    ToggleButton:
+      Name: '&2Toggle to Residence offer'
+      Lore:
+      - '&eCurrent Residence: &6[residencename]'
+      - '&eClick again to switch to another'
+      - ''
+      - '&eFull list of offer:'
+      - '[list]'
+    logList: '&e[name]'
+    Limit: '&eSorry cant offer more residences, as &e[playername] &ehas reached max
+      allowed limit!'
+command:
+  help:
+    output:
+      CommandColor: '&2'
+      VariableColor: '&6'
+      title: '&e-------&e ======= &6TradeMe &e======= &e-------'
+      usage: '&eUsage: %usage%'
+      cmdInfo: '[command]'
+      cmdFormat: '&6/[command]&f[arguments]'
+      helpPageDescription: '&e* [description]'
+      explanation: '&e * [explanation]'
+  nocmd:
+    help:
+      info: '&eShows all available commands'
+      args: ''
+  accept:
+    help:
+      info: '&2Accept offer'
+      args: '&3(-s)'
+    info:
+      ClickToAccept: '&6Click to accept offer!'
+  deny:
+    help:
+      info: '&2Deny trade offer'
+      args: '[playername]'
+      simbol: ' &c[x]'
+    info:
+      ClickToDeny: '&cClick to deny offer!'
+      simbol: '&c[x]'
+      deny: '&eTrade request was declined!'
+      DenyForSender: '&eYour trade request was declined!'
+  block:
+    help:
+      info: '&2Block player'
+      args: '[playerName]'
+    info:
+      RemovedFromBlockList: '&6[playername] &ewas removed from your trade block list!'
+      AddedToBlockList: '&6[playername] &ewas added to your trade block list!'
+      Blocked: '&6[playername] &ehas you in their block list!'
+  toggle:
+    help:
+      info: '&2Toggle trades'
+      args: ''
+    info:
+      ToggledOn: '&eYou are now accepting trade offers!'
+      ToggledOff: '&eYou are no longer accepting any trades offers!'
+  checkperm:
+    help:
+      info: '&eCheck possible permission nodes'
+      args: (key word)
+    info:
+      list: '&e[place]. [permission]'
+      hover: '&e[desc]'
+      others: |-
+        &4
+        ---->When command is used on another player<----
+        &cBase command required
+      permissionColor: '&6'
+      cmdPermissionColor: '&2'
+      variableColor: '&f'
+      noPermissionFound: '&7No permissions found by this keyword'
+  force:
+    help:
+      info: '&2Force a trade between 2 players'
+      args: '[playername] [playername] &3(-s)'
+  log:
+    help:
+      info: '&2Check yor own or players trade logs'
+      args: '[username]'
+    info:
+      tradelog: '&e[number]. &6[player1] &e--> &6[player2] &eon &6[date]'
+      dateformat: dd/MM/yyyy HH:mm:ss
+      deletedentries: '&6[amount] &eentries was deleted from database!'
+      noentries: '&eThere is no entries by this time range!'
+      noplayerlogentries: '&eThere is no log entries!'
+      offered: '&3&n[playername] &6offered!'
+  logitems:
+    help:
+      info: '&2Check yor own or players traded items'
+      args: (username)
+    info:
+      offered: '&3&n[playerName] &6traded!'
+      item: '&e[&r[itemName] &ex &6[amount]&e] '
+      noItem: '&eThere was no items traded'
+  offer:
+    help:
+      info: '&2Send trade offer'
+      args: '[playername] &3(-s)'
+    info:
+      gotOffer: "&6[playername] &ewants to trade with you. \n"
+      accept: '   &2[Accept]   '
+      deny: '   &c[Decline]   '
+      MadeOffer: '&eYou have sent a trade offer to &6[playername]&e. They have &6[time]&e
+        seconds to accept.'
+      somethingWrong: '&eSomething went wrong with your trade, please try again'
+      ClickToAccept: '&6Click to accept offer!'
+  purge:
+    help:
+      info: '&2Clears database to specific point'
+      args: '[TimeInMinutes]'
+  reload:
+    help:
+      info: '&eReload config and locale file'
+      args: ''
+    info:
+      response: '&eConfiguration files was reloaded'
+  set:
+    help:
+      info: '&2Change config setings'
+      args: '[path] [variable]'
+    info:
+      ConfigUpdate: '&eConfig file updated for &6[path] &ewith &6[variable]&e!'

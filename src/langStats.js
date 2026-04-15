@@ -8,6 +8,10 @@ const KNOWN_CATEGORY_LABELS = new Map([
   ["CMILibPlugin/CMILib/Translations/Items/items_EN.yml", "CMILib (items locale)"],
   ["JobsPlugin/locale/messages_en.yml", "Jobs (plugin locale)"],
   ["JobsPlugin/TranslatableWords/Words_en.yml", "Jobs (translatable words)"],
+  ["SVISPlugin/Locale_EN.yml", "SVIS (plugin locale)"],
+  ["MFMPlugin/Locale/Locale_EN.yml", "MFM (plugin locale)"],
+  ["TryMePlugin/Locale_EN.yml", "TryMe (plugin locale)"],
+  ["TradeMePlugin/Locale_EN.yml", "TradeMe (plugin locale)"],
 ]);
 
 const KNOWN_CATEGORY_ORDER = [...KNOWN_CATEGORY_LABELS.keys()];
@@ -130,14 +134,109 @@ export function formatLanguageCategoryStats(categories, formatDisplayPath, plugi
     return "";
   }
 
-  const lines = ["Language categories:"];
+  const groupDefinitions =
+    pluginId === "jobs"
+      ? [
+          {
+            title: "Jobs language data:",
+            matcher: (category) =>
+              category.englishRelativePath.startsWith("JobsPlugin/locale/") ||
+              category.englishRelativePath.startsWith("JobsPlugin/TranslatableWords/"),
+          },
+          {
+            title: "Shared CMILib language data:",
+            matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+          },
+        ]
+      : pluginId === "svis"
+        ? [
+            {
+              title: "SVIS language data:",
+              matcher: (category) => category.englishRelativePath.startsWith("SVISPlugin/"),
+            },
+            {
+              title: "Shared CMILib language data:",
+              matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+            },
+          ]
+        : pluginId === "mfm"
+          ? [
+              {
+                title: "MFM language data:",
+                matcher: (category) => category.englishRelativePath.startsWith("MFMPlugin/"),
+              },
+              {
+                title: "Shared CMILib language data:",
+                matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+              },
+            ]
+          : pluginId === "tryme"
+            ? [
+                {
+                  title: "TryMe language data:",
+                  matcher: (category) => category.englishRelativePath.startsWith("TryMePlugin/"),
+                },
+                {
+                  title: "Shared CMILib language data:",
+                  matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+                },
+              ]
+            : pluginId === "trademe"
+              ? [
+                  {
+                    title: "TradeMe language data:",
+                    matcher: (category) => category.englishRelativePath.startsWith("TradeMePlugin/"),
+                  },
+                  {
+                    title: "Shared CMILib language data:",
+                    matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+                  },
+                ]
+      : [
+          {
+            title: "CMI language data:",
+            matcher: (category) => category.englishRelativePath.startsWith("CMIPlugin/CMI/"),
+          },
+          {
+            title: "Shared CMILib language data:",
+            matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+          },
+        ];
 
-  for (const category of categories) {
-    const displayPath = formatDisplayPath(pluginId, category.englishRelativePath);
-    const languageLabel = category.languageCount === 1 ? "language" : "languages";
-    const codes = category.languageCodes.join(", ");
-    lines.push(`- ${category.label} -> ${displayPath} (${category.languageCount} ${languageLabel}: ${codes})`);
+  const blocks = [];
+
+  for (const groupDefinition of groupDefinitions) {
+    const groupedCategories = categories.filter(groupDefinition.matcher);
+    if (!groupedCategories.length) {
+      continue;
+    }
+
+    const lines = [groupDefinition.title];
+    for (const category of groupedCategories) {
+      const displayPath = formatDisplayPath(pluginId, category.englishRelativePath);
+      const languageLabel = category.languageCount === 1 ? "language" : "languages";
+      const codes = category.languageCodes.join(", ");
+      lines.push(`- ${category.label} -> ${displayPath} (${category.languageCount} ${languageLabel}: ${codes})`);
+    }
+    blocks.push(lines.join("\n"));
   }
 
-  return lines.join("\n");
+  const groupedKeys = new Set(
+    groupDefinitions.flatMap((groupDefinition) =>
+      categories.filter(groupDefinition.matcher).map((category) => category.key),
+    ),
+  );
+  const leftovers = categories.filter((category) => !groupedKeys.has(category.key));
+  if (leftovers.length) {
+    const lines = ["Other language data:"];
+    for (const category of leftovers) {
+      const displayPath = formatDisplayPath(pluginId, category.englishRelativePath);
+      const languageLabel = category.languageCount === 1 ? "language" : "languages";
+      const codes = category.languageCodes.join(", ");
+      lines.push(`- ${category.label} -> ${displayPath} (${category.languageCount} ${languageLabel}: ${codes})`);
+    }
+    blocks.push(lines.join("\n"));
+  }
+
+  return blocks.join("\n\n");
 }

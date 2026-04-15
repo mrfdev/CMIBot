@@ -2,7 +2,7 @@
 
 CMIBot is a Discord support bot built around a channel-aware `/lookup` workflow.
 
-Today it fully supports the CMI context and already includes the first working Jobs context, with the active plugin decided by the Discord channel ID.
+Today it fully supports the CMI context, includes a working Jobs context, and now also supports lightweight YAML-only contexts for SVIS, MFM, TryMe, and TradeMe, with the active plugin decided by the Discord channel ID.
 
 ## Current Direction
 
@@ -11,7 +11,7 @@ Today it fully supports the CMI context and already includes the first working J
 - `#test` can be switched live between plugin contexts through the debug command
 - `/lookup reload` is global and rebuilds caches for every plugin context
 - `/lookup stats` and `/lookup langstats` are context-aware and only show data for the active plugin
-- `/lookup debug` shows channel routing plus project size and live memory usage
+- `/lookup debug` shows channel routing, tracked plugins, file counts, uptime, runtime versions, cache health, memory usage, disk footprint, and active test overrides
 
 ## Current Contexts
 
@@ -56,6 +56,54 @@ These are currently not part of the Jobs scope:
 - `material`
 - `tabcomplete`
 
+### SVIS
+
+The SVIS context currently supports:
+
+- `config`
+- `language|lang`
+- `langstats`
+- `stats`
+- `debug`
+- `reload`
+- `help`
+
+### MFM
+
+The MFM context currently supports:
+
+- `config`
+- `language|lang`
+- `langstats`
+- `stats`
+- `debug`
+- `reload`
+- `help`
+
+### TryMe
+
+The TryMe context currently supports:
+
+- `config`
+- `language|lang`
+- `langstats`
+- `stats`
+- `debug`
+- `reload`
+- `help`
+
+### TradeMe
+
+The TradeMe context currently supports:
+
+- `config`
+- `language|lang`
+- `langstats`
+- `stats`
+- `debug`
+- `reload`
+- `help`
+
 ## Example Commands
 
 ### CMI examples
@@ -93,6 +141,46 @@ These are currently not part of the Jobs scope:
 /lookup langstats
 ```
 
+### SVIS examples
+
+```text
+/lookup help
+/lookup config particle
+/lookup language selection
+/lookup langstats
+/lookup stats
+```
+
+### MFM examples
+
+```text
+/lookup help
+/lookup config farm
+/lookup language mob
+/lookup langstats
+/lookup stats
+```
+
+### TryMe examples
+
+```text
+/lookup help
+/lookup config tryme
+/lookup language message
+/lookup langstats
+/lookup stats
+```
+
+### TradeMe examples
+
+```text
+/lookup help
+/lookup config trade
+/lookup language seller
+/lookup langstats
+/lookup stats
+```
+
 ### Test-channel context switching
 
 When used in a configured test channel by an admin:
@@ -112,6 +200,10 @@ The bot uses explicit channel IDs from `.env`:
 - `DISCORD_ALLOWED_CHANNEL_IDS`: every channel where the bot is allowed to run
 - `DISCORD_CMI_CHANNEL_IDS`: channels that should route to the CMI context
 - `DISCORD_JOBS_CHANNEL_IDS`: channels that should route to the Jobs context
+- `DISCORD_SVIS_CHANNEL_IDS`: channels that should route to the SVIS context
+- `DISCORD_MFM_CHANNEL_IDS`: channels that should route to the MFM context
+- `DISCORD_TRYME_CHANNEL_IDS`: channels that should route to the TryMe context
+- `DISCORD_TRADEME_CHANNEL_IDS`: channels that should route to the TradeMe context
 - `DISCORD_TEST_CHANNEL_IDS`: channels that are allowed to override context live
 - `DISCORD_TEST_DEFAULT_CONTEXT`: default context for test channels, currently `cmi`
 
@@ -119,6 +211,10 @@ Current defaults:
 
 - `#cmi`: `526402563847880725`
 - `#jobs-reborn`: `526402919826849804`
+- `#selectionvisualizer`: `714110524731686962`
+- `#mobfarmmanager`: `713838315572559892`
+- `#tryme`: `714111148059787285`
+- `#trademe`: `713838991744434277`
 - `#test`: `1493976695152054353`
 
 If a channel is not in `DISCORD_ALLOWED_CHANNEL_IDS`, the bot refuses to run there.
@@ -153,6 +249,26 @@ Shared CMILib data:
 `/lookup reload` rebuilds this cache globally for every configured plugin context.
 
 For startup and reload summaries, shared `CMILib` config and language data is shown in its own `Shared CMILib data:` section at the bottom so it does not visually look like plugin-owned data inside the CMI or Jobs blocks.
+
+## Debug Output
+
+`/lookup debug` is a compact health dashboard for the current channel context. It now reports:
+
+- detected plugin context
+- channel type and channel ID
+- tracked plugin list
+- known channel-route counts
+- current context file counts
+- uptime
+- Node and `discord.js` versions
+- project disk size
+- RAM RSS and heap usage
+- global and current-context cache totals
+- last cache reload timestamp
+- largest cache bucket
+- active test-channel overrides
+- tracked plugin disk footprint
+- which commands are available or unsupported in the current context
 
 ## Search Behavior
 
@@ -222,6 +338,9 @@ Copy `.env.example` to `.env` and fill in the values.
 - `DISCORD_ALLOWED_CHANNEL_IDS`
 - `DISCORD_CMI_CHANNEL_IDS`
 - `DISCORD_JOBS_CHANNEL_IDS`
+- `DISCORD_SVIS_CHANNEL_IDS`
+- `DISCORD_MFM_CHANNEL_IDS`
+- `DISCORD_TRYME_CHANNEL_IDS`
 - `DISCORD_TEST_CHANNEL_IDS`
 - `DISCORD_TEST_DEFAULT_CONTEXT`
 - `ALLOWED_ROLE_IDS`
@@ -283,6 +402,27 @@ These are the current Jobs search scopes:
 - `JOBS_FAQ_INCLUDE_GLOBS`
 - `JOBS_FAQ_EXCLUDE_GLOBS`
 
+### Lightweight plugin data scopes
+
+These are the current YAML-only plugin search scopes:
+
+- `SVIS_LOOKUP_INCLUDE_GLOBS`
+- `SVIS_LOOKUP_EXCLUDE_GLOBS`
+- `SVIS_LANGUAGE_INCLUDE_GLOBS`
+- `SVIS_LANGUAGE_EXCLUDE_GLOBS`
+- `MFM_LOOKUP_INCLUDE_GLOBS`
+- `MFM_LOOKUP_EXCLUDE_GLOBS`
+- `MFM_LANGUAGE_INCLUDE_GLOBS`
+- `MFM_LANGUAGE_EXCLUDE_GLOBS`
+- `TRYME_LOOKUP_INCLUDE_GLOBS`
+- `TRYME_LOOKUP_EXCLUDE_GLOBS`
+- `TRYME_LANGUAGE_INCLUDE_GLOBS`
+- `TRYME_LANGUAGE_EXCLUDE_GLOBS`
+- `TRADEME_LOOKUP_INCLUDE_GLOBS`
+- `TRADEME_LOOKUP_EXCLUDE_GLOBS`
+- `TRADEME_LANGUAGE_INCLUDE_GLOBS`
+- `TRADEME_LANGUAGE_EXCLUDE_GLOBS`
+
 ## Current Data Layout
 
 Right now the live CMI data remains where it already works:
@@ -292,6 +432,10 @@ CMIPlugin/CMI/
 CMIPlugin/data/
 CMILibPlugin/CMILib/
 JobsPlugin/data/
+SVISPlugin/
+MFMPlugin/
+TryMePlugin/
+TradeMePlugin/
 src/
 ```
 
@@ -332,4 +476,4 @@ npm start
 ## Next Planned Steps
 
 - add real Jobs YAML config data when you are ready to index more than the shared CMILib files
-- extend the multi-plugin structure to more support channels like Residence, TradeMe, or TryMe
+- extend the multi-plugin structure to more support channels like Residence

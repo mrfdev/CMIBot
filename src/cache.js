@@ -139,6 +139,7 @@ export function formatCacheSummary(summary, { verb = "Loaded", suffix = "." } = 
 export function createSearchCache(config) {
   const cache = new Map();
   const pluginSummaries = new Map();
+  let lastReloadedAt = null;
 
   function getCacheKey(pluginId, profileName) {
     return `${pluginId}:${profileName}`;
@@ -208,12 +209,14 @@ export function createSearchCache(config) {
 
     const totalEntries = loadedPluginSummaries.reduce((sum, item) => sum + item.totalEntries, 0);
     const totalFiles = loadedPluginSummaries.reduce((sum, item) => sum + item.totalFiles, 0);
+    lastReloadedAt = new Date();
 
     return {
       totalEntries,
       totalFiles,
       pluginSummaries: loadedPluginSummaries,
       sharedCmilibSummary: buildSharedCmilibSummary(cache, loadedPluginSummaries),
+      lastReloadedAt,
     };
   }
 
@@ -248,6 +251,7 @@ export function createSearchCache(config) {
         totalFiles: loadedPluginSummaries.reduce((sum, item) => sum + item.totalFiles, 0),
         pluginSummaries: loadedPluginSummaries,
         sharedCmilibSummary: buildSharedCmilibSummary(cache, loadedPluginSummaries),
+        lastReloadedAt,
       };
     },
   };

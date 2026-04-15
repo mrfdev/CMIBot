@@ -50,6 +50,10 @@ function toDisplayRelativePath(relativePath) {
     ["CMILibPlugin/CMILib/", "CMILib/"],
     ["CMILibPlugin/data/", "CMILib/data/"],
     ["JobsPlugin/", "Jobs/"],
+    ["SVISPlugin/", "SelectionVisualizer/"],
+    ["MFMPlugin/", "MobFarmManager/"],
+    ["TryMePlugin/", "TryMe/"],
+    ["TradeMePlugin/", "TradeMe/"],
   ];
 
   for (const [from, to] of replacements) {
@@ -73,6 +77,32 @@ function createProfile(name, overrides = {}) {
     include: [],
     exclude: [],
     ...overrides,
+  };
+}
+
+function buildSimplePluginProfiles({
+  configInclude,
+  configExcludeEnv,
+  configExcludeDefault = "",
+  languageInclude,
+  languageExcludeEnv,
+  languageExcludeDefault = "",
+} = {}) {
+  return {
+    config: createProfile("config", {
+      sourceType: "yaml",
+      entryLabel: "YAML entries",
+      statsFileLabel: "YAML configuration files",
+      include: parseCsv(configInclude),
+      exclude: parseCsv(configExcludeEnv ?? configExcludeDefault),
+    }),
+    language: createProfile("language", {
+      sourceType: "yaml",
+      entryLabel: "YAML entries",
+      statsFileLabel: "YAML locale files",
+      include: parseCsv(languageInclude),
+      exclude: parseCsv(languageExcludeEnv ?? languageExcludeDefault),
+    }),
   };
 }
 
@@ -230,6 +260,54 @@ function buildJobsProfiles() {
   };
 }
 
+function buildSvisProfiles() {
+  return buildSimplePluginProfiles({
+    configInclude:
+      process.env.SVIS_LOOKUP_INCLUDE_GLOBS ?? "SVISPlugin/config.yml,CMILibPlugin/CMILib/config.yml",
+    configExcludeEnv: process.env.SVIS_LOOKUP_EXCLUDE_GLOBS,
+    languageInclude:
+      process.env.SVIS_LANGUAGE_INCLUDE_GLOBS ??
+      "SVISPlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+    languageExcludeEnv: process.env.SVIS_LANGUAGE_EXCLUDE_GLOBS,
+  });
+}
+
+function buildMfmProfiles() {
+  return buildSimplePluginProfiles({
+    configInclude:
+      process.env.MFM_LOOKUP_INCLUDE_GLOBS ?? "MFMPlugin/config.yml,CMILibPlugin/CMILib/config.yml",
+    configExcludeEnv: process.env.MFM_LOOKUP_EXCLUDE_GLOBS,
+    languageInclude:
+      process.env.MFM_LANGUAGE_INCLUDE_GLOBS ??
+      "MFMPlugin/Locale/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+    languageExcludeEnv: process.env.MFM_LANGUAGE_EXCLUDE_GLOBS,
+  });
+}
+
+function buildTrymeProfiles() {
+  return buildSimplePluginProfiles({
+    configInclude:
+      process.env.TRYME_LOOKUP_INCLUDE_GLOBS ?? "TryMePlugin/config.yml,CMILibPlugin/CMILib/config.yml",
+    configExcludeEnv: process.env.TRYME_LOOKUP_EXCLUDE_GLOBS,
+    languageInclude:
+      process.env.TRYME_LANGUAGE_INCLUDE_GLOBS ??
+      "TryMePlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+    languageExcludeEnv: process.env.TRYME_LANGUAGE_EXCLUDE_GLOBS,
+  });
+}
+
+function buildTrademeProfiles() {
+  return buildSimplePluginProfiles({
+    configInclude:
+      process.env.TRADEME_LOOKUP_INCLUDE_GLOBS ?? "TradeMePlugin/config.yml,CMILibPlugin/CMILib/config.yml",
+    configExcludeEnv: process.env.TRADEME_LOOKUP_EXCLUDE_GLOBS,
+    languageInclude:
+      process.env.TRADEME_LANGUAGE_INCLUDE_GLOBS ??
+      "TradeMePlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+    languageExcludeEnv: process.env.TRADEME_LANGUAGE_EXCLUDE_GLOBS,
+  });
+}
+
 function buildPluginCommandAvailability(overrides = {}) {
   return {
     help: "ready",
@@ -254,6 +332,10 @@ export function loadConfig() {
   const displayPathPrefix = process.env.DISPLAY_PATH_PREFIX?.trim() || "~/plugins";
   const cmiProfiles = buildCmiProfiles();
   const jobsProfiles = buildJobsProfiles();
+  const svisProfiles = buildSvisProfiles();
+  const mfmProfiles = buildMfmProfiles();
+  const trymeProfiles = buildTrymeProfiles();
+  const trademeProfiles = buildTrademeProfiles();
   const configuredTestChannelIds = parseCsv(process.env.DISCORD_TEST_CHANNEL_IDS);
   const fallbackLegacyTestChannelIds = parseCsv(process.env.DISCORD_CMI_TEST_CHANNEL_IDS);
   const testChannelIds = configuredTestChannelIds.length ? configuredTestChannelIds : fallbackLegacyTestChannelIds;
@@ -261,6 +343,10 @@ export function loadConfig() {
   const pluginChannelIds = {
     cmi: parseCsv(process.env.DISCORD_CMI_CHANNEL_IDS),
     jobs: parseCsv(process.env.DISCORD_JOBS_CHANNEL_IDS),
+    svis: parseCsv(process.env.DISCORD_SVIS_CHANNEL_IDS),
+    mfm: parseCsv(process.env.DISCORD_MFM_CHANNEL_IDS),
+    tryme: parseCsv(process.env.DISCORD_TRYME_CHANNEL_IDS),
+    trademe: parseCsv(process.env.DISCORD_TRADEME_CHANNEL_IDS),
   };
 
   return {
@@ -287,16 +373,24 @@ export function loadConfig() {
       defaultResultLimit: Math.max(1, Math.min(15, parseInteger(process.env.DEFAULT_RESULT_LIMIT, 3))),
       maxResultLimit: 15,
     },
+    sharedDebugRoots: [
+      {
+        label: "Shared CMILib",
+        directories: ["CMILibPlugin"],
+      },
+    ],
     plugins: {
       cmi: {
         id: "cmi",
         label: "CMI",
+        debugRoots: ["CMIPlugin"],
         profiles: cmiProfiles,
         commandAvailability: buildPluginCommandAvailability(),
       },
       jobs: {
         id: "jobs",
         label: "Jobs",
+        debugRoots: ["JobsPlugin"],
         profiles: jobsProfiles,
         commandAvailability: buildPluginCommandAvailability({
           config: "ready",
@@ -306,6 +400,62 @@ export function loadConfig() {
           command: "ready",
           permission: "ready",
           faq: "ready",
+          tabcomplete: "unsupported",
+        }),
+      },
+      svis: {
+        id: "svis",
+        label: "SVIS",
+        debugRoots: ["SVISPlugin"],
+        profiles: svisProfiles,
+        commandAvailability: buildPluginCommandAvailability({
+          placeholder: "unsupported",
+          material: "unsupported",
+          command: "unsupported",
+          permission: "unsupported",
+          faq: "unsupported",
+          tabcomplete: "unsupported",
+        }),
+      },
+      mfm: {
+        id: "mfm",
+        label: "MFM",
+        debugRoots: ["MFMPlugin"],
+        profiles: mfmProfiles,
+        commandAvailability: buildPluginCommandAvailability({
+          placeholder: "unsupported",
+          material: "unsupported",
+          command: "unsupported",
+          permission: "unsupported",
+          faq: "unsupported",
+          tabcomplete: "unsupported",
+        }),
+      },
+      tryme: {
+        id: "tryme",
+        label: "TryMe",
+        debugRoots: ["TryMePlugin"],
+        profiles: trymeProfiles,
+        commandAvailability: buildPluginCommandAvailability({
+          placeholder: "unsupported",
+          material: "unsupported",
+          command: "unsupported",
+          permission: "unsupported",
+          faq: "unsupported",
+          tabcomplete: "unsupported",
+        }),
+      },
+      trademe: {
+        id: "trademe",
+        label: "TradeMe",
+        debugRoots: ["TradeMePlugin"],
+        profiles: trademeProfiles,
+        commandAvailability: buildPluginCommandAvailability({
+          placeholder: "unsupported",
+          material: "unsupported",
+          command: "unsupported",
+          permission: "unsupported",
+          faq: "unsupported",
           tabcomplete: "unsupported",
         }),
       },

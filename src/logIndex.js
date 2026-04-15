@@ -209,8 +209,11 @@ function extractMarkdownFaqSummary(fileText) {
   const bodyLines = separatorIndex >= 0 ? lines.slice(separatorIndex + 1) : lines;
 
   const paragraphs = [];
+  const bulletSections = [];
   let current = [];
+  let currentBulletSection = [];
   let inCode = false;
+  let collectingBullets = false;
 
   function flushParagraph() {
     if (!current.length) {
@@ -224,12 +227,22 @@ function extractMarkdownFaqSummary(fileText) {
     current = [];
   }
 
+  function flushBulletSection() {
+    if (!currentBulletSection.length) {
+      return;
+    }
+
+    bulletSections.push([...currentBulletSection]);
+    currentBulletSection = [];
+  }
+
   for (const rawLine of bodyLines) {
     const trimmed = rawLine.trim();
 
     if (/^```/.test(trimmed)) {
       inCode = !inCode;
       flushParagraph();
+      flushBulletSection();
       continue;
     }
 
@@ -239,30 +252,53 @@ function extractMarkdownFaqSummary(fileText) {
 
     if (!trimmed) {
       flushParagraph();
+      flushBulletSection();
+      collectingBullets = false;
       continue;
     }
 
     if (/^#+\s+/.test(trimmed)) {
       flushParagraph();
+      flushBulletSection();
+      collectingBullets = false;
       continue;
     }
 
     let line = normalizeMarkdownLinks(stripHtml(trimmed));
     if (!line) {
       flushParagraph();
+      flushBulletSection();
+      collectingBullets = false;
       continue;
     }
 
-    line = line.replace(/^[-*]\s+/, "").trim();
+    const bulletMatch = line.match(/^[-*]\s+(.+)$/);
+    if (bulletMatch) {
+      const bulletLine = bulletMatch[1].trim();
+      if (isUsefulMarkdownLine(bulletLine)) {
+        flushParagraph();
+        currentBulletSection.push(bulletLine);
+        collectingBullets = true;
+      }
+      continue;
+    }
+
+    if (collectingBullets) {
+      flushBulletSection();
+      collectingBullets = false;
+    }
+
     if (!isUsefulMarkdownLine(line)) {
       flushParagraph();
+      flushBulletSection();
       continue;
     }
 
-    current.push(line);
+    current.push(line.trim());
   }
 
   flushParagraph();
+  flushBulletSection();
 
   const usableParagraphs = paragraphs.filter((paragraph) => {
     if (/^(This page should help explain|If some piece of text is wrong)/i.test(paragraph)) {
@@ -279,8 +315,25 @@ function extractMarkdownFaqSummary(fileText) {
 
     return true;
   });
+  const primaryParagraph = usableParagraphs[0] ?? "";
+  const secondaryParagraph = usableParagraphs[1] ?? "";
+  const primaryBullets = bulletSections.find((section) => section.length) ?? [];
 
-  return usableParagraphs.slice(0, 2).join(" ").slice(0, 500).trim();
+  let summary = primaryParagraph;
+
+  if (primaryParagraph && /such as[:.]?$/i.test(primaryParagraph) && primaryBullets.length) {
+    summary = `${primaryParagraph} ${primaryBullets.slice(0, 4).join("; ")}.`;
+  } else if (!primaryParagraph && primaryBullets.length) {
+    summary = primaryBullets.slice(0, 4).join("; ");
+  } else if (primaryParagraph && primaryParagraph.length < 120 && secondaryParagraph) {
+    summary = `${primaryParagraph} ${secondaryParagraph}`;
+  }
+
+  return summary
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .slice(0, 420)
+    .trim();
 }
 
 function buildMarkdownFaqUrl(relativePath) {

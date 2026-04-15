@@ -1,0 +1,342 @@
+# Set line to empty one like '' so it will not be displayed
+info:
+  prefix: '&e[&aTradeMe&e] '
+  NoPermission: '&cVous n''avez pas la permission !'
+  NoTargetpermission: '&4La cible n''a pas la permission de faire cela !'
+  Ingame: '&cVous pouvez utiliser ceci seulement en jeu !'
+  NoInformation: '&cAucune information n''est trouvable !'
+  FromConsole: '&cVous pouvez utiliser ceci seulement depuis la console !'
+  NotOnline: '&cLe joueur n''est pas connecté !'
+  NoPlayer: '&cAucun joueur ne possédant ce pseudo n''a été trouvé !'
+  NoCommand: '&cIl n'y a pas de commande par ce nom !'
+  UseInteger: '&4Veuillez utiliser des nombres !'
+  UseBoolean: '&4Veuillez utiliser &2True &4ou &cFalse &4!'
+  NoLessThan: '&4Le nombre ne peut pas être inférieur à [amount]!'
+  NoMoreThan: '&4Le nombre ne peut pas être supérieur à [amount]'
+  Spliter: '&e--------------------------------------------------'
+  fliperSimbols: '&e----------'
+  prevPage: '&2----<< &6Precédent '
+  prevPageGui: '&6Page précédente '
+  prevPageClean: '&6 Precédent '
+  prevPageOff: '&2----<< &7Precédent '
+  prevPageHover: '&7<<<'
+  nextPage: '&6 Suivant &2>>----'
+  nextPageGui: '&6Page suivante'
+  nextPageClean: '&6 Suivant'
+  nextPageOff: '&7 Suivant &2>>----'
+  nextPageHover: '&7>>>'
+  pageCount: '&2[current]&7/&2[total]'
+  pageCountHover: '&2[totalEntries]'
+error:
+  CantChat: '&cVous ne pouvez pas chatter lors d''un échange !'
+  CantSendCommands: '&cVous ne pouvez pas effectuer de commande lors d''un échange !'
+NoRequests: '&eVous n'avez aucune demande d'échange en attente !'
+CanceledTrade: '&e[playername] à annulé l''échange !'
+YouCanceledTrade: '&eVous avez annulé l''échange !'
+BlockedWorldSender: '&eLe monde dans lequel vous vous situez n''autorise pas les échanges !'
+BlockedWorldTarget: '&eLa cible se situe dans un monde n''autorisant pas les échanges !'
+DifferentGameMode: '&eVous ne pouvez pas échanger avec un joueur qui est dans un mode de jeu différent du vote !'
+BetweenWorlds: '&eVous devez vous situer dans le même monde afin d''effectuer un échange !'
+ToFar: '&eCe joueur est trop loin de vous ! La distance maximum est de &6[distance] &eblocs.'
+StillInCombat: '&eLe joueur [player] est toujours en combat. Veuillez patienter [time] secondes avant d''
+  échanger !'
+InvIsOpen: '&6[player] &aa son inventaire ouvert. Merci d''attendre qu''il le ferme.'
+CantTradeDifGroup: '&cVous ne pouvez pas échanger avec un joueur ayant un groupe différent du votre.'
+MiddleMouse: '&2Utilisez le bouton central de la souris pour faire défiler les modes.'
+CantTradeOverBungge: '&cImpossible de commercer avec ce joueur sur un réseau bungee.'
+CantTradeOverServers: '&cImpossible d''échanger entre ces 2 serveurs: [server1] - > [server2]'
+NotOnline: '&eLe joueur [playername] n''est pas connecté !'
+Vanished: '&eLe joueur [playername] n''est pas connecté !'
+yourSelf: '&6Vous ne pouvez pas échanger avec vous-même !'
+NotAccepting: '&6[playername] &en''accepte pas d''offres d'échanges !'
+BlacklistedItem: '&4Cet item est sur la liste noire !'
+AlreadyTrading: '&e[playername] est déjà en échange avec quelqu''un d''autre !'
+PendingRequest: '&eVous avez déjà une requête active ! Patientez &6[time] &esecondes.'
+AlreadyRequested: '&eQuelqu''un à déjà envoyé une offre d''échange à votre cible ! Patientez &6[time] &esecondes'
+Successful: '&2Succès de l''échange !'
+Failed: '&cEchec de l''échange!'
+Taxes:
+  Mein: ' Taxes:'
+  BothEnabled: ' &'
+  Fixed: ' [amount]'
+  Percentage: ' [amount]% ([takenamount])'
+  Left: (&4 [amount] &e)
+Button:
+  Decline:
+    Name: '&eCliquez pour refuser'
+    Lore: []
+  Accept:
+    Name: '&2Cliquez pour accepter'
+    Lore: []
+  Accepted:
+    Name: '&eA accepté votre offre'
+    Lore: []
+  Waiting:
+    Name: '&2N''a toujours pas accepté votre offre'
+    Lore: []
+Item:
+  Got: '&eVous avez reçu: &6[itemlist]'
+  YourInvFull: '&eVous devez faire de la place dans votre inventaire'
+  TargetInvFull: '&eL''inventaire de &f[player] &en''a pas assez d''espace'
+Regions:
+  WorldGuard:
+    YouCanttrade: '&2Vous ne pouvez pas échanger dans cette région !'
+    PlayerCanttrade: '&2[playername] ne peut pas échanger dans cette région !'
+  Residence:
+    YouCanttrade: '&2Vous ne pouvez pas échanger dans cette résidence !'
+    PlayerCanttrade: '&2[playername] ne peut pas échanger dans cette résidence !'
+TradeModes:
+  Exp:
+    Button:
+      Name: '&2Augmentation de l''exp par &6[amount]'
+      Lore:
+      - '&eClique gauche pour ajouter'
+      - '&eClique droit pour retirer'
+      - '&eMaintenez shift pour augmenter 10 fois'
+      - '&eMaximum disponnible: &6[balance]'
+      - '&eOffre d''exp actuelle: &6[offer] [taxes]'
+      - '&eVous serez laissé avec &6[sourcelevel] &eniveaux et &6[sourceexp] &eexp'
+      - '&eLe joueur ciblé sera à &6[targetlevel] &et aurez &6[targetexp] &eexp'
+    OfferedButton:
+      Lore:
+      - '&eOffre d''exp actuelle: &6[amount] [taxes]'
+      - '&e[player] sera laissé avec &6[sourcelevel] &eniveaux et &6[sourceexp] &eexp'
+      - '&eVous serez laissé avec &6[targetlevel] &eet aurez &6[targetexp] &eexp'
+      Name: 'Offre d''exp de &2[player]'
+    log: '&e[amount] &7Exp'
+    ChangedOffer: '&6[playername] &eà changé son offre d''exp pour: &6[amount]'
+    ToggleButton:
+      Name: '&2Basculer sur l''offre d''experience'
+      Lore:
+      - '&eOffre d''exp actuelle: &6[amount] [taxes]'
+      - '&eVous serez laissé avec &6[sourcelevel] &eniveaux et &6[sourceexp] &eexp'
+      - '&eLe joueur ciblé sera à &6[targetlevel] &eet aurez &6[targetexp] &eexp'
+    Error: '&e[playername] n''a pas assez d''exp !'
+    Limit: '&eVous n''avez pas assez d''exp ! Le montant a été réglé au maximum que vous puissiez échanger: &6[amount]'
+    Got: '&eVous avez reçu &6[amount] &eexp'
+    ChangedOfferTitle: '&8Offre &0[amount] &8exp'
+  Residence:
+    Button:
+      Name: '&2Vous offrez actuellement &6[residence]'
+      LoreConfirmed:
+      - '&2Résidence confirmée pour échange !'
+      LoreSecondConfirm:
+      - '&6Clique droit pour finir la confirmation'
+      LoreFirstConfirm:
+      - '&eClique gauche pour initier la confirmation'
+    GotList: '[resname]&e, &6'
+    OfferedButton:
+      Size: '&eTaille X: &6[x] &eY: &6[y] &eZ: &6[z]'
+      seperator: '&e-----------------'
+      World: '&eMonde: &6[world]'
+      Name: '&2Offre de la résidence de [player]'
+      Cost: '&eCoût estimé: &6[cost]'
+      Lore:
+      - '&eListe complète d''offre:'
+      - '[list]'
+      TotalSize: '&eTaille totale: &6[totalSize]'
+      ResidenceName: '&2Offrant actuel &6[residence]'
+    log: '&7Residence'
+    Got: '&eVous possédez la résidence: &6[list]'
+    ChangedOfferTitle: '&8Offre la résidence &0[residence]'
+    ChangedOffer: '&6[playername] &evous à offert la résidence &c[residence]'
+    ToggleButton:
+      Name: '&2Activer l''offre de résidence'
+      Lore:
+      - '&eRésidence Actuelle: &6[residencename]'
+      - '&eCliquez à nouveau pour passer à un autre'
+      - ''
+      - '&eListe complète d''offre:'
+      - '[list]'
+    logList: '&e[name]'
+    Limit: '&eDésolé, vous ne pouvez pas offrir plus de résidences car &e[playername] &eà atteint la limite
+      autorisée !'
+  Money:
+    Button:
+      Name: '&2Augmentation d''argent par &6[amount]'
+      Lore:
+      - '&eClique gauche pour augmenter'
+      - '&eClique droit pour diminuer'
+      - '&eMaintenez shift pour augmenter 10 fois'
+      - '&eMaximum disponnible: &6[balance]'
+      - '&eOffre d''argent actuelle: &6[offer] [taxes]'
+    log: '&e[amount] &7Argent'
+    Error: '&e[playername] n''a pas assez d''argent !'
+    Got: '&eVous avez reçu &6[amount] &ed''argent'
+    OfferedButton:
+      Name: '&2Offre d''argent de [player]'
+      Lore:
+      - '&eOffre d''argent actuelle: &6[amount] [taxes]'
+    InLoanTarget: '&eVotre offre d''argent est trop faible ! Offrez plutôt &6[amount]'
+    ChangedOfferTitle: '&8Offre &0[amount] &8d''argent'
+    ChangedOffer: '&6[playername] &eà changé son offre d''argent pour: &6[amount]'
+    ToggleButton:
+      Name: '&2Basculer sur une offre monétaire'
+      Lore:
+      - '&eOffre d''argent actuelle: &6[amount] [taxes]'
+    InLoanYou: '&6L''offre de [playername] &eest trop faible !'
+    hardLimit: '&6[playername] &ene peut pas avoir plus de 10,000,000,000,000 d''argent !'
+    Limit: '&eVous n''avez pas assez d''argent! Montant définit sur le maximum que vous puissiez échanger:
+      &6[amount]'
+    CantWidraw: '&cImpossible de prendre l''argent du joueur ! ([playername])'
+  Jobs:
+    Button:
+      Name: '&2Augmentation d''exp des jobs par &6[amount]'
+      Lore:
+      - '&eClique gauche pour augmenter'
+      - '&eClique droit pour diminuer'
+      - '&eMaintenez shift pour augmenter 10 fois'
+      - '&eMaximum disponnible: &6[balance]'
+      - '&eOffre d''exp de Jobs actuelle: &6[offer] [taxes]'
+      - '&eVous serez laissé avec &6[sourcelevel] &eniveaux et &6[sourceexp] &eexp'
+      - '&eLe joueur cible sera laissé avec &6[targetlevel] &eet aura &6[targetexp] &eexp'
+    GotList: '[job] &e-> &6[amount] Exp&e, &6'
+    log: '&7Jobs'
+    Got: '&eVous avez exp des Jobs pour: &6[list]'
+    OfferedButton:
+      Name: '&2Offre d''exp des Jobs de [player]'
+      Lore:
+      - '&eOffre totale d''exp des Jobs:'
+      - '[list]'
+    ChangedOfferTitle: '&8Jobs: &0[amount] &8-> &0[jobName]'
+    TargetLimit: '&eLa cible ne peut pas avoir plus de &6[level] &eniveaux ! Montant définit sur le maximum
+      qu''il puisse recevoir: &6[amount]'
+    ChangedOffer: '&6[playername] &eà changé son offre d''exp des Jobs pour: &6[amount]
+      &e pour le Job &6[jobName]'
+    ToggleButton:
+      Name: '&2Basculer sur l''ofre d''exp des Jobs'
+      Lore:
+      - '&eJob actuel: &6[jobname]'
+      - '&eCliquez encore pour changer'
+      - '&eOffre actuelle d''exp du Job: &6[amount]'
+      - ''
+      - '&eTotal de l''offre de Job'
+      - '[list]'
+    logList: '&e[name] -> &6[amount] exp'
+    Limit: '&eVous n''avez pas assez d''exp ! Montant définit sur la maximum que vous puissiez échanger: &6[amount]'
+  JobsPoints:
+    Button:
+      Name: '&2Augmentation des JP par &6[amount]'
+      Lore:
+      - '&eClique gauche pour augmenter'
+      - '&eClique droit pour diminuer'
+      - '&eMaintenez shift pour augmenter 10 fois'
+      - '&eMaximum disponnible: &6[balance]'
+      - '&eOffre de JP actuelle: &6[offer] [taxes]'
+      - '&eVous serez laissé avec &6[sourcepoints] &epoints'
+      - '&eLe joueur cible sera laissé à &6[targetpoints] &epoints'
+    OfferedButton:
+      Lore:
+      - '&eOffre de JP actuelle: &6[amount] [taxes]'
+      - '&e[player] sera laissé avec &6[sourcepoints] &epoints'
+      - '&eVous serez laissé avec &6[targetpoints] &epoints'
+      Name: '&2Offre de JP de [player]'
+    log: '&e[amount] &7Points de Jobs'
+    ChangedOffer: '&6[playername] &eà changé son offre de Points de Jobs pour: &6[amount]'
+    ToggleButton:
+      Name: '&2Basculer sur l''ofre de Points des Jobs'
+      Lore:
+      - '&eOffre de JP actuelle: &6[amount] [taxes]'
+      - '&eVous serez laissé avec &6[sourcepoints] &epoints'
+      - '&eLe joueur cible sera laissé avec &6[targetpoints] &epoints'
+    Error: '&e[playername] n''a pas assez de Points de Jobs !'
+    Limit: '&eVous n''avez pas assez de Points de Jobs ! Montant définit sur le maximum que vous puissiez
+      échanger: &6[amount]'
+    Got: '&eVous avez reçu &6[amount] &ePoints de Jobs'
+    ChangedOfferTitle: '&8Offre &0[amount] &8Points de Jobs'
+command:
+  help:
+    output:
+      CommandColor: '&2'
+      VariableColor: '&6'
+      title: '&e-------&e ======= &6TradeMe &e======= &e-------'
+      usage: '&eUtilisation: %usage%'
+      cmdInfoFormat: '[command] &f- &e[description]'
+      cmdFormat: '&6/[command]&f[arguments]'
+      helpPageDescription: '&e* [description]'
+      explanation: '&e * [explanation]'
+  nocmd:
+    help:
+      info: '&eAfficher toutes les commandes disponnibles'
+      args: ''
+  accept:
+    help:
+      info: '&2Accepter une offre'
+      args: '&3(-s)'
+    info:
+      ClickToAccept: '&6Cliquez pour accepter l''offre !'
+  deny:
+    help:
+      info: '&2Refuser l''offre d''échange'
+      args: '[playername]'
+      simbol: ' &c[x]'
+    info:
+      ClickToDeny: '&cCliquez pour refuser l''offre !'
+      simbol: '&c[x]'
+      deny: '&eL''ofre d''échange à été rejetée !'
+      DenyForSender: '&eVotre offre d''échange à été rejetée !'
+  block:
+    help:
+      info: '&2Bloquer le joueur'
+      args: '[playerName]'
+    info:
+      RemovedFromBlockList: '&6[playername] &est de nouveau autorisé à échanger avec vous !'
+      AddedToBlockList: '&6[playername] &en''est plus autorisé à échanger avec vous !'
+      Blocked: '&eVous n''êtes pas autorisé à échanger avec &6[playername] &e!'
+  toggle:
+    help:
+      info: '&2Autoriser/Refuser les échanges'
+      args: ''
+    info:
+      ToggledOn: '&eVous acceptez désormais les offres d''échanges !'
+      ToggledOff: '&eVous n''acceptez plus les offres d''échanges !'
+  offer:
+    help:
+      info: '&2Envoyer une offre d''échange'
+      args: '[playername] &3(-s)'
+    info:
+      gotOffer: "&6[playername] &esouhaiterais échanger avec vous. \n"
+      accept: '   &2[Accepter]   '
+      deny: '   &c[Refuser]   '
+      MadeOffer: '&eVous avez envoyé une offre d''échange à &6[playername]&e. Il lui reste &6[time]&e
+        secondes pour accepter.'
+      ClickToAccept: '&6Cliquez pour accepter l''offre !'
+  set:
+    help:
+      info: '&2Modifier les options de configurations'
+      args: '[path] [variable]'
+    info:
+      ConfigUpdate: '&eFichier de configurations modifié pour &6[path] &eavec &6[variable]&e!'
+  reload:
+    help:
+      info: '&eRecharger les fichiers de traduction et de configurations'
+      args: ''
+    info:
+      response: '&eFichiers rechargés avec succès'
+  log:
+    help:
+      info: '&2Vérifiez votre propre journal de logs, ou celui d''autres joueurs'
+      args: '[username]'
+    info:
+      tradelog: '&e[number]. &6[player1] &e--> &6[player2] &ele &6[date]'
+      dateformat: dd/MM/yyyy HH:mm:ss
+      deletedentries: '&6[amount] &eentrées ont été supprimées de la base de données !'
+      noentries: '&eIl n''y a pas d''entrées dans cette plage de temps !'
+      noplayerlogentries: '&eIls n''y a pas d''entrées de logs !'
+      offered: '&3&n[playername] &6à offert !'
+  force:
+    help:
+      info: '&2Forcer un échange entre deux joueurs'
+      args: '[playername] [playername] &3(-s)'
+  purge:
+    help:
+      info: '&2Efface la base de données à un point spécifique'
+      args: '[TimeInMinutes]'
+  logitems:
+    help:
+      info: '&2Vérifiez vos articles ou ceux des joueurs'
+      args: (username)
+    info:
+      offered: '&3&n[playerName] &6à échangé !'
+      item: '&e[&r[itemName] &ex &6[amount]&e] '
+      noItem: '&eIl n''y avait pas d''items échangés'

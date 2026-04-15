@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { createSearchCache, formatCacheSummary } from "./cache.js";
 import { loadConfig } from "./config.js";
+import { formatLanguageCategoryStats } from "./langStats.js";
 import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
 import { resolveFileFilter } from "./security.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
@@ -36,12 +37,7 @@ async function main() {
       return;
     }
     console.log(`Current context: ${plugin.label}`);
-    for (const category of categories) {
-      const displayPath = config.formatDisplayPath(plugin.id, category.englishRelativePath);
-      console.log(
-        `- ${category.label} -> ${displayPath} (${category.languageCount} ${category.languageCount === 1 ? "language" : "languages"}: ${category.languageCodes.join(", ")})`,
-      );
-    }
+    console.log(formatLanguageCategoryStats(categories, config.formatDisplayPath, plugin.id));
     return;
   }
 

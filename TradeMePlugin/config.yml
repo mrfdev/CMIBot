@@ -1,0 +1,443 @@
+# Shows if there is available new version on login with trademe.versioncheck permission node
+ShowNewVersion: false
+DataBase:
+  # Do you want to use Mysql database system or SQLite
+  # Use: mysql or sqlite
+  DataBaseType: sqlite
+  # Not usable if sqlite file system chosen
+  # Usually localhost or 127.0.0.1
+  mysqlHost: localhost
+  # Default port is 3306
+  mysqlPort: 3306
+  # Database table name
+  mysqlDatabase: trademe
+  # Database username, usually its root
+  mysqlUsername: root
+  # Your mysql database password, keep it as strong as possible
+  mysqlPassword: realystrongone
+  # Table prefix
+  prefix: TradeMe
+# Language file you want to use
+Language: EN
+#  
+# This will allow you to globaly disable trades with specific modes
+# You can always give or take trade options with permission like trademe.moneytrade or trademe.exptrade
+TradeModes:
+  ItemTrade: true
+  ResidenceTrade: false
+  ExpTrade: false
+  GriefPreventionTrade: false
+  JobsTrade: false
+  McMMOTrade: false
+  MoneyTrade: true
+  KingdomsTrade: false
+  MyPetTrade: false
+  PlayerPointsTrade: false
+  JobsPointsTrade: false
+  TokenManagerTrade: false
+  MMOCoreSkillPointsTrade: false
+  MMOCoreAttributesTrade: false
+  BeastTokensTrade: false
+#  
+# Order of extra trade modes you want to shown in
+# Modes not included int the list will be placed at end of it
+# Valid options: Exp, Residence, GriefPrevention, PlayerPoints, TokenManager, MyPet, Kingdoms, McMMO, BeastTokens, Money, Jobs, JobsPoints, MMOCoreSkillPoints, MMOCoreAttributes
+TradeOrder:
+- Money
+- Exp
+- Residence
+- GriefPrevention
+- PlayerPoints
+- TokenManager
+- MyPet
+- Kingdoms
+- McMMO
+- Jobs
+- JobsPoints
+- MMOCoreSkillPoints
+- MMOCoreAttributes
+#  
+# Time to accept trade, in seconds
+AcceptDelay: 16
+#  
+# Do you want to show trade accept/deny message
+# Keep in mind that this only disables clickable buttons, message about trade offer will still be visible
+# If you want to disable trade offer message entirely then disable this and set gotOffer locale to ''
+ConfirmMessage: true
+#  
+# Time until counter ends, in seconds
+Confirm: 3
+#  
+# Time in sec for how long after combat player can't trade
+NonCombat: 10
+#  
+# If you want to check for possible item dupping or perform general checks if starting item amount matches amount at trade end, enable this option
+# Players with trademe.exploitwarning will get notification when possible exploit was detected
+Exploiting:
+  Check: false
+  # Time in hours we should keep trade logs in
+  # Keep in mind that log cleanup is only performed on plugin startup
+  KeepFor: 720
+  TradeCencelations:
+    #  
+    # Disables trade if player moves during trade
+    OnMove: true
+    # Disables trade if player is damaged during trade
+    OnDamaged: true
+GriefPrevention:
+  #  
+  # Determines lowest amount of blocks players has to keep after trade
+  MinLeftBlocks: 100
+#  
+# When this set to true, players can give trade offers or accept them by sneeking and pressing right mouse button on a player
+ShiftRightClick: false
+#  
+# You can lock quickbar and prevent players from trading from it
+LockQuickBar: false
+#  
+# Prevent trading between game modes
+NoTradeBetweenGameModes: true
+#  
+# Allow trading between users with same IP address
+SameIpTrades: true
+#  
+# If this set to true, players will be check for appropriate trade permissions between different permission groups for particular trade mode
+# Player should have trademe.moneytrade.[groupname] permission node to trade with that group with money
+# In example: player1 has Newbie group and player2 - Advanced group
+# player1 should have trademe.moneytrade.advanced and player2 should have trademe.moneytrade.newbie permission nodes for option to trade with money
+# Possible nodes: trademe.moneytrade.[groupname], trademe.exptrade.[groupname], trademe.mcmmotrade.[groupname], trademe.jobstrade.[groupname], trademe.residencetrade.[groupname]
+TradeGroups: false
+#  
+# While this is true, Distance wont work
+BetweenWorlds: true
+#  
+# List of sounds to use while trading
+# Provide name and optionally volume and pitch, example: 'BLOCK_SAND_STEP:0.25:2'
+Sounds:
+  clickUp: BLOCK_TRIPWIRE_CLICK_ON:0.3:0.5
+  clickDown: BLOCK_LEVER_CLICK:0.3:0.1
+  switchMode: ENTITY_PLAYER_BURP:0.3:3.0
+  switchSameMode: ENTITY_CHICKEN_EGG:0.3:1.0
+  fullInventory: ENTITY_SHULKER_HURT:0.3:1.0
+  selectMode: ENTITY_CHICKEN_EGG:0.3:3.0
+  confirmTrade: ENTITY_PLAYER_LEVELUP:0.3:2.0
+  confirmBothTrade: ENTITY_PLAYER_LEVELUP:0.5:1.0
+  cancelTrade: BLOCK_GRAVEL_FALL:0.3:2.0
+  counter: ENTITY_ITEM_PICKUP:0.3:1.0
+  finishedTrade: ITEM_TRIDENT_THUNDER:0.2:1.0
+#  
+# World groups to separate trades if you have multiverse or similar plugin
+WorldGroups:
+  Group1:
+  - spawn
+  - general
+  - nether
+  - end
+  - wild
+  Group2:
+  - oneblock
+  Group3:
+  - skyblock
+  Group4:
+  - cave
+  Group5:
+  - acid
+# Max distance players can trade to each other, BetweenWorlds should be set to false for this to work
+# Set 0 if you don't want to have distance restriction
+Distance: 0
+Logging:
+  # When this set to true, all trades will be logged into database for tracking down who traded what at which time
+  # Disable this if you are not interested in tracking this information and want to avoid having aditional database
+  Use: true
+  LogEveryTrade:
+    # While enabled we will log every trades players actions for future investigations
+    Use: true
+    # Time in hours we should keep trade logs in
+    # Keep in mind that log cleanup is only performed on plugin startup
+    KeepFor: 72
+AutoPurge:
+  Use: false
+  # Set for how long to keep trade information in database by minutes
+  # 43200 = 30 days
+  # 20160 = 14 days
+  # 10080 = 7 days
+  # 1440 = 24 hours
+  TimeRange: 43200
+Residence:
+  # Do you want to use residence max limit
+  # With this set to false players can have more residences than its been set up in residence config file
+  UseMaxLimit: true
+Regions:
+  # You can set in witch regions players can trade or cannot
+  WorldGuard:
+    Allow:
+      Use: false
+      List:
+      - testRegion
+      - testRegion2
+    Deny:
+      use: false
+      List:
+      - testRegion3
+      - testRegion4
+  # You can set in witch residence players can trade or cannot
+  Residence:
+    Allow:
+      Use: false
+      List:
+      - testResidence
+      - testResidence2
+    Deny:
+      use: false
+      List:
+      - testResidence3
+      - testResidence4
+BlockedWorlds:
+- builders
+- legacy
+- run
+- parkour
+- owo
+- uwu
+- vubbo
+- lumifae
+# List of item id's to be blocked from trade
+BlockedItems:
+- '137'
+- '166'
+# List of item lore to be blocked from trade
+# this can be only part of line without color codes
+BlockedLore:
+- Right Click to open /menu
+# List of item NBT to be blocked from trade
+# Provide actual path to specific NBT, for example 'display.Name' capitalization is essential and this will only check for existing NBT section and will not compare its actual value
+BlockedNBT: []
+# Max lvl allowed for player to have, if McMMO config files are not modified its is 1000
+McMMO:
+  MaxLvl: 500
+Numbers:
+  ShortNames:
+    # With this enabled big numbers will be shortened from 1234567 to 1m or 1.23m
+    Enabled: false
+    # With this enabled numbers will be shown like 1.23m instead of only 1m
+    Show2Numbers: true
+    '1000': k
+    '1000000': m
+    '1000000000': b
+    '1000000000000': t
+Amounts:
+  Exp:
+    '1': 1.0
+    '2': 100.0
+    '3': 1000.0
+    '4': 10000.0
+  McMMO:
+    '1': 1.0
+    '2': 100.0
+    '3': 10000.0
+    '4': 1000000.0
+  # All amounts used for buttons to increase/decrease
+  # Inform players about posibility to use Shift button to rise increment by 10 times
+  Money:
+    '1': 1.0
+    '2': 100.0
+    '3': 1000.0
+    '4': 10000.0
+  Jobs:
+    '1': 1.0
+    '2': 100.0
+    '3': 10000.0
+    '4': 1000000.0
+  JobsPoints:
+    '1': 1.0
+    '2': 100.0
+    '3': 10000.0
+    '4': 1000000.0
+Taxes:
+  # Taxes for transfers
+  Exp:
+    Fixed:
+      # Fixed amount of Exp will be taken during transfer
+      Use: false
+      Amount: 100
+    Percentage:
+      # Percentage amount of Exp will be taken during transfer
+      # 10.0 means user will receive 10% less money
+      Use: false
+      Amount: 10
+  # Taxes for transfers
+  McMMO:
+    Fixed:
+      # Fixed amount of McMMO will be taken during transfer
+      Use: false
+      Amount: 100
+    Percentage:
+      # Percentage amount of McMMO will be taken during transfer
+      # 10.0 means user will receive 10% less money
+      Use: false
+      Amount: 10
+  # Taxes for transfers
+  Money:
+    Fixed:
+      # Fixed amount of Money will be taken during transfer
+      Use: false
+      Amount: 100
+    Percentage:
+      # Percentage amount of Money will be taken during transfer
+      # 10.0 means user will receive 10% less money
+      Use: false
+      Amount: 10
+  # Taxes for transfers
+  Jobs:
+    Fixed:
+      # Fixed amount of Jobs will be taken during transfer
+      Use: false
+      Amount: 100
+    Percentage:
+      # Percentage amount of Jobs will be taken during transfer
+      # 10.0 means user will receive 10% less money
+      Use: false
+      Amount: 10
+  # Taxes for transfers
+  JobsPoints:
+    Fixed:
+      # Fixed amount of JobsPoints will be taken during transfer
+      Use: false
+      Amount: 100
+    Percentage:
+      # Percentage amount of JobsPoints will be taken during transfer
+      # 10.0 means user will receive 10% less money
+      Use: false
+      Amount: 10
+Buttons:
+  Confirm:
+    # Material used for confirm buttons
+    Accepted: GREEN_STAINED_GLASS_PANE
+    NotAccepted: RED_STAINED_GLASS_PANE
+  Counter:
+    'On': LIME_STAINED_GLASS_PANE
+    'Off': BLACK_STAINED_GLASS_PANE
+  # Filled up when iten trading is turned off
+  NoItemTrade: GRAY_STAINED_GLASS_PANE
+  # Material used for empty slot to fillup
+  EmptySlots: GRAY_STAINED_GLASS_PANE
+  TradeModes:
+    Exp:
+      1Amount: BUCKET
+      2Amount: MILK_BUCKET
+      3Amount: WATER_BUCKET
+      4Amount: LAVA_BUCKET
+      Offered: EXPERIENCE_BOTTLE
+      Sub:
+        NA:
+          OfferOff: GLASS_BOTTLE
+          OfferOn: EXPERIENCE_BOTTLE
+    McMMO:
+      1Amount: WHITE_WOOL
+      2Amount: LIGHT_GRAY_WOOL
+      3Amount: GRAY_WOOL
+      4Amount: BLACK_WOOL
+      Offered: FERMENTED_SPIDER_EYE
+      Sub:
+        Taming:
+          OfferOff: BONE
+          OfferOn: LEAD
+        Alchemy:
+          OfferOff: POTION
+          OfferOn: POTION
+        Excavation:
+          OfferOff: WOODEN_SHOVEL
+          OfferOn: DIAMOND_SHOVEL
+        Herbalism:
+          OfferOff: WOODEN_HOE
+          OfferOn: DIAMOND_HOE
+        Fishing:
+          OfferOff: COOKED_COD
+          OfferOn: FISHING_ROD
+        Mining:
+          OfferOff: WOODEN_PICKAXE
+          OfferOn: DIAMOND_PICKAXE
+        Unarmed:
+          OfferOff: GOLDEN_APPLE
+          OfferOn: ENCHANTED_GOLDEN_APPLE
+        Swords:
+          OfferOff: WOODEN_SWORD
+          OfferOn: DIAMOND_SWORD
+        Archery:
+          OfferOff: STICK
+          OfferOn: BOW
+        Woodcutting:
+          OfferOff: OAK_LOG
+          OfferOn: DARK_OAK_LOG
+        Axes:
+          OfferOff: WOODEN_AXE
+          OfferOn: DIAMOND_AXE
+        Repair:
+          OfferOff: IRON_INGOT
+          OfferOn: IRON_BLOCK
+        Acrobatics:
+          OfferOff: LEATHER_BOOTS;160,101,64
+          OfferOn: DIAMOND_BOOTS
+    Money:
+      1Amount: GOLD_NUGGET
+      2Amount: GOLD_INGOT
+      3Amount: GOLD_BLOCK
+      4Amount: DIAMOND
+      Offered: GOLD_INGOT
+      Sub:
+        NA:
+          OfferOff: ENDER_PEARL
+          OfferOn: ENDER_EYE
+    Jobs:
+      1Amount: BONE_MEAL
+      2Amount: LIGHT_GRAY_DYE
+      3Amount: GRAY_DYE
+      4Amount: INK_SAC
+      Offered: DIAMOND_HOE
+      Sub:
+        Hunter:
+          OfferOff: PUFFERFISH
+          OfferOn: COOKED_COD
+        Miner:
+          OfferOff: WOODEN_AXE
+          OfferOn: DIAMOND_AXE
+        Digger:
+          OfferOff: BONE
+          OfferOn: LEAD
+        Weaponsmith:
+          OfferOff: WOODEN_SWORD
+          OfferOn: DIAMOND_SWORD
+        Woodcutter:
+          OfferOff: LEATHER_BOOTS
+          OfferOn: DIAMOND_BOOTS
+        Builder:
+          OfferOff: STICK
+          OfferOn: BOW
+        Enchanter:
+          OfferOff: WOODEN_SHOVEL
+          OfferOn: DIAMOND_SHOVEL
+        Brewer:
+          OfferOff: WOODEN_HOE
+          OfferOn: DIAMOND_HOE
+        Farmer:
+          OfferOff: WOODEN_HOE
+          OfferOn: DIAMOND_HOE
+        Crafter:
+          OfferOff: ENCHANTED_GOLDEN_APPLE
+          OfferOn: GOLDEN_APPLE
+        Explorer:
+          OfferOff: WOODEN_PICKAXE
+          OfferOn: DIAMOND_PICKAXE
+        Fisherman:
+          OfferOff: IRON_INGOT
+          OfferOn: IRON_BLOCK
+    JobsPoints:
+      1Amount: GHAST_SPAWN_EGG
+      2Amount: SKELETON_SPAWN_EGG
+      3Amount: ENDERMITE_SPAWN_EGG
+      4Amount: ENDERMAN_SPAWN_EGG
+      Offered: REDSTONE_LAMP
+      Sub:
+        NA:
+          OfferOff: GLOWSTONE
+          OfferOn: REDSTONE_LAMP

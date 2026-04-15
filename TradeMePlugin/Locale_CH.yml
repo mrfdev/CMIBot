@@ -1,0 +1,314 @@
+Prefix: '&e[&a交易系统&e] '
+GotOffer: '&6[playername] &e想和你交易 使用指令&6/trade accept&e或者直接点本消息'
+ClickToAccept: '&6点击接受!'
+MadeOffer: '&e已向玩家 &6[playername]&e 发出交易请求. 对方有 &6[time]&e 秒时间接受'
+NoRequests: '&e无待处理请求!'
+CanceledTrade: '&e[playername] 取消了交易!'
+YouCanceledTrade: '&e你取消了交易!'
+Deny: '&e交易请求被取消!'
+DenyForSender: '&e你的交易请求被取消!'
+BlockedWorldSender: '&e你不能在这个世界交易!'
+BlockedWorldTarget: '&e对方现在正在一个禁止交易的世界内!'
+DifferentGameMode: '&e你无法和一个不和你在同一游戏模式的玩家交易!'
+BetweenWorlds: '&e不能跨世界交易!'
+ToFar: '&e这个玩家距离你太远了! 你们只能在 &6[distance] &e格距离内完成交易'
+StillInCombat: '&e玩家 [player] 现在正在战斗中, 可能无法处理交易请求, 请等待 [time] 秒!'
+InvIsOpen: '&6[player] &a现在在整理背包, 可能无法进行交易'
+CantTradeDifGroup: '&c不同玩家组之间不能交易'
+MiddleMouse: '&2使用鼠标中键点击切换交易物种类'
+CantTradeOverBungge: '&c不能跨服交易！'
+CantTradeOverServers: '&c不能在这两个子服间交易: [server1] - > [server2]'
+NotOnline: '&e玩家 [playername] 不在线!'
+Vanished: '&e玩家 [playername] 不在线!'
+AddedToBlockList: '&6[playername] &e已添加进黑名单!'
+RemovedFromBlockList: '&6[playername] &e已从你的黑名单中移除!'
+Blocked: '&6[playername] &e把你拉黑了!'
+NotAccepting: '&6[playername] &e现在拒绝接受任何交易请求!'
+ToggledOn: '&e现在你可以接受交易请求了!'
+ToggledOff: '&e现在你再也不会收到任何交易请求了!'
+BlacklistedItem: '&4这个物品被封禁了，无法交易!'
+AlreadyTrading: '&e[playername] 在和别人交易中!'
+PendingRequest: '&e你已经有了一个待处理请求! 请再等待 &6[time] &e秒'
+AlreadyRequested: '&e已经有人在和他交易! 请再等待 &6[time] &e秒'
+Successful: '&a交易成功！'
+Nopermission: '&c你没有权限这么做!'
+NoTargetpermission: '&c对方没有权限这么做!'
+ConfigUpdate: '&e配置文件升级至 &6[path] &e拥有 &6[variable]&e!'
+Reload: '&eTradeMe已重载！汉化 by MCBBS 秋风残叶'
+Taxes:
+  Mein: ' 税:'
+  BothEnabled: ' &'
+  Fixed: ' [amount]'
+  Percentage: ' [amount]% ([takenamount])'
+  Left: (&4 [amount] &e)
+Decline:
+  Name: '&e点击取消'
+  Lore:
+  - ''
+Accept:
+  Name: '&2点击确认交易'
+  Lore:
+  - '&e谨慎点击！'
+  - '&e点击后请不要再修改交易物品'
+Accepted:
+  Name: '&e已确认交易'
+  Lore:
+  - ''
+Waiting:
+  Name: '&2对方还未确认'
+  Lore:
+  - ''
+Item:
+  Got: '&e你收到了物品: &6[itemlist]'
+  YourInvFull: '&e你的背包空间不够'
+  TargetInvFull: '&f[player] &e的背包空间不够'
+  log: '&7物品'
+  logList: '&e[name] -> &6[amount] qty'
+TradeModes:
+  PlayerPoints:
+    Button:
+      Name: '&2点券数量 &6[amount]'
+      Lore:
+      - '&e左键点击增加'
+      - '&e右键点击减少'
+      - '&7Shift+左键增加10倍'
+      - '&7Shift+右键减少10倍'
+      - '&e可交易最大值: &6[balance] &e点券'
+      - '&e当前提供交易量: &6[offer] [taxes]'
+      - '&e交易完成后你会剩余 &6[sourcePoints] &e点券'
+      - '&e交易完成后对方拥有 &6[targetPoints] &e点券'
+    OfferedButton:
+      Lore:
+      - '&e对方提供: &6[amount] [taxes]'
+      - '&e[player] 将会剩下 &6[sourcePoints] &e点券'
+      - '&e交易完成后你将拥有 &6[targetPoints] &e点券'
+      Name: '&2[player] 提供点券'
+    log: '&e[amount] &7点券'
+    ChangedOffer: '&6[playername] &e更改点券交易量为 &c[points]'
+    ToggleButton:
+      Name: '&2选择 &a点券 &2交易'
+      Lore:
+      - '&e当前提供: &6[offer] [taxes]'
+      - '&e交易完成后你会剩余 &6[sourcePoints] &e点券'
+      - '&e交易完成后对方拥有 &6[targetPoints] &e点券'
+    Error: '&e[playername] 点券不够!'
+    Limit: '&e你的点券不够! 已自动设置为您的最大点券: &6[amount]'
+    Got: '&e你获得了 &6[amount] &e点券'
+  Exp:
+    Button:
+      Name: '&2经验数量 &6[amount]'
+      Lore:
+      - '&e左键点击增加'
+      - '&e右键点击减少'
+      - '&7Shift+左键增加10倍'
+      - '&7Shift+右键减少10倍'
+      - '&e可交易最大值: &6[balance] &e经验'
+      - '&e当前提供交易量: &6[offer] [taxes]'
+      - '&e交易完成后你会剩余 &6[sourcelevel] &e等级 + &6[sourceexp] &e经验'
+      - '&e交易完成后对方拥有 &6[targetlevel] &e等级 + &6[targetexp] &e经验'
+    OfferedButton:
+      Lore:
+      - '&e对方提供: &6[amount] [taxes]'
+      - '&e[player] 将会剩下 &6[sourcelevel] &e等级 + &6[sourceexp] &e经验'
+      - '&e交易完成后你将拥有 &6[targetlevel] &e等级 + &6[targetexp] &e经验'
+      Name: '&2[player] 提供经验'
+    log: '&e[amount] &7经验'
+    ChangedOffer: '&6[playername] &e更改经验交易量为 &6[amount]'
+    ToggleButton:
+      Name: '&2选择 &b经验 &2交易'
+      Lore:
+      - '&e当前提供: &6[amount] [taxes]'
+      - '&e交易完成后你会剩余 &6[sourcelevel] &e等级 + &6[sourceexp] &e经验'
+      - '&e交易完成后对方拥有 &6[targetlevel] &e等级 + &6[targetexp] &e经验'
+    Error: '&e[playername] 经验不够!'
+    Limit: '&e你的经验不够! 已自动设置为您的最大经验: &6[amount]'
+    Got: '&e你获得了 &6[amount] &e经验'
+  Residence:
+    Button:
+      Name: '&2提供领地 &6[residence]'
+      LoreConfirmed:
+      - '&a领地已确认交易!再次点击将取消'
+      LoreSecondConfirm:
+      - '&6确认交易？右键点击进行确认'
+      LoreFirstConfirm:
+      - '&e左键点击交易此领地'
+    GotList: '[resname]&e, &6'
+    log: '&7领地'
+    Got: '&e你获得了领地: &6[list]'
+    OfferedButton:
+      Name: '&2[player] 提供领地'
+      Lore:
+      - '&e领地列表:'
+      - '[list]'
+    ChangedOffer: '&6[playername] &e更改领地交易为 &c[residence]'
+    ToggleButton:
+      Name: '&2选择 &6领地 &2交易'
+      Lore:
+      - '&e当前待交易领地: &6[residencename]'
+      - '&e再次点击更换'
+      - ''
+      - '&e领地列表:'
+      - '[list]'
+    logList: '&e[name]'
+    Limit: '&e领地交易失败, 因为玩家 &e[playername] &e已达到最大领地限制!'
+  Money:
+    Button:
+      Name: '&2金钱数量 &6[amount]'
+      Lore:
+      - '&e左键点击增加'
+      - '&e右键点击减少'
+      - '&7Shift+左键增加10倍'
+      - '&7Shift+右键减少10倍'
+      - '&e可交易最大值: &6[balance]'
+      - '&e当前提供交易量: &6[offer] [taxes]'
+    log: '&e[amount] &7金钱'
+    Error: '&e[playername] 的金钱不够!'
+    Got: '&e你获得了 &6[amount] &e金钱'
+    OfferedButton:
+      Name: '&2[player] 提供金钱'
+      Lore:
+      - '&e当前提供金钱: &6[amount] [taxes]'
+    InLoanTarget: '&e你提供给 &6[playername] &e的金钱太少了! 请至少提供 &6[amount]'
+    ChangedOffer: '&6[playername] &e更改金钱交易量为 &6[amount]'
+    ToggleButton:
+      Name: '&2选择 &e金钱 &2交易'
+      Lore:
+      - '&e当前提供金钱: &6[amount] [taxes]'
+    InLoanYou: '&6[playername] &e提供的金钱太少了!'
+    hardLimit: '&6[playername] &e不能拥有超过 10,000,000,000,000 的金钱!'
+    Limit: '&e你的金钱不够! 已自动设置为您的最大金钱: &6[amount]'
+    CantWidraw: '&c现在不能从玩家那里取出金钱! ([playername])'
+  MyPet:
+    Button:
+      Name: '&2当前提供宠物 &6[name]'
+      LoreConfirmed:
+      - '&2宠物已确认交易!再次点击将取消!'
+      LoreSecondConfirm:
+      - '&6确认交易？右键点击进行确认'
+      LoreFirstConfirm:
+      - '&e左键点击交易此宠物'
+    log: '&7MyPet宠物'
+    Error: '&e[playername] 已经有宠物了!'
+    Got: '&e你获得了名叫 &6[name] &e的宠物'
+    OfferedButton:
+      Name: '&2[player] 提供宠物'
+      Lore:
+      - '&e名字: &6[name]'
+      - '&e种类: &6[type]'
+      - '&e血量: &6[currentHp]/[totalHp]'
+      - '&e攻击力: &6[damage]'
+      - '&e饥饿值: &6[hunger]'
+      - '&e技能树: &6[skillTree]'
+      - '&e等级: &6[lvl]'
+      - '&e经验: &6[currentExp]/[totalExp]'
+    ChangedOffer: '&6[playername] &e更改交易宠物为 &c[MyPet]'
+    ToggleButton:
+      Name: '&2选择 &d宠物 &2交易'
+      Lore:
+      - '&e名字: &6[name]'
+      - '&e种类: &6[type]'
+      - '&e血量: &6[currentHp]/[totalHp]'
+      - '&e攻击力: &6[damage]'
+      - '&e饥饿值: &6[hunger]'
+      - '&e技能树: &6[skillTree]'
+      - '&e等级: &6[lvl]'
+      - '&e经验: &6[currentExp]/[totalExp]'
+    logList: '&e[name]'
+  McMMO:
+    Button:
+      Name: '&2McMMO经验数量 &6[amount]'
+      Lore:
+      - '&e左键点击增加'
+      - '&e右键点击减少'
+      - '&7Shift+左键增加10倍'
+      - '&7Shift+右键减少10倍'
+      - '&e可交易最大值: &6[balance]'
+      - '&e当前提供交易量: &6[offer] [taxes]'
+      - '&e交易完成后你会剩余 &6[sourcelevel] &e等级 + &6[sourceexp] &e经验'
+      - '&e交易完成后对方拥有 &6[targetlevel] &e等级 + &6[targetexp] &e经验'
+    GotList: '[skill] &e-> &6[amount] 经验&e, &6'
+    log: '&7McMMO'
+    Got: '&e你获得了MCMMO经验: &6[list]'
+    listString: '&e[skillname]: &6[exp]经验 [taxesstring]'
+    OfferedButton:
+      Name: '&2[player] 提供MCMMO经验'
+      Lore:
+      - '&e总MCMMO经验'
+      - '[list]'
+    TargetLimit: '&e对方无法接受这么多McMMO经验! 可能是因为已到达最大值，他顶多只能接收: &6[amount]'
+    ChangedOffer: '&6[playername] &e更改交易MCMMO经验为: &6[amount] &e 技能： &6[skillname]'
+    ToggleButton:
+      Name: '&2选择 McMMO 经验值交易'
+      Lore:
+      - '&e当前技能: &6[skillname]'
+      - '&e再点击一次切换其它技能'
+      - '&e当前提供经验: &6[amount]'
+      - ''
+      - '&e总提供经验'
+      - '[list]'
+    logList: '&e[name] -> &6[amount] 经验'
+    Limit: '&e你的McMMO经验值不够! 已自动设置为您的最大经验: &6[amount]'
+Regions:
+  WorldGuard:
+    YouCanttrade: '&2你不能在这个区域内交易'
+    PlayerCanttrade: '&2[playername] 不能在他所在的区域内交易'
+command:
+  help:
+    output:
+      usage: '&e用法: &6%usage%'
+      title: '&2----&e ==== &6交易系统 &e==== &2----'
+      splitter: '&e - '
+      cmdcolor: '&a'
+  offer:
+    help:
+      info: '&2发送交易请求'
+      args: '[playername] &3(-s)'
+  accept:
+    help:
+      info: '&2接受交易'
+      args: '&3(-s)'
+  deny:
+    help:
+      info: '&2取消交易'
+      args: ''
+      simbol: ' &c[x]'
+  block:
+    help:
+      info: '&2禁止玩家交易'
+      args: '[username]'
+  toggle:
+    help:
+      info: '&2设置让自己无视限制交易'
+      args: ''
+  force:
+    help:
+      info: '&2强制让两个玩家进行交易'
+      args: '[playername] [playername]'
+  reload:
+    help:
+      info: '&2重载插件 汉化 by 秋风残叶'
+      args: ''
+  set:
+    help:
+      info: '&2改变config设置'
+      args: '[path] [variable]'
+  log:
+    help:
+      info: '&2查看玩家的交易记录'
+      args: '[username]'
+    info:
+      tradelog: '&e[number]. &6[player1] &e--> &6[player2] &e时间 &6[date]'
+      dateformat: dd/MM/yyyy HH:mm:ss
+      deletedentries: '&6[amount] &e条记录被删除!'
+      noentries: '&e这个时间段内没有记录!'
+      noplayerlogentries: '&e无记录!'
+      offered: '&3&n[playername] &6选定!'
+      forwards: '&e    下一页 >>>'
+      forwardsinfo: '&e下一页'
+      backwards: '&e<<< 上一页'
+      backwardsinfo: '&e上一页'
+  purge:
+    help:
+      info: '&2清理数据库'
+      args: '[TimeInMinutes]'
+ 
