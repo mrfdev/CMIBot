@@ -296,7 +296,7 @@ This dataset currently combines:
 - The FAQ links you pinned in Discord for CMI support topics
 - Short pre-sales Q&A entries based on the [Zrips FAQ](https://www.zrips.net/faq/)
 
-FAQ results use the FAQ title itself as the clickable link, with the supporting notes shown underneath in a code fence and without exposing the internal `data/faq.log` file heading in Discord output.
+FAQ results use the FAQ title itself as the clickable link, with the supporting notes shown underneath in a code fence and without exposing the internal `data/faq.log` file heading, raw URL line, or keyword metadata in Discord output.
 
 Options:
 

@@ -366,7 +366,9 @@ function extractUrlFromComments(comments = []) {
 
 function stripFaqSnippet(snippet, yamlPath) {
   const lines = snippet.split("\n");
-  const filtered = lines.filter((line) => !/^\s*#\s*URL:\s*/i.test(line));
+  const filtered = lines.filter(
+    (line) => !/^\s*#\s*URL:\s*/i.test(line) && !/^\s*#\s*Keywords:\s*/i.test(line),
+  );
 
   if (filtered[filtered.length - 1]?.trim() === yamlPath.trim()) {
     filtered.pop();
