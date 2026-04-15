@@ -1,0 +1,65 @@
+#
+
+CustomAlias:
+  _booper:
+    Cmds:
+    - asConsole! cmi titlemsg $1 {#buttercup}⌖ Boop \n {#orange>}You hit $2{#buttercup<}
+    - asConsole! cmi titlemsg $2 {#buttercup}⌖ Boop \n {#orange>} → You got hit by
+      $1 ← {#buttercup<}
+    - asConsole! cmi panimation preset:TpUp;target:$2
+    - asConsole! sound entity_experience_orb_pickup $1 -s
+    - asConsole! sound entity_experience_orb_pickup $2 -s
+    - asConsole! cmi smite $2 -s -safe
+    - asConsole! cmi launch $2 -nodamage p:3 a:45
+    Perm: true
+  _item-cracked-diamond:
+    Cmds:
+    - asConsole! cmi msg [playerName] !WIP
+    Perm: true
+  _item-event-halloween-temp-fly:
+    Cmds:
+    - asConsole! cmi msg [playerName] !WIP
+    Perm: true
+  _item-mystery-melon:
+    Cmds:
+    - asConsole! cmi msg [playerName] !WIP
+    Perm: true
+  _item_event_scaryprefix:
+    Cmds:
+    - statement:check1! check:%server_time_MM%==10! check:%server_time_Y%==2025!
+    - if:check1@! asConsole! cmi msg $1 !{#buttercup}Sorry $1, you can only use this
+      in October 2025. {#orange}🎃
+    - if:check1! asConsole! cmi nameplate $1 -pref:{#orange}🎃_&r
+    - if:check1! asConsole! cmi panimation circle;effect:raid_omen;twist;part:5;r:0.5;pitch:90;offset:0,0,0;dur:1;target:$1
+    - if:check1! asConsole! cmi titlemsg $1 {#orange}🏷 Done! \n {#buttercup}Scary
+      Prefix Applied
+    Perm: true
+  _item_event_santamilk:
+    Cmds:
+    - statement:check1! check:%server_time_MM%==11|12! check:%server_time_Y%==2025!
+    - if:check1@! asConsole! cmi msg $1 !{#buttercup}Sorry $1, you can only use this
+      in December 2025. {#orange}🎄
+    - if:check1! asConsole! cmi nameplate $1 -pref:{#riogrande}🎁{#spray}🌌_&r -s
+    - if:check1! asConsole! cmi panimation circle;c:0,255,0;twist;part:5;r:0.75;pitch:90;move:0,0.1,0;rc:-0.02;target:$1
+    - if:check1! asConsole! cmi titlemsg $1 {#riogrande}🏷 Done! \n {#riogrande}🎁{#spray}🌌{#buttercup}
+      Prefix Applied
+    - if:check1! asConsole! cmi msg $1 !{#orchid} Yummy! Santa enjoyed his treat!
+      {#buttercup} Your prefix has been updated to a show A Christmas Present and
+      Winter Sparkles
+    - if:check1! asConsole! cmi tablistupdate -s
+    Perm: true
+  _item_event_santacookie:
+    Cmds:
+    - statement:check1! check:%server_time_MM%==11|12! check:%server_time_Y%==2025!
+    - if:check1@! asConsole! cmi msg $1 !{#buttercup}Sorry $1, you can only use this
+      in December 2025. {#orange}🎄
+    - if:check1! asConsole! cmi nameplate $1 -pref:{#japaneselaurel}🎄{#spray}✨_&r
+      -s
+    - if:check1! asConsole! cmi panimation circle;c:0,255,0;twist;part:5;r:0.75;pitch:90;move:0,0.1,0;rc:-0.02;target:$1
+    - if:check1! asConsole! cmi titlemsg $1 {#riogrande}🏷 Done! \n {#japaneselaurel}🎄{#spray}✨{#buttercup}
+      Prefix Applied
+    - if:check1! asConsole! cmi msg $1 !{#orchid} Yummy! Santa enjoyed his treat!
+      {#buttercup} Your prefix has been updated to a Christmas Tree and Winter Sky
+      Stars
+    - if:check1! asConsole! cmi tablistupdate -s
+    Perm: true

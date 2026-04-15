@@ -1,0 +1,18 @@
+# 1MoreBlock.com /chunks command, allowing players who have performance issues to try and improve this by force-lowering their chunks' view distance to 4, or those who want pretty screenshots to force it to 16. With reset option. 
+# version 0.0.2 (tnx zrips for updating viewdistance) Note to server owners: This is an admin tool, do not grant the permissions to your players, use an alias command like this so you are in control, optionally add cooldowns, etc. 
+
+CustomAlias:
+  chunks:
+    Cmds:
+    - gcooldown:15#?!
+    - statement:check1! check:$1==less|more|reset!
+    - 'if:check1@! msg! [playerName] {#yellow} [chunks] {#orange}Oops, syntax is:
+      "{#green}/$0 <more|less|reset>{#orange}"&r \n {#yellow}[chunks] {#orange}Example:
+      /chunks less'
+    - if:check1! check:$1==less! asConsole! cmi viewdistance 4 [playerName] view
+    - if:check1! check:$1==more! asConsole! cmi viewdistance 16 [playerName] view
+    - if:check1! check:$1==reset! asConsole! cmi viewdistance -1 [playerName] view
+    - if:check1! asConsole! cmi msg [playerName] !{#yellow} [chunks] {#orange} Done.
+      {#green}($1}
+    CustomTabs:
+    - less,more,reset

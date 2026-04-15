@@ -1,0 +1,30 @@
+'1':
+  Loc: spawn;0.0;66.0;137.0
+  Interval: 20.0
+  Range: 8
+  Personal: false
+  Lines:
+  - You're on IP
+  - '&l1MoreBlock.com'
+  - a Minecraft %onemb_mc_version%
+  - Survival Server
+'2':
+  Loc: spawn;7.0;64.0;145.0
+  Interval: 20.0
+  Range: 6
+  Personal: false
+  Lines:
+  - This is a Paper
+  - Minecraft %onemb_mc_version%
+  - Survival Server
+  - ^_^
+'3':
+  Loc: spawn;6.0;64.0;146.0
+  Interval: 20.0
+  Range: 6
+  Personal: false
+  Lines:
+  - Which era of the
+  - 1MoreBlock.com
+  - server is this?
+  - 'Version: %onemb_1mb_version%'
