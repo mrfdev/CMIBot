@@ -2,18 +2,69 @@ import { MessageFlags, REST, Routes, SlashCommandBuilder } from "discord.js";
 import path from "node:path";
 import { writeAuditLog } from "./auditLog.js";
 import { formatCacheSummary } from "./cache.js";
-import { formatLanguageCategoryStats } from "./langStats.js";
 import { createCooldownManager, resolveFileFilter, sanitizeForDisplay, validateQuery } from "./security.js";
 import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 
-const COMMAND_NAME = "cmibot";
+const PRIMARY_COMMAND_NAME = "lookup";
+const LEGACY_COMMAND_NAME = "cmibot";
+const SUPPORTED_COMMAND_NAMES = new Set([PRIMARY_COMMAND_NAME, LEGACY_COMMAND_NAME]);
 const MAX_RESULT_LIMIT = 15;
 const MATERIAL_MAX_RESULT_LIMIT = 25;
 const NO_MENTIONS = { parse: [] };
 
 function pluralize(count, singular, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
+}
+
+function hasRole(member, { roleIds = [] } = {}) {
+  const roles = member.roles?.cache;
+  if (!roles) {
+    return false;
+  }
+
+  return roleIds.length > 0 && roles.some((role) => roleIds.includes(role.id));
+}
+
+function resolveCanonicalSubcommand(subcommand) {
+  if (subcommand === "lang") {
+    return "language";
+  }
+
+  if (subcommand === "cmd") {
+    return "command";
+  }
+
+  if (subcommand === "perm") {
+    return "permission";
+  }
+
+  return subcommand;
+}
+
+function getSearchCommandLabel(commandName, canonicalSubcommand) {
+  const prefix = `/${commandName}`;
+
+  switch (canonicalSubcommand) {
+    case "config":
+      return `\`${prefix} config <keyword>\``;
+    case "language":
+      return `\`${prefix} language|lang <keyword>\``;
+    case "placeholder":
+      return `\`${prefix} placeholder <keyword>\``;
+    case "material":
+      return `\`${prefix} material <keyword>\``;
+    case "command":
+      return `\`${prefix} command|cmd <keyword>\``;
+    case "permission":
+      return `\`${prefix} permission|perm <keyword>\``;
+    case "faq":
+      return `\`${prefix} faq <keyword>\``;
+    case "tabcomplete":
+      return `\`${prefix} tabcomplete <keyword>\``;
+    default:
+      return `\`${prefix} ${canonicalSubcommand}\``;
+  }
 }
 
 function addCommonLookupOptions(
@@ -64,287 +115,363 @@ function addCommonLookupOptions(
   );
 }
 
-function buildCommandData(config) {
+function buildCommandTree(commandName, config) {
   const defaultResultLimit = config.search.defaultResultLimit;
-  const materialDefaultLimit = config.search.profiles.material.defaultResultLimit ?? MATERIAL_MAX_RESULT_LIMIT;
-
-  return [
-    new SlashCommandBuilder()
-      .setName(COMMAND_NAME)
-      .setDescription("Look up CMI or CMILib config, locale, or exported data entries by keyword.")
-      .addSubcommand((subcommand) =>
-        subcommand.setName("help").setDescription("Show available CMIBot commands and usage notes."),
-      )
-      .addSubcommand((subcommand) =>
-        addCommonLookupOptions(
-          subcommand
-            .setName("config")
-            .setDescription("Search regular CMI and CMILib config files."),
-          defaultResultLimit,
-          { includeRelated: true, includeFileFilter: true },
-        ),
-      )
-      .addSubcommand((subcommand) =>
-        addCommonLookupOptions(
-          subcommand
-            .setName("language")
-            .setDescription("Search English locale and translation YAML files."),
-          defaultResultLimit,
-          { includeRelated: true },
-        ),
-      )
-      .addSubcommand((subcommand) =>
-        addCommonLookupOptions(
-          subcommand
-            .setName("lang")
-            .setDescription("Alias for the English locale and translation search."),
-          defaultResultLimit,
-          { includeRelated: true },
-        ),
-      )
-      .addSubcommand((subcommand) =>
-        addCommonLookupOptions(
-          subcommand
-            .setName("placeholder")
-            .setDescription("Search exported CMI placeholder entries."),
-          defaultResultLimit,
-        ),
-      )
-      .addSubcommand((subcommand) =>
-        addCommonLookupOptions(
-          subcommand
-            .setName("material")
-            .setDescription("Search exported material names."),
-          materialDefaultLimit,
-          { maxResultLimit: MATERIAL_MAX_RESULT_LIMIT },
-        ),
-      )
-      .addSubcommand((subcommand) =>
-        addCommonLookupOptions(
-          subcommand
-            .setName("command")
-            .setDescription("Search exported CMI command usage entries."),
-          defaultResultLimit,
-        ),
-      )
-      .addSubcommand((subcommand) =>
-        addCommonLookupOptions(
-          subcommand
-            .setName("cmd")
-            .setDescription("Alias for the exported CMI command usage search."),
-          defaultResultLimit,
-        ),
-      )
-      .addSubcommand((subcommand) =>
-        addCommonLookupOptions(
-          subcommand
-            .setName("permission")
-            .setDescription("Search exported permission nodes and command permissions."),
-          defaultResultLimit,
-        ),
-      )
-      .addSubcommand((subcommand) =>
-        addCommonLookupOptions(
-          subcommand
-            .setName("perm")
-            .setDescription("Alias for the exported permission search."),
-          defaultResultLimit,
-        ),
-      )
-      .addSubcommand((subcommand) =>
-        addCommonLookupOptions(
-          subcommand
-            .setName("faq")
-            .setDescription("Search curated CMI FAQ titles, links, and pre-sales answers."),
-          defaultResultLimit,
-        ),
-      )
-      .addSubcommand((subcommand) =>
-        addCommonLookupOptions(
-          subcommand
-            .setName("tabcomplete")
-            .setDescription("Search exported tab-complete token entries."),
-          defaultResultLimit,
-        ),
-      )
-      .addSubcommand((subcommand) =>
-        subcommand
-          .setName("langstats")
-          .setDescription("Show English locale categories, English file paths, and available language codes."),
-      )
-      .addSubcommand((subcommand) =>
-        subcommand
-          .setName("stats")
-          .setDescription("Show cache totals and per-profile entry/file counts."),
-      )
-      .addSubcommand((subcommand) =>
-        subcommand
-          .setName("debug")
-          .setDescription("Show which plugin/channel context this channel is mapped to."),
-      )
-      .addSubcommand((subcommand) =>
-        subcommand.setName("reload").setDescription("Reload the in-memory search cache."),
-      )
-      .toJSON(),
+  const materialDefaultLimit =
+    config.plugins.cmi?.profiles.material?.defaultResultLimit ?? MATERIAL_MAX_RESULT_LIMIT;
+  const debugContextChoices = [
+    { name: "auto", value: "auto" },
+    ...Object.values(config.plugins).map((plugin) => ({
+      name: plugin.label.toLowerCase(),
+      value: plugin.id,
+    })),
   ];
+
+  return new SlashCommandBuilder()
+    .setName(commandName)
+    .setDescription(
+      commandName === PRIMARY_COMMAND_NAME
+        ? "Look up plugin config, locale, and exported support data by keyword."
+        : "Legacy alias for /lookup while the command migration is in progress.",
+    )
+    .addSubcommand((subcommand) =>
+      subcommand.setName("help").setDescription("Show available commands and usage notes for this channel context."),
+    )
+    .addSubcommand((subcommand) =>
+      addCommonLookupOptions(
+        subcommand.setName("config").setDescription("Search indexed config files for the active plugin context."),
+        defaultResultLimit,
+        { includeRelated: true, includeFileFilter: true },
+      ),
+    )
+    .addSubcommand((subcommand) =>
+      addCommonLookupOptions(
+        subcommand
+          .setName("language")
+          .setDescription("Search indexed English locale and translation YAML files for the active plugin context."),
+        defaultResultLimit,
+        { includeRelated: true },
+      ),
+    )
+    .addSubcommand((subcommand) =>
+      addCommonLookupOptions(
+        subcommand.setName("lang").setDescription("Alias for the active context language search."),
+        defaultResultLimit,
+        { includeRelated: true },
+      ),
+    )
+    .addSubcommand((subcommand) =>
+      addCommonLookupOptions(
+        subcommand.setName("placeholder").setDescription("Search exported placeholder entries."),
+        defaultResultLimit,
+      ),
+    )
+    .addSubcommand((subcommand) =>
+      addCommonLookupOptions(
+        subcommand.setName("material").setDescription("Search exported material names."),
+        materialDefaultLimit,
+        { maxResultLimit: MATERIAL_MAX_RESULT_LIMIT },
+      ),
+    )
+    .addSubcommand((subcommand) =>
+      addCommonLookupOptions(
+        subcommand.setName("command").setDescription("Search exported command usage entries."),
+        defaultResultLimit,
+      ),
+    )
+    .addSubcommand((subcommand) =>
+      addCommonLookupOptions(
+        subcommand.setName("cmd").setDescription("Alias for the exported command usage search."),
+        defaultResultLimit,
+      ),
+    )
+    .addSubcommand((subcommand) =>
+      addCommonLookupOptions(
+        subcommand.setName("permission").setDescription("Search exported permission entries."),
+        defaultResultLimit,
+      ),
+    )
+    .addSubcommand((subcommand) =>
+      addCommonLookupOptions(
+        subcommand.setName("perm").setDescription("Alias for the exported permission search."),
+        defaultResultLimit,
+      ),
+    )
+    .addSubcommand((subcommand) =>
+      addCommonLookupOptions(
+        subcommand.setName("faq").setDescription("Search curated FAQ titles, links, and short notes."),
+        defaultResultLimit,
+      ),
+    )
+    .addSubcommand((subcommand) =>
+      addCommonLookupOptions(
+        subcommand.setName("tabcomplete").setDescription("Search exported tab-complete token entries."),
+        defaultResultLimit,
+      ),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("langstats")
+        .setDescription("Show language-category stats for the active plugin context."),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("stats")
+        .setDescription("Show cache totals and per-profile counts for the active plugin context."),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("debug")
+        .setDescription("Show the current channel context and optionally override it in test channels.")
+        .addStringOption((option) =>
+          option
+            .setName("context")
+            .setDescription("For test channels only: set the active context or reset to auto.")
+            .addChoices(...debugContextChoices),
+        ),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand.setName("reload").setDescription("Reload the in-memory search cache for every plugin context."),
+    )
+    .toJSON();
 }
 
-function hasRole(member, { roleIds = [] } = {}) {
-  const roles = member.roles?.cache;
-  if (!roles) {
-    return false;
-  }
-
-  return roleIds.length > 0 && roles.some((role) => roleIds.includes(role.id));
+function buildCommandData(config) {
+  return [buildCommandTree(PRIMARY_COMMAND_NAME, config), buildCommandTree(LEGACY_COMMAND_NAME, config)];
 }
 
 function formatReloadMessage(summary) {
   return formatCacheSummary(summary, { verb: "Reloaded" }).replace(/- (\w+):/g, "- `$1`:");
 }
 
-function formatHelpMessage(config, member) {
-  const canLookup = hasRole(member, { roleIds: config.discord.allowedRoleIds });
-  const canReload = hasRole(member, { roleIds: config.discord.adminRoleIds });
-  const canUseAi = hasRole(member, { roleIds: config.discord.aiRoleIds });
-  const aiEnabled = config.openai.enabled;
-
-  const lines = [
-    "### CMIBot Help",
-    "Commands available through this bot:",
-    "- `/cmibot help` shows this help message",
-    "- `/cmibot config <keyword>` searches regular CMI and CMILib config files",
-    "- `/cmibot language|lang <keyword>` searches English locale and translation files",
-    "- `/cmibot placeholder <keyword>` searches exported placeholder entries",
-    "- `/cmibot material <keyword>` searches exported material names",
-    "- `/cmibot command|cmd <keyword>` searches exported command entries",
-    "- `/cmibot permission|perm <keyword>` searches exported permission entries",
-    "- `/cmibot faq <keyword>` searches curated FAQ titles and links",
-    "- `/cmibot tabcomplete <keyword>` searches exported tab-complete entries",
-    "- `/cmibot langstats` shows English locale categories and language codes",
-    "- `/cmibot stats` shows cache totals and per-profile counts",
-    "- `/cmibot debug` shows which channel/plugin context this channel is mapped to",
-    "- `/cmibot reload` refreshes the in-memory search cache from disk",
-    "",
-    "Options:",
-    "- `mode: exact|whole|broad` controls how strict the search is",
-    "- `file: <name>` narrows `config` to a matching indexed file like `Chat.yml` or `CMI/Settings/Chat.yml`",
-    `- \`limit: 1-${MAX_RESULT_LIMIT}\` is used by most commands, with \`${config.search.defaultResultLimit}\` as the default`,
-    `- \`material\` uses \`limit: 1-${MATERIAL_MAX_RESULT_LIMIT}\` and defaults to \`${config.search.profiles.material.defaultResultLimit ?? MATERIAL_MAX_RESULT_LIMIT}\``,
-    "- `related: true|false` adds nearby YAML entries for `config`, `language`, and `lang`",
-    aiEnabled
-      ? "- `summary: true|false` adds an optional AI-generated summary (admin-only for now)"
-      : "- `summary: true|false` is currently disabled in bot config",
-    "",
-    "Examples:",
-    "- `/cmibot config dynmap`",
-    "- `/cmibot config chat file:Chat.yml`",
-    "- `/cmibot config \"mini message\" mode:whole`",
-    "- `/cmibot config bluemap related:true`",
-    "- `/cmibot language home`",
-    "- `/cmibot lang \"was fireballed by\"`",
-    "- `/cmibot placeholder balance`",
-    "- `/cmibot material shulker`",
-    "- `/cmibot cmd balance`",
-    "- `/cmibot perm cmi.command.balance`",
-    "- `/cmibot faq refund`",
-    "- `/cmibot tabcomplete [playername] mode:whole`",
-    "- `/cmibot stats`",
-    "- `/cmibot debug`",
-  ];
-
-  if (!canLookup) {
-    lines.push(
-      "",
-      "Notice: config, language, lang, placeholder, material, command, permission, faq, tabcomplete, langstats, stats, and reload are limited to certain support/admin groups. `debug` is available in recognized debug/support channels.",
-    );
-  } else if (aiEnabled && !canReload && !canUseAi) {
-    lines.push(
-      "",
-      "Notice: you can use search commands here, but `/cmibot reload` and AI-backed options like `summary:true` are restricted.",
-    );
-  } else if (!canReload) {
-    lines.push("", "Notice: you can use search commands here, but `/cmibot reload` is admin-only.");
-  } else {
-    lines.push(
-      "",
-      "Notice: you can use config, language, lang, placeholder, material, command, permission, faq, tabcomplete, langstats, stats, and reload in this channel.",
-    );
-  }
-
-  return lines.join("\n");
+function formatStatsMessage(plugin, summary) {
+  return [`### Lookup Stats`, `Current context: \`${plugin.label}\``, formatCacheSummary(summary)].join("\n");
 }
 
-function formatStatsMessage(summary) {
-  return [`### CMIBot Stats`, formatCacheSummary(summary)].join("\n");
-}
+function resolveChannelContext(channelId, config, testOverrides) {
+  const isTestChannel = config.discord.testChannelIds.includes(channelId);
+  const overridePluginId = testOverrides.get(channelId) ?? "";
 
-function resolveChannelContext(channelId, config) {
-  if (config.discord.cmiTestChannelIds.includes(channelId)) {
+  if (isTestChannel) {
+    const pluginId = overridePluginId || config.discord.testDefaultContext;
+    const plugin = config.plugins[pluginId] ?? null;
+
     return {
-      key: "cmi",
-      label: "CMI",
-      variant: "test",
+      pluginId,
+      plugin,
       channelType: "test channel",
-      routingNote: "This channel is intentionally treated as CMI for safe testing.",
+      isTestChannel: true,
+      overridePluginId,
+      routingNote: plugin
+        ? overridePluginId
+          ? `This test channel is currently overridden to the ${plugin.label} context.`
+          : `This test channel is currently following the default ${plugin.label} context.`
+        : "This test channel does not currently resolve to a configured plugin context.",
     };
   }
 
-  if (config.discord.cmiChannelIds.includes(channelId) || config.discord.allowedChannelIds.includes(channelId)) {
-    return {
-      key: "cmi",
-      label: "CMI",
-      variant: "support",
-      channelType: "support channel",
-      routingNote: "This channel is mapped to the CMI lookup set.",
-    };
-  }
-
-  if (config.discord.jobsChannelIds.includes(channelId)) {
-    return {
-      key: "jobs",
-      label: "Jobs",
-      variant: "support",
-      channelType: "support channel",
-      routingNote: "This channel is mapped to a Jobs-specific context placeholder for future routing.",
-    };
+  for (const [pluginId, channelIds] of Object.entries(config.discord.pluginChannelIds)) {
+    if (channelIds.includes(channelId)) {
+      const plugin = config.plugins[pluginId] ?? null;
+      return {
+        pluginId,
+        plugin,
+        channelType: "support channel",
+        isTestChannel: false,
+        overridePluginId: "",
+        routingNote: plugin
+          ? `This channel is mapped to the ${plugin.label} lookup set.`
+          : "This channel is mapped to an unknown plugin context.",
+      };
+    }
   }
 
   return {
-    key: "unknown",
-    label: "Unknown",
-    variant: "unknown",
+    pluginId: "",
+    plugin: null,
     channelType: "unmapped channel",
+    isTestChannel: false,
+    overridePluginId: "",
     routingNote: "This channel does not currently map to a known plugin context.",
   };
 }
 
-function formatDebugMessage(interaction, config) {
-  const context = resolveChannelContext(interaction.channelId, config);
-
-  return [
-    "### CMIBot Debug",
-    `Detected context: \`${context.label}\``,
+function formatDebugMessage(interaction, context, commandName) {
+  const lines = [
+    `### ${commandName === LEGACY_COMMAND_NAME ? "CMIBot" : "Lookup"} Debug`,
+    `Detected context: \`${context.plugin?.label ?? "Unknown"}\``,
     `Channel type: \`${context.channelType}\``,
     `Channel ID: \`${interaction.channelId}\``,
-    "",
-    context.routingNote,
-  ].join("\n");
+  ];
+
+  if (context.isTestChannel) {
+    lines.push(
+      `Test override: \`${context.overridePluginId || "auto"}\`${context.overridePluginId ? " (active)" : ""}`,
+    );
+  }
+
+  lines.push("", context.routingNote);
+  return lines.join("\n");
 }
 
-function resolveProfileName(subcommand) {
-  if (subcommand === "lang") {
-    return "language";
+function getCommandAvailability(plugin, canonicalSubcommand) {
+  return plugin.commandAvailability[canonicalSubcommand] ?? "unsupported";
+}
+
+function formatCommandUnavailableMessage(plugin, canonicalSubcommand, commandName, availability) {
+  const commandLabel = getSearchCommandLabel(commandName, canonicalSubcommand);
+
+  if (availability === "coming_soon") {
+    return `${commandLabel} is still being worked on for the ${plugin.label} context.`;
   }
 
-  if (subcommand === "cmd") {
-    return "command";
+  return `${commandLabel} is not a feature of the ${plugin.label} context.`;
+}
+
+function formatHelpMessage(config, member, context, commandName) {
+  const plugin = context.plugin;
+  const canLookup = hasRole(member, { roleIds: config.discord.allowedRoleIds });
+  const canReload = hasRole(member, { roleIds: config.discord.adminRoleIds });
+  const canUseAi = hasRole(member, { roleIds: config.discord.aiRoleIds });
+  const aiEnabled = config.openai.enabled;
+  const prefix = `/${PRIMARY_COMMAND_NAME}`;
+  const currentCommand = `/${commandName}`;
+  const lines = ["### Lookup Help"];
+
+  if (!plugin) {
+    lines.push("This allowed channel does not map to a plugin context yet.");
+    return lines.join("\n");
   }
 
-  if (subcommand === "perm") {
-    return "permission";
+  lines.push(`Current context: \`${plugin.label}\``);
+
+  if (context.isTestChannel) {
+    lines.push(
+      `Test channel mode: \`${context.overridePluginId || "auto"}\`${context.overridePluginId ? " override active" : ""}`,
+    );
   }
 
-  return subcommand;
+  if (commandName === LEGACY_COMMAND_NAME) {
+    lines.push(`Legacy note: \`${LEGACY_COMMAND_NAME}\` is being phased out. Prefer \`${prefix}\`.`);
+  }
+
+  lines.push("", "Available here:");
+  lines.push(`- \`${prefix} help\` shows this help message`);
+
+  const commandDescriptions = new Map([
+    ["config", "searches indexed config files"],
+    ["language", "searches indexed English locale files"],
+    ["placeholder", "searches exported placeholder entries"],
+    ["material", "searches exported material names"],
+    ["command", "searches exported command entries"],
+    ["permission", "searches exported permission entries"],
+    ["faq", "searches curated FAQ entries"],
+    ["tabcomplete", "searches exported tab-complete entries"],
+  ]);
+
+  const readyCommands = [...commandDescriptions.keys()].filter(
+    (subcommand) => getCommandAvailability(plugin, subcommand) === "ready",
+  );
+  const comingSoonCommands = [...commandDescriptions.keys()].filter(
+    (subcommand) => getCommandAvailability(plugin, subcommand) === "coming_soon",
+  );
+  const unsupportedCommands = [...commandDescriptions.keys()].filter(
+    (subcommand) => getCommandAvailability(plugin, subcommand) === "unsupported",
+  );
+
+  for (const subcommand of readyCommands) {
+    lines.push(`- ${getSearchCommandLabel(PRIMARY_COMMAND_NAME, subcommand)} ${commandDescriptions.get(subcommand)}`);
+  }
+
+  lines.push(`- \`${prefix} langstats\` shows language-category stats for this plugin context`);
+  lines.push(`- \`${prefix} stats\` shows cache totals for this plugin context`);
+  lines.push(`- \`${prefix} debug\` shows the current channel context`);
+  lines.push(`- \`${prefix} reload\` refreshes the cache for every plugin context`);
+
+  if (comingSoonCommands.length) {
+    lines.push("", `Still being worked on for ${plugin.label}:`);
+    for (const subcommand of comingSoonCommands) {
+      lines.push(`- ${getSearchCommandLabel(PRIMARY_COMMAND_NAME, subcommand)}`);
+    }
+  }
+
+  if (unsupportedCommands.length) {
+    lines.push("", `Not part of the ${plugin.label} scope:`);
+    for (const subcommand of unsupportedCommands) {
+      lines.push(`- ${getSearchCommandLabel(PRIMARY_COMMAND_NAME, subcommand)}`);
+    }
+  }
+
+  lines.push("", "Options:");
+  lines.push("- `mode: exact|whole|broad` controls how strict the search is");
+
+  if (getCommandAvailability(plugin, "config") === "ready") {
+    lines.push("- `file: <name>` narrows `config` to a matching indexed file");
+  }
+
+  lines.push(
+    `- \`limit: 1-${MAX_RESULT_LIMIT}\` is used by most commands, with \`${config.search.defaultResultLimit}\` as the default`,
+  );
+
+  if (getCommandAvailability(plugin, "material") === "ready") {
+    const materialDefaultLimit =
+      plugin.profiles.material?.defaultResultLimit ?? MATERIAL_MAX_RESULT_LIMIT;
+    lines.push(
+      `- \`material\` uses \`limit: 1-${MATERIAL_MAX_RESULT_LIMIT}\` and defaults to \`${materialDefaultLimit}\``,
+    );
+  }
+
+  if (getCommandAvailability(plugin, "config") === "ready" || getCommandAvailability(plugin, "language") === "ready") {
+    lines.push("- `related: true|false` adds nearby YAML entries for `config`, `language`, and `lang`");
+  }
+
+  lines.push(
+    aiEnabled
+      ? "- `summary: true|false` adds an optional AI-generated summary (admin-only for now)"
+      : "- `summary: true|false` is currently disabled in bot config",
+  );
+
+  if (context.isTestChannel) {
+    lines.push(
+      "- `debug context:auto|cmi|jobs` can switch the test channel context live when used by an admin",
+    );
+  }
+
+  lines.push("", "Examples:");
+
+  if (plugin.id === "cmi") {
+    lines.push(`- \`${prefix} config dynmap\``);
+    lines.push(`- \`${prefix} config chat file:Chat.yml\``);
+    lines.push(`- \`${prefix} config "mini message" mode:whole\``);
+    lines.push(`- \`${prefix} language home\``);
+    lines.push(`- \`${prefix} placeholder balance\``);
+    lines.push(`- \`${prefix} material shulker\``);
+    lines.push(`- \`${prefix} cmd balance\``);
+    lines.push(`- \`${prefix} perm cmi.command.balance\``);
+    lines.push(`- \`${prefix} faq refund\``);
+  } else {
+    lines.push(`- \`${prefix} stats\``);
+    lines.push(`- \`${prefix} langstats\``);
+    lines.push(`- \`${prefix} debug\``);
+  }
+
+  if (!canLookup) {
+    lines.push(
+      "",
+      "Notice: search, stats, and reload are limited to the configured support/admin role IDs. Help and debug stay available in allowed channels.",
+    );
+  } else if (aiEnabled && !canReload && !canUseAi) {
+    lines.push(
+      "",
+      "Notice: you can use search commands here, but `/lookup reload` and AI-backed options like `summary:true` are restricted.",
+    );
+  } else if (!canReload) {
+    lines.push("", "Notice: you can use search commands here, but `/lookup reload` is admin-only.");
+  } else {
+    lines.push("", `Notice: ${currentCommand} is available here, with \`${prefix}\` as the primary command.`);
+  }
+
+  return lines.join("\n");
 }
 
 function formatCompactFileLabel(filePath, { preferShortPath = false } = {}) {
@@ -396,7 +523,7 @@ function formatFileList(filePaths, { preferShortPath = false } = {}) {
   return ` (${visible} +${fileLabels.length - 3} more)`;
 }
 
-function formatLanguageStatsMessage(languageCategories, formatDisplayPath) {
+function formatLanguageStatsMessage(languageCategories, pluginId, formatDisplayPath) {
   if (!languageCategories?.length) {
     return "";
   }
@@ -404,13 +531,31 @@ function formatLanguageStatsMessage(languageCategories, formatDisplayPath) {
   const blocks = ["Language categories:"];
 
   for (const category of languageCategories) {
-    const displayPath = formatDisplayPath(category.englishRelativePath);
+    const displayPath = formatDisplayPath(pluginId, category.englishRelativePath);
     const languageLabel = pluralize(category.languageCount, "language");
     const codes = category.languageCodes.map((code) => `\`${code}\``).join(", ");
     blocks.push(`- \`${category.label}\` -> \`${displayPath}\`\n(${category.languageCount} ${languageLabel}: ${codes})`);
   }
 
   return blocks.join("\n\n");
+}
+
+function formatLangStatsOnlyMessage(plugin, languageCategories, formatDisplayPath) {
+  const statsBody = formatLanguageStatsMessage(languageCategories, plugin.id, formatDisplayPath);
+  if (!statsBody) {
+    return `Language stats are still being worked on for the ${plugin.label} context.`;
+  }
+
+  const count = languageCategories.length;
+  return [
+    "### Language Stats",
+    `Current context: \`${plugin.label}\``,
+    `Found [${count}] ${pluralize(count, "category")} for English locale coverage.`,
+    "",
+    statsBody,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function extractUrlFromComments(comments = []) {
@@ -437,13 +582,17 @@ function stripFaqSnippet(snippet, yamlPath) {
   return filtered.join("\n").trimEnd();
 }
 
+function linkedReferenceLabel(label, url) {
+  return `[${label}](<${url}>)`;
+}
+
 function formatResultLead(result, options) {
   if (options.layout === "faq") {
     const url = extractUrlFromComments(result.comments);
     return url ? `[${sanitizeForDisplay(result.yamlPath)}](<${url}>)` : `\`${result.yamlPath}\``;
   }
 
-  if (options.layout === "permission" || options.layout === "command") {
+  if (["permission", "command"].includes(options.layout)) {
     return "";
   }
 
@@ -458,20 +607,13 @@ function formatResultSnippet(result, options) {
   return result.snippet;
 }
 
-function formatLangStatsOnlyMessage(languageCategories, formatDisplayPath) {
-  const statsBody = formatLanguageStatsMessage(languageCategories, formatDisplayPath);
-  if (!statsBody) {
-    return "No language category stats are available right now.";
-  }
-
-  const count = languageCategories.length;
-  return [`### Language Stats`, `Found [${count}] ${pluralize(count, "category")} for English locale coverage.`, "", statsBody]
-    .filter(Boolean)
-    .join("\n");
-}
-
-function linkedReferenceLabel(label, url) {
-  return `[${label}](<${url}>)`;
+function formatMaterialResultsMessage(keyword, results, totalMentions) {
+  const mentionLabel = pluralize(totalMentions, "mention");
+  const safeKeyword = sanitizeForDisplay(keyword);
+  const header = `### Found [${totalMentions}] ${mentionLabel} in the NMS material list for \`${safeKeyword}\``;
+  const values = results.map((result) => result.yamlPath).join("\n");
+  const footer = `_Showing ${results.length} ${pluralize(results.length, "result")}${totalMentions > results.length ? ", but there are more." : "."}_`;
+  return [header, `\`\`\`text\n${values}\n\`\`\``, footer].filter(Boolean).join("\n");
 }
 
 function formatResultsMessage(
@@ -479,14 +621,12 @@ function formatResultsMessage(
   results,
   totalMentions,
   fileCount,
-  limit,
   aiSummary,
   allMatchedFiles,
   options = {},
-  extras = [],
 ) {
   if (options.layout === "materialList") {
-    return formatMaterialResultsMessage(keyword, results, totalMentions, fileCount, allMatchedFiles);
+    return formatMaterialResultsMessage(keyword, results, totalMentions);
   }
 
   const mentionLabel = pluralize(totalMentions, "mention");
@@ -506,12 +646,12 @@ function formatResultsMessage(
   const hideInternalHeading = ["faq", "placeholder", "tabcomplete", "command", "permission"].includes(options.layout);
 
   for (const [displayPath, fileResults] of groupedResults.entries()) {
-    const heading =
-      hideInternalHeading
-        ? ""
-        : fileResults[0]?.sourceType === "log"
-          ? `From bot's: \`${displayPath}\``
-          : `In \`${displayPath}\`:`;
+    const heading = hideInternalHeading
+      ? ""
+      : fileResults[0]?.sourceType === "log"
+        ? `From bot's: \`${displayPath}\``
+        : `In \`${displayPath}\`:`;
+
     if (heading) {
       blocks.push(heading);
     }
@@ -520,9 +660,7 @@ function formatResultsMessage(
       const leadLine = formatResultLead(result, options);
       const snippet = formatResultSnippet(result, options);
       const relatedLine = result.related?.length
-        ? `Related: ${result.related
-            .map((entry) => `\`${entry.yamlPath}\` (line ${entry.lineNumber})`)
-            .join(", ")}\n`
+        ? `Related: ${result.related.map((entry) => `\`${entry.yamlPath}\` (line ${entry.lineNumber})`).join(", ")}\n`
         : "";
       blocks.push([leadLine, `${relatedLine}\`\`\`${result.codeLanguage}\n${snippet}\n\`\`\``].filter(Boolean).join("\n"));
     }
@@ -541,7 +679,7 @@ function formatResultsMessage(
             ? `### Found [${totalMentions}] ${mentionLabel} for ${linkedReferenceLabel("commands", "https://www.zrips.net/cmi/commands/")} matching \`${safeKeyword}\``
             : options.layout === "permission"
               ? `### Found [${totalMentions}] ${mentionLabel} for ${linkedReferenceLabel("permissions", "https://www.zrips.net/cmi/permissions/")} matching \`${safeKeyword}\``
-      : `### Found [${totalMentions}] ${mentionLabel} in [${fileCount}] ${fileLabel} for \`${safeKeyword}\`${fileHint}`;
+              : `### Found [${totalMentions}] ${mentionLabel} in [${fileCount}] ${fileLabel} for \`${safeKeyword}\`${fileHint}`;
 
   let footer = "";
   if (shownCount === totalMentions) {
@@ -551,32 +689,7 @@ function formatResultsMessage(
   }
 
   const summaryBlock = aiSummary ? `AI summary (generated): ${aiSummary}` : "";
-
-  return [header, ...blocks, summaryBlock, ...extras.filter(Boolean), footer].filter(Boolean).join("\n");
-}
-
-function formatMaterialResultsMessage(keyword, results, totalMentions, fileCount, allMatchedFiles) {
-  const mentionLabel = pluralize(totalMentions, "mention");
-  const safeKeyword = sanitizeForDisplay(keyword);
-  const header = `### Found [${totalMentions}] ${mentionLabel} in the NMS material list for \`${safeKeyword}\``;
-  const groups = new Map();
-
-  for (const result of results) {
-    if (!groups.has(result.displayPath)) {
-      groups.set(result.displayPath, []);
-    }
-
-    groups.get(result.displayPath).push(result);
-  }
-
-  const blocks = [];
-  for (const [, fileResults] of groups.entries()) {
-    const values = fileResults.map((result) => result.yamlPath).join("\n");
-    blocks.push(`\`\`\`text\n${values}\n\`\`\``);
-  }
-
-  const footer = `_Showing ${results.length} ${pluralize(results.length, "result")}${totalMentions > results.length ? ", but there are more." : "."}_`;
-  return [header, ...blocks, footer].filter(Boolean).join("\n");
+  return [header, ...blocks, summaryBlock, footer].filter(Boolean).join("\n");
 }
 
 function truncateDiscordMessage(message) {
@@ -599,6 +712,7 @@ export async function registerCommands(config) {
 export function createInteractionHandler(config, searchCache) {
   const reranker = new AiReranker(config.openai);
   const cooldowns = createCooldownManager();
+  const testOverrides = new Map();
 
   function logEvent(interaction, payload) {
     return writeAuditLog(config.workspaceRoot, config.security.auditLogPath, {
@@ -607,6 +721,7 @@ export function createInteractionHandler(config, searchCache) {
       channelId: interaction.channelId,
       userId: interaction.user.id,
       userTag: interaction.user.tag,
+      commandName: interaction.commandName,
       ...payload,
     });
   }
@@ -620,7 +735,7 @@ export function createInteractionHandler(config, searchCache) {
   }
 
   return async function handleInteraction(interaction) {
-    if (!interaction.isChatInputCommand() || interaction.commandName !== COMMAND_NAME) {
+    if (!interaction.isChatInputCommand() || !SUPPORTED_COMMAND_NAMES.has(interaction.commandName)) {
       return;
     }
 
@@ -633,66 +748,95 @@ export function createInteractionHandler(config, searchCache) {
       return;
     }
 
-    const subcommand = interaction.options.getSubcommand();
-    const channelContext = resolveChannelContext(interaction.channelId, config);
+    if (!config.discord.allowedChannelIds.includes(interaction.channelId)) {
+      await interaction.reply({
+        content: "This command can only be used in a configured support or test channel.",
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
 
-    if (subcommand === "debug") {
-      if (channelContext.key === "unknown") {
-        await logEvent(interaction, {
-          subcommand,
-          outcome: "denied",
-          reason: "debug-channel",
-        });
-        await interaction.reply({
-          content: "This debug command can only be used in a configured support or test channel.",
-          flags: MessageFlags.Ephemeral,
-          allowedMentions: NO_MENTIONS,
-        });
-        return;
+    const subcommand = interaction.options.getSubcommand();
+    const canonicalSubcommand = resolveCanonicalSubcommand(subcommand);
+    let context = resolveChannelContext(interaction.channelId, config, testOverrides);
+
+    if (canonicalSubcommand === "debug") {
+      const requestedContext = interaction.options.getString("context") ?? "";
+
+      if (requestedContext) {
+        if (!context.isTestChannel) {
+          await interaction.reply({
+            content: "Context overrides can only be changed from a configured test channel.",
+            flags: MessageFlags.Ephemeral,
+            allowedMentions: NO_MENTIONS,
+          });
+          return;
+        }
+
+        if (!hasRole(interaction.member, { roleIds: config.discord.adminRoleIds })) {
+          await interaction.reply({
+            content: "Only the configured admin role can change the active test-channel context.",
+            flags: MessageFlags.Ephemeral,
+            allowedMentions: NO_MENTIONS,
+          });
+          return;
+        }
+
+        if (requestedContext === "auto") {
+          testOverrides.delete(interaction.channelId);
+        } else {
+          testOverrides.set(interaction.channelId, requestedContext);
+        }
+
+        context = resolveChannelContext(interaction.channelId, config, testOverrides);
       }
 
       await logEvent(interaction, {
         subcommand,
         outcome: "success",
-        detectedContext: channelContext.key,
-        channelVariant: channelContext.variant,
+        detectedContext: context.pluginId || "unknown",
+        channelType: context.channelType,
+        override: context.overridePluginId || "auto",
       });
       await interaction.reply({
-        content: formatDebugMessage(interaction, config),
+        content: formatDebugMessage(interaction, context, interaction.commandName),
         flags: MessageFlags.Ephemeral,
         allowedMentions: NO_MENTIONS,
       });
       return;
     }
 
-    if (!config.discord.allowedChannelIds.includes(interaction.channelId)) {
-      await interaction.reply({
-        content: "This command can only be used in the configured support channel.",
-        flags: MessageFlags.Ephemeral,
-        allowedMentions: NO_MENTIONS,
-      });
-      return;
-    }
-
-    if (subcommand === "help") {
+    if (canonicalSubcommand === "help") {
       await logEvent(interaction, {
         subcommand,
         outcome: "help",
+        detectedContext: context.pluginId || "unknown",
       });
       await interaction.reply({
-        content: truncateDiscordMessage(formatHelpMessage(config, interaction.member)),
+        content: truncateDiscordMessage(formatHelpMessage(config, interaction.member, context, interaction.commandName)),
         flags: MessageFlags.Ephemeral,
         allowedMentions: NO_MENTIONS,
       });
       return;
     }
 
-    if (subcommand === "reload") {
+    if (!context.plugin) {
+      await interaction.reply({
+        content: "This allowed channel does not map to a plugin context yet.",
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
+    if (canonicalSubcommand === "reload") {
       if (!hasRole(interaction.member, { roleIds: config.discord.adminRoleIds })) {
         await logEvent(interaction, {
           subcommand,
           outcome: "denied",
           reason: "reload-role",
+          detectedContext: context.pluginId,
         });
         await interaction.reply({
           content: "Only the configured admin role can use the reload command.",
@@ -713,7 +857,7 @@ export function createInteractionHandler(config, searchCache) {
           totalFiles: summary.totalFiles,
         });
         console.log(
-          `[CMIBot] Cache reloaded by ${interaction.user.tag} in channel ${interaction.channelId}.\n${formatCacheSummary(summary, { verb: "Reloaded" })}`,
+          `[LookupBot] Cache reloaded by ${interaction.user.tag} in channel ${interaction.channelId}.\n${formatCacheSummary(summary, { verb: "Reloaded" })}`,
         );
         await interaction.editReply({
           content: formatReloadMessage(summary),
@@ -727,7 +871,7 @@ export function createInteractionHandler(config, searchCache) {
           reason: message,
         });
         await interaction.editReply({
-          content: `CMIBot failed to reload the search cache: ${message}`,
+          content: `The bot failed to reload the search cache: ${message}`,
           allowedMentions: NO_MENTIONS,
         });
       }
@@ -739,6 +883,7 @@ export function createInteractionHandler(config, searchCache) {
         subcommand,
         outcome: "denied",
         reason: "lookup-role",
+        detectedContext: context.pluginId,
       });
       await interaction.reply({
         content: "You do not have one of the allowed support roles for this command.",
@@ -748,38 +893,27 @@ export function createInteractionHandler(config, searchCache) {
       return;
     }
 
-    if (subcommand === "stats") {
+    if (canonicalSubcommand === "stats") {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
       try {
-        const profiles = Object.values(config.search.profiles);
-        const profileSummaries = profiles
-          .map((profile) => {
-            const snapshot = searchCache.getSnapshot(profile.name);
-            return {
-              profileName: profile.name,
-              profileDisplayName: profile.displayName ?? profile.name,
-              statsFileLabel: profile.statsFileLabel ?? "",
-              entryCount: snapshot?.entryCount ?? 0,
-              fileCount: snapshot?.fileCount ?? 0,
-            };
-          });
-        const totalEntries = profileSummaries.reduce((sum, item) => sum + item.entryCount, 0);
-        const totalFiles = profileSummaries.reduce((sum, item) => sum + item.fileCount, 0);
-        const summary = {
-          totalEntries,
-          totalFiles,
-          profileSummaries,
+        const summary = searchCache.getPluginSummary(context.plugin.id) ?? {
+          pluginId: context.plugin.id,
+          pluginLabel: context.plugin.label,
+          totalEntries: 0,
+          totalFiles: 0,
+          profileSummaries: [],
         };
 
         await logEvent(interaction, {
           subcommand,
           outcome: "success",
-          totalEntries,
-          totalFiles,
+          detectedContext: context.pluginId,
+          totalEntries: summary.totalEntries,
+          totalFiles: summary.totalFiles,
         });
         await interaction.editReply({
-          content: truncateDiscordMessage(formatStatsMessage(summary)),
+          content: truncateDiscordMessage(formatStatsMessage(context.plugin, summary)),
           allowedMentions: NO_MENTIONS,
         });
       } catch (error) {
@@ -788,26 +922,28 @@ export function createInteractionHandler(config, searchCache) {
           subcommand,
           outcome: "error",
           reason: message,
+          detectedContext: context.pluginId,
         });
         await interaction.editReply({
-          content: `CMIBot hit an error while loading stats: ${message}`,
+          content: `The bot hit an error while loading stats: ${message}`,
           allowedMentions: NO_MENTIONS,
         });
       }
       return;
     }
 
-    if (subcommand === "langstats") {
-      await interaction.deferReply();
+    if (canonicalSubcommand === "langstats") {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
       try {
-        const snapshot = searchCache.getSnapshot("language");
+        const snapshot = searchCache.getSnapshot(context.plugin.id, "language");
         const languageCategories = snapshot?.languageCategories ?? [];
-        const message = formatLangStatsOnlyMessage(languageCategories, config.formatDisplayPath);
+        const message = formatLangStatsOnlyMessage(context.plugin, languageCategories, config.formatDisplayPath);
 
         await logEvent(interaction, {
           subcommand,
           outcome: "success",
+          detectedContext: context.pluginId,
           categoryCount: languageCategories.length,
         });
         await interaction.editReply({
@@ -820,19 +956,36 @@ export function createInteractionHandler(config, searchCache) {
           subcommand,
           outcome: "error",
           reason: message,
+          detectedContext: context.pluginId,
         });
         await interaction.editReply({
-          content: `CMIBot hit an error while loading language stats: ${message}`,
+          content: `The bot hit an error while loading language stats: ${message}`,
           allowedMentions: NO_MENTIONS,
         });
       }
       return;
     }
 
+    const availability = getCommandAvailability(context.plugin, canonicalSubcommand);
+    if (availability !== "ready") {
+      await logEvent(interaction, {
+        subcommand,
+        outcome: "blocked",
+        reason: availability,
+        detectedContext: context.pluginId,
+      });
+      await interaction.reply({
+        content: formatCommandUnavailableMessage(context.plugin, canonicalSubcommand, PRIMARY_COMMAND_NAME, availability),
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
     const keywordInput = interaction.options.getString("keyword", true);
     const fileInput = interaction.options.getString("file") ?? "";
     const mode = interaction.options.getString("mode") ?? "exact";
-    const profile = config.search.profiles[resolveProfileName(subcommand)];
+    const profile = context.plugin.profiles[canonicalSubcommand];
     const profileDefaultLimit = profile.defaultResultLimit ?? config.search.defaultResultLimit;
     const profileMaxResultLimit = profile.maxResultLimit ?? config.search.maxResultLimit;
     const limit = Math.min(interaction.options.getInteger("limit") ?? profileDefaultLimit, profileMaxResultLimit);
@@ -851,6 +1004,7 @@ export function createInteractionHandler(config, searchCache) {
         summary,
         outcome: "rejected",
         reason: validation.reason,
+        detectedContext: context.pluginId,
       });
       await interaction.reply({
         content: validationMessage(validation.reason),
@@ -860,9 +1014,9 @@ export function createInteractionHandler(config, searchCache) {
       return;
     }
 
-    const allProfileEntries = searchCache.getEntries(profile.name);
+    const allProfileEntries = searchCache.getEntries(context.plugin.id, canonicalSubcommand);
     const fileFilter = resolveFileFilter(fileInput, allProfileEntries, {
-      profileLabel: profile.name === "config" ? "config" : profile.name,
+      profileLabel: canonicalSubcommand === "config" ? `${context.plugin.label} config` : `${context.plugin.label} ${canonicalSubcommand}`,
     });
 
     if (!fileFilter.ok) {
@@ -875,6 +1029,7 @@ export function createInteractionHandler(config, searchCache) {
         summary,
         outcome: "rejected",
         reason: fileFilter.reason,
+        detectedContext: context.pluginId,
       });
       await interaction.reply({
         content: fileFilter.reason,
@@ -886,7 +1041,7 @@ export function createInteractionHandler(config, searchCache) {
 
     const lookupCooldown = cooldowns.check(
       interaction.user.id,
-      `${profile.name}:lookup`,
+      `${context.plugin.id}:${canonicalSubcommand}:lookup`,
       config.security.lookupCooldownSeconds,
     );
     if (!lookupCooldown.allowed) {
@@ -898,6 +1053,7 @@ export function createInteractionHandler(config, searchCache) {
         summary,
         outcome: "rejected",
         reason: `lookup-cooldown:${lookupCooldown.retryAfterSeconds}`,
+        detectedContext: context.pluginId,
       });
       await interaction.reply({
         content: `Please wait ${lookupCooldown.retryAfterSeconds}s before running another lookup.`,
@@ -916,6 +1072,7 @@ export function createInteractionHandler(config, searchCache) {
         summary,
         outcome: "denied",
         reason: "ai-role",
+        detectedContext: context.pluginId,
       });
       await interaction.reply({
         content: config.openai.enabled
@@ -930,7 +1087,7 @@ export function createInteractionHandler(config, searchCache) {
     if (summary) {
       const summaryCooldown = cooldowns.check(
         interaction.user.id,
-        `${profile.name}:summary`,
+        `${context.plugin.id}:${canonicalSubcommand}:summary`,
         config.security.summaryCooldownSeconds,
       );
       if (!summaryCooldown.allowed) {
@@ -942,6 +1099,7 @@ export function createInteractionHandler(config, searchCache) {
           summary,
           outcome: "rejected",
           reason: `summary-cooldown:${summaryCooldown.retryAfterSeconds}`,
+          detectedContext: context.pluginId,
         });
         await interaction.reply({
           content: `Please wait ${summaryCooldown.retryAfterSeconds}s before requesting another AI summary.`,
@@ -952,14 +1110,13 @@ export function createInteractionHandler(config, searchCache) {
       }
     }
 
-      await interaction.deferReply();
+    await interaction.deferReply();
 
     try {
       const entries = fileFilter.filteredEntries;
       const lexicalMatches = lexicalSearch(keyword, entries, { limit: 25, mode });
-      const rerankedMatches = config.openai.enabled && canUseAi
-        ? await reranker.rerank(keyword, lexicalMatches)
-        : lexicalMatches;
+      const rerankedMatches =
+        config.openai.enabled && canUseAi ? await reranker.rerank(keyword, lexicalMatches) : lexicalMatches;
       const orderedMatches = orderMatchesForDisplay(rerankedMatches);
       const finalMatches = orderedMatches.slice(0, limit);
 
@@ -972,52 +1129,44 @@ export function createInteractionHandler(config, searchCache) {
           related,
           summary,
           outcome: "empty",
+          detectedContext: context.pluginId,
         });
         await interaction.editReply({
-          content: `No ${profile.entryLabel ?? "entries"} matched \`${sanitizeForDisplay(keyword)}\` in the \`${subcommand}\` profile${fileFilter.normalizedFilter ? ` with file filter \`${sanitizeForDisplay(fileFilter.normalizedFilter)}\`` : ""}.`,
+          content: `No ${profile.entryLabel ?? "entries"} matched \`${sanitizeForDisplay(keyword)}\` in the \`${context.plugin.label}\` \`${canonicalSubcommand}\` profile${fileFilter.normalizedFilter ? ` with file filter \`${sanitizeForDisplay(fileFilter.normalizedFilter)}\`` : ""}.`,
           allowedMentions: NO_MENTIONS,
         });
         return;
       }
 
       const visibleResults = finalMatches.map((item) => ({
-        ...makeDisplayContext(item.entry, config.formatDisplayPath),
+        ...makeDisplayContext(item.entry, context.plugin.id, config.formatDisplayPath),
         related: related ? findRelatedEntries(item.entry, entries) : [],
       }));
       const totalMentions = orderedMatches.length;
       const fileCount = new Set(orderedMatches.map((item) => item.entry.relativePath)).size;
       let aiSummary = "";
       if (summary && config.openai.enabled && canUseAi) {
-        aiSummary = (await reranker.summarize(keyword, finalMatches, { profileName: profile.name })) || "";
+        aiSummary = (await reranker.summarize(keyword, finalMatches, { profileName: `${context.plugin.id}:${canonicalSubcommand}` })) || "";
       }
       const allMatchedFiles = [...new Set(orderedMatches.map((item) => item.entry.relativePath))];
-      const message = formatResultsMessage(
-        keyword,
-        visibleResults,
-        totalMentions,
-        fileCount,
-        limit,
-        aiSummary,
-        allMatchedFiles,
-        {
-          preferShortPath: profile.name === "language",
-          showFileHints: profile.name === "config",
-          layout:
-            profile.name === "material"
-              ? "materialList"
-              : profile.name === "faq"
-                ? "faq"
-                : profile.name === "placeholder"
-                  ? "placeholder"
-                  : profile.name === "tabcomplete"
-                    ? "tabcomplete"
-                : profile.name === "permission"
-                  ? "permission"
-                  : profile.name === "command"
-                    ? "command"
-                    : "default",
-        },
-      );
+      const message = formatResultsMessage(keyword, visibleResults, totalMentions, fileCount, aiSummary, allMatchedFiles, {
+        preferShortPath: canonicalSubcommand === "language",
+        showFileHints: canonicalSubcommand === "config",
+        layout:
+          canonicalSubcommand === "material"
+            ? "materialList"
+            : canonicalSubcommand === "faq"
+              ? "faq"
+              : canonicalSubcommand === "placeholder"
+                ? "placeholder"
+                : canonicalSubcommand === "tabcomplete"
+                  ? "tabcomplete"
+                  : canonicalSubcommand === "permission"
+                    ? "permission"
+                    : canonicalSubcommand === "command"
+                      ? "command"
+                      : "default",
+      });
 
       await logEvent(interaction, {
         subcommand,
@@ -1028,6 +1177,7 @@ export function createInteractionHandler(config, searchCache) {
         summary,
         aiEnabled: canUseAi,
         outcome: "success",
+        detectedContext: context.pluginId,
         resultCount: finalMatches.length,
         totalMentions,
         fileCount,
@@ -1046,9 +1196,10 @@ export function createInteractionHandler(config, searchCache) {
         summary,
         outcome: "error",
         reason: message,
+        detectedContext: context.pluginId,
       });
       await interaction.editReply({
-        content: `CMIBot hit an error while searching: ${message}`,
+        content: `The bot hit an error while searching: ${message}`,
         allowedMentions: NO_MENTIONS,
       });
     }

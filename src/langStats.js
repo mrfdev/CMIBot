@@ -123,7 +123,7 @@ export async function buildLanguageCategoryStats(workspaceRoot, includeGlobs) {
   return categories;
 }
 
-export function formatLanguageCategoryStats(categories, formatDisplayPath) {
+export function formatLanguageCategoryStats(categories, formatDisplayPath, pluginId = "cmi") {
   if (!categories?.length) {
     return "";
   }
@@ -131,7 +131,7 @@ export function formatLanguageCategoryStats(categories, formatDisplayPath) {
   const lines = ["Language categories:"];
 
   for (const category of categories) {
-    const displayPath = formatDisplayPath(category.englishRelativePath);
+    const displayPath = formatDisplayPath(pluginId, category.englishRelativePath);
     const languageLabel = category.languageCount === 1 ? "language" : "languages";
     const codes = category.languageCodes.join(", ");
     lines.push(`- ${category.label} -> ${displayPath} (${category.languageCount} ${languageLabel}: ${codes})`);

@@ -1,8 +1,6 @@
 import "dotenv/config";
 import { createSearchCache, formatCacheSummary } from "./cache.js";
 import { loadConfig } from "./config.js";
-import { buildLanguageCategoryStats, formatLanguageCategoryStats } from "./langStats.js";
-import { loadEntriesForProfile } from "./profileIndex.js";
 import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
 import { resolveFileFilter } from "./security.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
@@ -10,32 +8,40 @@ import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 async function main() {
   const config = loadConfig();
   const args = process.argv.slice(2);
+  const requestedPlugin = args[0] && config.plugins[args[0]] ? args.shift() : "cmi";
+  const plugin = config.plugins[requestedPlugin];
   const rawSubcommand = args.shift();
-  const subcommand =
-    rawSubcommand === "lang"
-      ? "language"
-      : rawSubcommand === "cmd"
-        ? "command"
-        : rawSubcommand === "perm"
-          ? "permission"
-          : rawSubcommand;
+  const subcommand = rawSubcommand === "lang" ? "language" : rawSubcommand === "cmd" ? "command" : rawSubcommand === "perm" ? "permission" : rawSubcommand;
+  const searchCache = createSearchCache(config);
+  await searchCache.warm();
 
   if (subcommand === "stats") {
-    const searchCache = createSearchCache(config);
-    const summary = await searchCache.warm();
+    const summary = searchCache.getPluginSummary(plugin.id) ?? {
+      pluginId: plugin.id,
+      pluginLabel: plugin.label,
+      totalEntries: 0,
+      totalFiles: 0,
+      profileSummaries: [],
+    };
+    console.log(`Current context: ${plugin.label}`);
     console.log(formatCacheSummary(summary));
     return;
   }
 
   if (subcommand === "langstats") {
-    const categories = await buildLanguageCategoryStats(config.workspaceRoot, config.search.profiles.language.include);
-    const statsBlock = formatLanguageCategoryStats(categories, config.formatDisplayPath);
-    if (!statsBlock) {
-      console.log("No language category stats are available right now.");
+    const snapshot = searchCache.getSnapshot(plugin.id, "language");
+    const categories = snapshot?.languageCategories ?? [];
+    if (!categories.length) {
+      console.log(`Language stats are still being worked on for ${plugin.label}.`);
       return;
     }
-
-    console.log(statsBlock);
+    console.log(`Current context: ${plugin.label}`);
+    for (const category of categories) {
+      const displayPath = config.formatDisplayPath(plugin.id, category.englishRelativePath);
+      console.log(
+        `- ${category.label} -> ${displayPath} (${category.languageCount} ${category.languageCount === 1 ? "language" : "languages"}: ${category.languageCodes.join(", ")})`,
+      );
+    }
     return;
   }
 
@@ -74,9 +80,9 @@ async function main() {
 
   const keyword = args.join(" ").trim();
 
-  if (!subcommand || !config.search.profiles[subcommand]) {
+  if (!subcommand || !plugin.profiles[subcommand]) {
     console.error(
-      "Usage: npm run lookup -- <config|language|lang|placeholder|material|command|cmd|permission|perm|faq|tabcomplete|langstats|stats> [--mode exact|whole|broad] [--file Chat.yml] [--related] [--summary] <keyword>",
+      "Usage: npm run lookup -- [cmi|jobs] <config|language|lang|placeholder|material|command|cmd|permission|perm|faq|tabcomplete|langstats|stats> [--mode exact|whole|broad] [--file Chat.yml] [--related] [--summary] <keyword>",
     );
     process.exitCode = 1;
     return;
@@ -94,9 +100,9 @@ async function main() {
     return;
   }
 
-  const allEntries = await loadEntriesForProfile(config.search.profiles[subcommand], config.workspaceRoot);
+  const allEntries = searchCache.getEntries(plugin.id, subcommand);
   const fileFilter = resolveFileFilter(file, allEntries, {
-    profileLabel: subcommand === "config" ? "config" : subcommand,
+    profileLabel: subcommand === "config" ? `${plugin.label} config` : `${plugin.label} ${subcommand}`,
   });
 
   if (!fileFilter.ok) {
@@ -110,7 +116,7 @@ async function main() {
   const reranker = new AiReranker(config.openai);
   const rerankedMatches = await reranker.rerank(keyword, lexicalMatches);
   const matches = orderMatchesForDisplay(rerankedMatches);
-  const profile = config.search.profiles[subcommand];
+  const profile = plugin.profiles[subcommand];
   const visibleLimit = profile.defaultResultLimit ?? config.search.defaultResultLimit;
 
   if (!matches.length) {
@@ -120,7 +126,7 @@ async function main() {
   }
 
   for (const item of matches.slice(0, visibleLimit)) {
-    const result = makeDisplayContext(item.entry, config.formatDisplayPath);
+    const result = makeDisplayContext(item.entry, plugin.id, config.formatDisplayPath);
     console.log(`${result.displayPath}:${result.lineNumber}`);
     if (related) {
       const relatedEntries = findRelatedEntries(item.entry, entries);
@@ -136,7 +142,7 @@ async function main() {
 
   if (summary) {
     const aiSummary =
-      (await reranker.summarize(keyword, matches.slice(0, visibleLimit), { profileName: subcommand })) ||
+      (await reranker.summarize(keyword, matches.slice(0, visibleLimit), { profileName: `${plugin.id}:${subcommand}` })) ||
       "";
     if (aiSummary) {
       console.log(`AI summary (generated): ${aiSummary}`);

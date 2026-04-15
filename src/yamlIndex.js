@@ -163,9 +163,9 @@ export async function loadEntriesForProfile(profile, workspaceRoot) {
   return entries;
 }
 
-export function makeDisplayContext(entry, formatDisplayPath) {
+export function makeDisplayContext(entry, pluginId, formatDisplayPath) {
   return {
-    displayPath: formatDisplayPath(entry.relativePath),
+    displayPath: formatDisplayPath(pluginId, entry.relativePath),
     relativePath: entry.relativePath,
     lineNumber: entry.lineNumber,
     yamlPath: entry.yamlPath,
