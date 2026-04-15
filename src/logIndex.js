@@ -128,6 +128,196 @@ function splitDelimitedLine(line) {
   };
 }
 
+function stripHtml(line) {
+  return line
+    .replace(/<g-emoji[^>]*>(.*?)<\/g-emoji>/gi, "$1")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeMarkdownLinks(text) {
+  return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1");
+}
+
+function slugToKeywords(fileName) {
+  return fileName
+    .replace(/^jobs-/, "")
+    .replace(/\.md$/i, "")
+    .split(/-/)
+    .filter(Boolean)
+    .join(", ");
+}
+
+function cleanFaqTitle(rawTitle, relativePath) {
+  let title = rawTitle.trim().replace(/^#+\s*/, "");
+  title = title.replace(/^FAQ\s*-\s*/i, "").trim();
+
+  if (!title) {
+    const fileName = path.posix.basename(toPosixPath(relativePath));
+    title = fileName
+      .replace(/^jobs-/, "")
+      .replace(/\.md$/i, "")
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  }
+
+  return title;
+}
+
+function isUsefulMarkdownLine(line) {
+  if (!line) {
+    return false;
+  }
+
+  if (line === "---") {
+    return false;
+  }
+
+  if (/^https?:\/\//i.test(line)) {
+    return false;
+  }
+
+  if (/^Zrips Discord @/i.test(line)) {
+    return false;
+  }
+
+  if (/^(FAQ Menu|Official Zrips Links|Prerequisites|More information|Backup|Test setup|Note ahead\.)$/i.test(line)) {
+    return false;
+  }
+
+  if (/^(Download Jobs-Reborn|Also Download CMILib)/i.test(line)) {
+    return false;
+  }
+
+  if (/^[•*-]\s+(api|bug-reports|can-i-do-thing-x-per-job|change-bossbar-color|commands|permissions|quests|translations)/i.test(line)) {
+    return false;
+  }
+
+  return true;
+}
+
+function extractMarkdownFaqSummary(fileText) {
+  const lines = fileText.split(/\r?\n/);
+  const separatorIndex = lines.findIndex((line) => line.trim() === "---");
+  const bodyLines = separatorIndex >= 0 ? lines.slice(separatorIndex + 1) : lines;
+
+  const paragraphs = [];
+  let current = [];
+  let inCode = false;
+
+  function flushParagraph() {
+    if (!current.length) {
+      return;
+    }
+
+    const paragraph = current.join(" ").replace(/\s+/g, " ").trim();
+    if (paragraph) {
+      paragraphs.push(paragraph);
+    }
+    current = [];
+  }
+
+  for (const rawLine of bodyLines) {
+    const trimmed = rawLine.trim();
+
+    if (/^```/.test(trimmed)) {
+      inCode = !inCode;
+      flushParagraph();
+      continue;
+    }
+
+    if (inCode) {
+      continue;
+    }
+
+    if (!trimmed) {
+      flushParagraph();
+      continue;
+    }
+
+    if (/^#+\s+/.test(trimmed)) {
+      flushParagraph();
+      continue;
+    }
+
+    let line = normalizeMarkdownLinks(stripHtml(trimmed));
+    if (!line) {
+      flushParagraph();
+      continue;
+    }
+
+    line = line.replace(/^[-*]\s+/, "").trim();
+    if (!isUsefulMarkdownLine(line)) {
+      flushParagraph();
+      continue;
+    }
+
+    current.push(line);
+  }
+
+  flushParagraph();
+
+  const usableParagraphs = paragraphs.filter((paragraph) => {
+    if (/^(This page should help explain|If some piece of text is wrong)/i.test(paragraph)) {
+      return false;
+    }
+
+    if (
+      /^(All my FAQ pages have been written|The mrfdev github page is not an official resource|I am an admin on the Zrips Discord)/i.test(
+        paragraph,
+      )
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  return usableParagraphs.slice(0, 2).join(" ").slice(0, 500).trim();
+}
+
+function buildMarkdownFaqUrl(relativePath) {
+  const fileName = path.posix.basename(toPosixPath(relativePath));
+  return `https://github.com/mrfdev/Jobs/blob/main/Resources/FAQ/${fileName}`;
+}
+
+export function extractEntriesFromMarkdownFaqText(fileText, relativePath) {
+  const lines = fileText.split(/\r?\n/);
+  const firstHeadingIndex = lines.findIndex((line) => /^#\s+/.test(line));
+  const title = cleanFaqTitle(firstHeadingIndex >= 0 ? lines[firstHeadingIndex] : "", relativePath);
+  const summary =
+    extractMarkdownFaqSummary(fileText) || "See the linked FAQ entry for the full explanation and step-by-step guidance.";
+  const fileName = path.posix.basename(toPosixPath(relativePath));
+  const comments = [
+    "# Category: Jobs GitHub FAQ",
+    `# URL: ${buildMarkdownFaqUrl(relativePath)}`,
+    `# Answer: ${summary}`,
+    `# Keywords: ${slugToKeywords(fileName)}`,
+  ];
+  const lineNumber = firstHeadingIndex >= 0 ? firstHeadingIndex + 1 : 1;
+
+  return [
+    buildEntry({
+      relativePath,
+      lineNumber,
+      startLine: lineNumber,
+      key: title,
+      value: summary,
+      yamlPath: title,
+      comments,
+      snippet: [...comments, title].join("\n").trimEnd(),
+      codeLanguage: "text",
+    }),
+  ];
+}
+
 export function extractEntriesFromDelimitedText(fileText, relativePath, { preserveLine = false } = {}) {
   const lines = fileText.split(/\r?\n/);
   const entries = [];
@@ -250,6 +440,10 @@ function extractEntriesByParser(parserType, fileText, relativePath) {
       return path.posix.basename(toPosixPath(relativePath)) === "cmdperms.log"
         ? extractEntriesFromCmdPermsText(fileText, relativePath)
         : extractEntriesFromDelimitedText(fileText, relativePath);
+    case "faqMixed":
+      return path.posix.extname(toPosixPath(relativePath)).toLowerCase() === ".md"
+        ? extractEntriesFromMarkdownFaqText(fileText, relativePath)
+        : extractEntriesFromCommentLogText(fileText, relativePath);
     default:
       return extractEntriesFromCommentLogText(fileText, relativePath);
   }

@@ -193,6 +193,13 @@ At the moment, Jobs `config` is still backed by shared `CMILibPlugin/CMILib/...`
 - `JobsPlugin/TranslatableWords/Words_en.yml`
 - shared `CMILibPlugin/CMILib/Translations/**/*_EN.yml`
 
+Jobs `faq` can now load from both:
+
+- `JobsPlugin/data/faq.log`
+- `JobsPlugin/data/faq/*.md`
+
+That means new markdown FAQ files dropped into the Jobs FAQ folder are picked up on `/lookup reload` without needing a separate conversion step.
+
 ## Environment
 
 Copy `.env.example` to `.env` and fill in the values.

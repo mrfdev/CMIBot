@@ -201,8 +201,8 @@ function buildJobsProfiles() {
       statsFileLabel: "FAQ data files",
       referenceLabel: "FAQ entries",
       referenceUrl: "https://www.zrips.net/jobs/common-issues/",
-      parserType: "commentBlocks",
-      include: parseCsv(process.env.JOBS_FAQ_INCLUDE_GLOBS ?? "JobsPlugin/data/faq.log"),
+      parserType: "faqMixed",
+      include: parseCsv(process.env.JOBS_FAQ_INCLUDE_GLOBS ?? "JobsPlugin/data/faq.log,JobsPlugin/data/faq/*.md"),
       exclude: parseCsv(process.env.JOBS_FAQ_EXCLUDE_GLOBS),
     }),
   };
