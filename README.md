@@ -1,17 +1,17 @@
 # CMIBot
 
-CMIBot is a Discord support bot that is now moving from a single-plugin `/cmibot` workflow to a channel-aware `/lookup` workflow.
+CMIBot is a Discord support bot built around a channel-aware `/lookup` workflow.
 
 Today it fully supports the CMI context and already includes the first working Jobs context, with the active plugin decided by the Discord channel ID.
 
 ## Current Direction
 
 - `/lookup` is now the primary slash command
-- `/cmibot` still exists as a legacy alias during the transition
 - Channel ID decides which plugin context is active
 - `#test` can be switched live between plugin contexts through the debug command
 - `/lookup reload` is global and rebuilds caches for every plugin context
 - `/lookup stats` and `/lookup langstats` are context-aware and only show data for the active plugin
+- `/lookup debug` shows channel routing plus project size and live memory usage
 
 ## Current Contexts
 
@@ -128,10 +128,10 @@ If a channel is not in `DISCORD_ALLOWED_CHANNEL_IDS`, the bot refuses to run the
 On `npm start`, the bot now warms a global cache and prints totals grouped by plugin context, for example:
 
 ```text
-Loaded 16530 entries from 40 files into the search cache.
+Loaded 19563 entries from 74 files into the search cache.
 CMI:
-- config: 4535 entries from 22 YAML configuration files
-- language: 6385 entries from 4 YAML locale files
+- config: 4499 entries from 21 YAML configuration files
+- language: 4145 entries from 2 YAML locale files
 - placeholder: 224 entries from 1 placeholder data file
 - material: 1697 entries from 1 material data file
 - command: 306 entries from 1 command data file
@@ -139,15 +139,20 @@ CMI:
 - faq: 54 entries from 1 FAQ data file
 - tabcomplete: 77 entries from 1 tab-complete data file
 Jobs:
-- config: 36 entries from 1 YAML configuration file
-- language: 2240 entries from 2 YAML locale files
+- config: 347 entries from 1 YAML configuration file
+- language: 2655 entries from 2 YAML locale files
 - placeholder: 72 entries from 1 placeholder data file
 - command: 57 entries from 1 command data file
 - permission: 65 entries from 1 permission data file
-- faq: 4 entries from 1 FAQ data file
+- faq: 35 entries from 32 FAQ data files
+Shared CMILib data:
+- config: 36 entries from 1 YAML configuration file
+- language: 2240 entries from 2 YAML locale files
 ```
 
 `/lookup reload` rebuilds this cache globally for every configured plugin context.
+
+For startup and reload summaries, shared `CMILib` config and language data is shown in its own `Shared CMILib data:` section at the bottom so it does not visually look like plugin-owned data inside the CMI or Jobs blocks.
 
 ## Search Behavior
 
@@ -187,7 +192,12 @@ The bot already includes:
 
 Because file filtering uses the active plugin context, a Jobs channel cannot search CMI config files and vice versa.
 
-At the moment, Jobs `config` is still backed by shared `CMILibPlugin/CMILib/...` data, while Jobs `language` now includes:
+At the moment, Jobs `config` includes:
+
+- `JobsPlugin/generalConfig.yml`
+- shared `CMILibPlugin/CMILib/config.yml`
+
+Jobs `language` now includes:
 
 - `JobsPlugin/locale/messages_en.yml`
 - `JobsPlugin/TranslatableWords/Words_en.yml`
@@ -322,5 +332,4 @@ npm start
 ## Next Planned Steps
 
 - add real Jobs YAML config data when you are ready to index more than the shared CMILib files
-- decide whether to keep `/cmibot` as a long-term alias or eventually hard-redirect it to `/lookup`
 - extend the multi-plugin structure to more support channels like Residence, TradeMe, or TryMe

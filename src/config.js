@@ -41,6 +41,26 @@ function toPosixPath(value) {
   return value.split(path.sep).join("/");
 }
 
+function toDisplayRelativePath(relativePath) {
+  const normalized = toPosixPath(relativePath);
+
+  const replacements = [
+    ["CMIPlugin/CMI/", "CMI/"],
+    ["CMIPlugin/data/", "CMI/data/"],
+    ["CMILibPlugin/CMILib/", "CMILib/"],
+    ["CMILibPlugin/data/", "CMILib/data/"],
+    ["JobsPlugin/", "Jobs/"],
+  ];
+
+  for (const [from, to] of replacements) {
+    if (normalized.startsWith(from)) {
+      return `${to}${normalized.slice(from.length)}`;
+    }
+  }
+
+  return normalized;
+}
+
 function createProfile(name, overrides = {}) {
   return {
     name,
@@ -151,7 +171,9 @@ function buildJobsProfiles() {
       sourceType: "yaml",
       entryLabel: "YAML entries",
       statsFileLabel: "YAML configuration files",
-      include: parseCsv(process.env.JOBS_LOOKUP_INCLUDE_GLOBS ?? "CMILibPlugin/CMILib/config.yml"),
+      include: parseCsv(
+        process.env.JOBS_LOOKUP_INCLUDE_GLOBS ?? "JobsPlugin/generalConfig.yml,CMILibPlugin/CMILib/config.yml",
+      ),
       exclude: parseCsv(process.env.JOBS_LOOKUP_EXCLUDE_GLOBS),
     }),
     language: createProfile("language", {
@@ -299,7 +321,7 @@ export function loadConfig() {
       auditLogPath: process.env.AUDIT_LOG_PATH?.trim() || "logs/cmibot-usage.jsonl",
     },
     formatDisplayPath(pluginId, relativePath) {
-      const normalizedRelativePath = toPosixPath(relativePath);
+      const normalizedRelativePath = toDisplayRelativePath(relativePath);
       if (normalizedRelativePath.startsWith("data/")) {
         return normalizedRelativePath;
       }

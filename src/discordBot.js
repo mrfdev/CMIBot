@@ -1,5 +1,6 @@
-import { MessageFlags, REST, Routes, SlashCommandBuilder } from "discord.js";
+import fs from "node:fs/promises";
 import path from "node:path";
+import { MessageFlags, REST, Routes, SlashCommandBuilder } from "discord.js";
 import { writeAuditLog } from "./auditLog.js";
 import { formatCacheSummary } from "./cache.js";
 import { createCooldownManager, resolveFileFilter, sanitizeForDisplay, validateQuery } from "./security.js";
@@ -7,11 +8,11 @@ import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 
 const PRIMARY_COMMAND_NAME = "lookup";
-const LEGACY_COMMAND_NAME = "cmibot";
-const SUPPORTED_COMMAND_NAMES = new Set([PRIMARY_COMMAND_NAME, LEGACY_COMMAND_NAME]);
+const SUPPORTED_COMMAND_NAMES = new Set([PRIMARY_COMMAND_NAME]);
 const MAX_RESULT_LIMIT = 15;
 const MATERIAL_MAX_RESULT_LIMIT = 25;
 const NO_MENTIONS = { parse: [] };
+const DEBUG_SIZE_SKIP_DIRS = new Set([".git"]);
 
 function pluralize(count, singular, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
@@ -129,11 +130,7 @@ function buildCommandTree(commandName, config) {
 
   return new SlashCommandBuilder()
     .setName(commandName)
-    .setDescription(
-      commandName === PRIMARY_COMMAND_NAME
-        ? "Look up plugin config, locale, and exported support data by keyword."
-        : "Legacy alias for /lookup while the command migration is in progress.",
-    )
+    .setDescription("Look up plugin config, locale, and exported support data by keyword.")
     .addSubcommand((subcommand) =>
       subcommand.setName("help").setDescription("Show available commands and usage notes for this channel context."),
     )
@@ -237,7 +234,7 @@ function buildCommandTree(commandName, config) {
 }
 
 function buildCommandData(config) {
-  return [buildCommandTree(PRIMARY_COMMAND_NAME, config), buildCommandTree(LEGACY_COMMAND_NAME, config)];
+  return [buildCommandTree(PRIMARY_COMMAND_NAME, config)];
 }
 
 function formatReloadMessage(summary) {
@@ -246,6 +243,44 @@ function formatReloadMessage(summary) {
 
 function formatStatsMessage(plugin, summary) {
   return [`### Lookup Stats`, `Current context: \`${plugin.label}\``, formatCacheSummary(summary)].join("\n");
+}
+
+function formatBytes(bytes) {
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let index = 0;
+
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index += 1;
+  }
+
+  const digits = index === 0 ? 0 : value >= 10 ? 1 : 2;
+  return `${value.toFixed(digits)} ${units[index]}`;
+}
+
+async function getDirectorySize(directoryPath) {
+  let totalSize = 0;
+  const entries = await fs.readdir(directoryPath, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (DEBUG_SIZE_SKIP_DIRS.has(entry.name)) {
+      continue;
+    }
+
+    const absolutePath = path.join(directoryPath, entry.name);
+    if (entry.isDirectory()) {
+      totalSize += await getDirectorySize(absolutePath);
+      continue;
+    }
+
+    if (entry.isFile()) {
+      const stats = await fs.stat(absolutePath);
+      totalSize += stats.size;
+    }
+  }
+
+  return totalSize;
 }
 
 function resolveChannelContext(channelId, config, testOverrides) {
@@ -296,13 +331,27 @@ function resolveChannelContext(channelId, config, testOverrides) {
   };
 }
 
-function formatDebugMessage(interaction, context, commandName) {
+async function formatDebugMessage(interaction, context, config, searchCache) {
+  const memory = process.memoryUsage();
+  const workspaceSize = await getDirectorySize(config.workspaceRoot);
+  const globalSummary = searchCache.getGlobalSummary();
+  const contextSummary = context.plugin ? searchCache.getPluginSummary(context.plugin.id) : null;
   const lines = [
-    `### ${commandName === LEGACY_COMMAND_NAME ? "CMIBot" : "Lookup"} Debug`,
+    "### Lookup Debug",
     `Detected context: \`${context.plugin?.label ?? "Unknown"}\``,
     `Channel type: \`${context.channelType}\``,
     `Channel ID: \`${interaction.channelId}\``,
+    `Project size on disk: \`${formatBytes(workspaceSize)}\``,
+    `Process RAM (RSS): \`${formatBytes(memory.rss)}\``,
+    `Process heap used: \`${formatBytes(memory.heapUsed)}\``,
+    `Global cache: \`${globalSummary.totalEntries ?? 0}\` entries from \`${globalSummary.totalFiles ?? 0}\` files`,
   ];
+
+  if (contextSummary) {
+    lines.push(
+      `Context cache: \`${contextSummary.totalEntries ?? 0}\` entries from \`${contextSummary.totalFiles ?? 0}\` files`,
+    );
+  }
 
   if (context.isTestChannel) {
     lines.push(
@@ -349,10 +398,6 @@ function formatHelpMessage(config, member, context, commandName) {
     lines.push(
       `Test channel mode: \`${context.overridePluginId || "auto"}\`${context.overridePluginId ? " override active" : ""}`,
     );
-  }
-
-  if (commandName === LEGACY_COMMAND_NAME) {
-    lines.push(`Legacy note: \`${LEGACY_COMMAND_NAME}\` is being phased out. Prefer \`${prefix}\`.`);
   }
 
   lines.push("", "Available here:");
@@ -470,7 +515,7 @@ function formatHelpMessage(config, member, context, commandName) {
   } else if (!canReload) {
     lines.push("", "Notice: you can use search commands here, but `/lookup reload` is admin-only.");
   } else {
-    lines.push("", `Notice: ${currentCommand} is available here, with \`${prefix}\` as the primary command.`);
+    lines.push("", `Notice: ${currentCommand} is available here.`);
   }
 
   return lines.join("\n");
@@ -817,7 +862,7 @@ export function createInteractionHandler(config, searchCache) {
         override: context.overridePluginId || "auto",
       });
       await interaction.reply({
-        content: formatDebugMessage(interaction, context, interaction.commandName),
+        content: await formatDebugMessage(interaction, context, config, searchCache),
         flags: MessageFlags.Ephemeral,
         allowedMentions: NO_MENTIONS,
       });
