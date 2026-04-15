@@ -3,7 +3,7 @@ import path from "node:path";
 import { writeAuditLog } from "./auditLog.js";
 import { formatCacheSummary } from "./cache.js";
 import { formatLanguageCategoryStats } from "./langStats.js";
-import { createCooldownManager, sanitizeForDisplay, validateQuery } from "./security.js";
+import { createCooldownManager, resolveFileFilter, sanitizeForDisplay, validateQuery } from "./security.js";
 import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 
@@ -19,7 +19,7 @@ function pluralize(count, singular, plural = `${singular}s`) {
 function addCommonLookupOptions(
   subcommand,
   defaultResultLimit,
-  { includeRelated = false, maxResultLimit = MAX_RESULT_LIMIT } = {},
+  { includeRelated = false, includeFileFilter = false, maxResultLimit = MAX_RESULT_LIMIT } = {},
 ) {
   let builder = subcommand
     .addStringOption((option) =>
@@ -42,6 +42,14 @@ function addCommonLookupOptions(
         .setMinValue(1)
         .setMaxValue(maxResultLimit),
     );
+
+  if (includeFileFilter) {
+    builder = builder.addStringOption((option) =>
+      option
+        .setName("file")
+        .setDescription("Optional indexed config file filter, like Chat.yml or CMI/Settings/Chat.yml."),
+    );
+  }
 
   if (includeRelated) {
     builder = builder.addBooleanOption((option) =>
@@ -73,7 +81,7 @@ function buildCommandData(config) {
             .setName("config")
             .setDescription("Search regular CMI and CMILib config files."),
           defaultResultLimit,
-          { includeRelated: true },
+          { includeRelated: true, includeFileFilter: true },
         ),
       )
       .addSubcommand((subcommand) =>
@@ -122,8 +130,24 @@ function buildCommandData(config) {
       .addSubcommand((subcommand) =>
         addCommonLookupOptions(
           subcommand
+            .setName("cmd")
+            .setDescription("Alias for the exported CMI command usage search."),
+          defaultResultLimit,
+        ),
+      )
+      .addSubcommand((subcommand) =>
+        addCommonLookupOptions(
+          subcommand
             .setName("permission")
             .setDescription("Search exported permission nodes and command permissions."),
+          defaultResultLimit,
+        ),
+      )
+      .addSubcommand((subcommand) =>
+        addCommonLookupOptions(
+          subcommand
+            .setName("perm")
+            .setDescription("Alias for the exported permission search."),
           defaultResultLimit,
         ),
       )
@@ -184,12 +208,11 @@ function formatHelpMessage(config, member) {
     "Commands available through this bot:",
     "- `/cmibot help` shows this help message",
     "- `/cmibot config <keyword>` searches regular CMI and CMILib config files",
-    "- `/cmibot language <keyword>` searches English locale and translation files",
-    "- `/cmibot lang <keyword>` is a short alias for `language`",
+    "- `/cmibot language|lang <keyword>` searches English locale and translation files",
     "- `/cmibot placeholder <keyword>` searches exported placeholder entries",
     "- `/cmibot material <keyword>` searches exported material names",
-    "- `/cmibot command <keyword>` searches exported command entries",
-    "- `/cmibot permission <keyword>` searches exported permission entries",
+    "- `/cmibot command|cmd <keyword>` searches exported command entries",
+    "- `/cmibot permission|perm <keyword>` searches exported permission entries",
     "- `/cmibot faq <keyword>` searches curated FAQ titles and links",
     "- `/cmibot tabcomplete <keyword>` searches exported tab-complete entries",
     "- `/cmibot langstats` shows English locale categories and language codes",
@@ -198,6 +221,7 @@ function formatHelpMessage(config, member) {
     "",
     "Options:",
     "- `mode: exact|whole|broad` controls how strict the search is",
+    "- `file: <name>` narrows `config` to a matching indexed file like `Chat.yml` or `CMI/Settings/Chat.yml`",
     `- \`limit: 1-${MAX_RESULT_LIMIT}\` is used by most commands, with \`${config.search.defaultResultLimit}\` as the default`,
     `- \`material\` uses \`limit: 1-${MATERIAL_MAX_RESULT_LIMIT}\` and defaults to \`${config.search.profiles.material.defaultResultLimit ?? MATERIAL_MAX_RESULT_LIMIT}\``,
     "- `related: true|false` adds nearby YAML entries for `config`, `language`, and `lang`",
@@ -207,14 +231,15 @@ function formatHelpMessage(config, member) {
     "",
     "Examples:",
     "- `/cmibot config dynmap`",
+    "- `/cmibot config chat file:Chat.yml`",
     "- `/cmibot config \"mini message\" mode:whole`",
     "- `/cmibot config bluemap related:true`",
     "- `/cmibot language home`",
     "- `/cmibot lang \"was fireballed by\"`",
     "- `/cmibot placeholder balance`",
     "- `/cmibot material shulker`",
-    "- `/cmibot command balance`",
-    "- `/cmibot permission cmi.command.balance`",
+    "- `/cmibot cmd balance`",
+    "- `/cmibot perm cmi.command.balance`",
     "- `/cmibot faq refund`",
     "- `/cmibot tabcomplete [playername] mode:whole`",
     "- `/cmibot stats`",
@@ -249,6 +274,14 @@ function formatStatsMessage(summary) {
 function resolveProfileName(subcommand) {
   if (subcommand === "lang") {
     return "language";
+  }
+
+  if (subcommand === "cmd") {
+    return "command";
+  }
+
+  if (subcommand === "perm") {
+    return "permission";
   }
 
   return subcommand;
@@ -331,6 +364,38 @@ function extractUrlFromComments(comments = []) {
   return "";
 }
 
+function stripFaqSnippet(snippet, yamlPath) {
+  const lines = snippet.split("\n");
+  const filtered = lines.filter((line) => !/^\s*#\s*URL:\s*/i.test(line));
+
+  if (filtered[filtered.length - 1]?.trim() === yamlPath.trim()) {
+    filtered.pop();
+  }
+
+  return filtered.join("\n").trimEnd();
+}
+
+function formatResultLead(result, options) {
+  if (options.layout === "faq") {
+    const url = extractUrlFromComments(result.comments);
+    return url ? `[${sanitizeForDisplay(result.yamlPath)}](<${url}>)` : `\`${result.yamlPath}\``;
+  }
+
+  if (options.layout === "permission" || options.layout === "command") {
+    return "";
+  }
+
+  return `Look around line ${result.lineNumber} -> \`${result.yamlPath}\``;
+}
+
+function formatResultSnippet(result, options) {
+  if (options.layout === "faq") {
+    return stripFaqSnippet(result.snippet, result.yamlPath);
+  }
+
+  return result.snippet;
+}
+
 function formatLangStatsOnlyMessage(languageCategories, formatDisplayPath) {
   const statsBody = formatLanguageStatsMessage(languageCategories, formatDisplayPath);
   if (!statsBody) {
@@ -375,32 +440,33 @@ function formatResultsMessage(
 
   for (const [displayPath, fileResults] of groupedResults.entries()) {
     const heading =
-      fileResults[0]?.sourceType === "log" ? `From bot's: \`${displayPath}\`` : `In \`${displayPath}\`:`;
-    blocks.push(heading);
+      options.layout === "faq"
+        ? ""
+        : fileResults[0]?.sourceType === "log"
+          ? `From bot's: \`${displayPath}\``
+          : `In \`${displayPath}\`:`;
+    if (heading) {
+      blocks.push(heading);
+    }
 
     for (const result of fileResults) {
+      const leadLine = formatResultLead(result, options);
+      const snippet = formatResultSnippet(result, options);
       const relatedLine = result.related?.length
         ? `Related: ${result.related
             .map((entry) => `\`${entry.yamlPath}\` (line ${entry.lineNumber})`)
             .join(", ")}\n`
         : "";
-      const faqUrlLine =
-        options.layout === "faq"
-          ? (() => {
-              const url = extractUrlFromComments(result.comments);
-              return url ? `\n<${url}>` : "";
-            })()
-          : "";
-
-      blocks.push(
-        `Look around line ${result.lineNumber} -> \`${result.yamlPath}\`\n${relatedLine}\`\`\`${result.codeLanguage}\n${result.snippet}\n\`\`\`${faqUrlLine}`,
-      );
+      blocks.push([leadLine, `${relatedLine}\`\`\`${result.codeLanguage}\n${snippet}\n\`\`\``].filter(Boolean).join("\n"));
     }
   }
 
   const safeKeyword = sanitizeForDisplay(keyword);
   const fileHint = options.showFileHints === false ? "" : formatFileList(allMatchedFiles, options);
-  const header = `### Found [${totalMentions}] ${mentionLabel} in [${fileCount}] ${fileLabel} for \`${safeKeyword}\`${fileHint}`;
+  const header =
+    options.layout === "faq"
+      ? `### Found [${totalMentions}] ${mentionLabel} for \`${safeKeyword}\``
+      : `### Found [${totalMentions}] ${mentionLabel} in [${fileCount}] ${fileLabel} for \`${safeKeyword}\`${fileHint}`;
 
   let footer = "";
   if (shownCount === totalMentions) {
@@ -590,6 +656,7 @@ export function createInteractionHandler(config, searchCache) {
             return {
               profileName: profile.name,
               profileDisplayName: profile.displayName ?? profile.name,
+              statsFileLabel: profile.statsFileLabel ?? "",
               entryCount: snapshot?.entryCount ?? 0,
               fileCount: snapshot?.fileCount ?? 0,
             };
@@ -660,6 +727,7 @@ export function createInteractionHandler(config, searchCache) {
     }
 
     const keywordInput = interaction.options.getString("keyword", true);
+    const fileInput = interaction.options.getString("file") ?? "";
     const mode = interaction.options.getString("mode") ?? "exact";
     const profile = config.search.profiles[resolveProfileName(subcommand)];
     const profileDefaultLimit = profile.defaultResultLimit ?? config.search.defaultResultLimit;
@@ -683,6 +751,30 @@ export function createInteractionHandler(config, searchCache) {
       });
       await interaction.reply({
         content: validationMessage(validation.reason),
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
+    const allProfileEntries = searchCache.getEntries(profile.name);
+    const fileFilter = resolveFileFilter(fileInput, allProfileEntries, {
+      profileLabel: profile.name === "config" ? "config" : profile.name,
+    });
+
+    if (!fileFilter.ok) {
+      await logEvent(interaction, {
+        subcommand,
+        keyword,
+        file: fileInput,
+        mode,
+        related,
+        summary,
+        outcome: "rejected",
+        reason: fileFilter.reason,
+      });
+      await interaction.reply({
+        content: fileFilter.reason,
         flags: MessageFlags.Ephemeral,
         allowedMentions: NO_MENTIONS,
       });
@@ -757,10 +849,10 @@ export function createInteractionHandler(config, searchCache) {
       }
     }
 
-    await interaction.deferReply();
+      await interaction.deferReply();
 
     try {
-      const entries = searchCache.getEntries(profile.name);
+      const entries = fileFilter.filteredEntries;
       const lexicalMatches = lexicalSearch(keyword, entries, { limit: 25, mode });
       const rerankedMatches = config.openai.enabled && canUseAi
         ? await reranker.rerank(keyword, lexicalMatches)
@@ -772,13 +864,14 @@ export function createInteractionHandler(config, searchCache) {
         await logEvent(interaction, {
           subcommand,
           keyword,
+          file: fileFilter.normalizedFilter,
           mode,
           related,
           summary,
           outcome: "empty",
         });
         await interaction.editReply({
-          content: `No ${profile.entryLabel ?? "entries"} matched \`${sanitizeForDisplay(keyword)}\` in the \`${subcommand}\` profile.`,
+          content: `No ${profile.entryLabel ?? "entries"} matched \`${sanitizeForDisplay(keyword)}\` in the \`${subcommand}\` profile${fileFilter.normalizedFilter ? ` with file filter \`${sanitizeForDisplay(fileFilter.normalizedFilter)}\`` : ""}.`,
           allowedMentions: NO_MENTIONS,
         });
         return;
@@ -806,13 +899,23 @@ export function createInteractionHandler(config, searchCache) {
         {
           preferShortPath: profile.name === "language",
           showFileHints: profile.name === "config",
-          layout: subcommand === "material" ? "materialList" : subcommand === "faq" ? "faq" : "default",
+          layout:
+            profile.name === "material"
+              ? "materialList"
+              : profile.name === "faq"
+                ? "faq"
+                : profile.name === "permission"
+                  ? "permission"
+                  : profile.name === "command"
+                    ? "command"
+                    : "default",
         },
       );
 
       await logEvent(interaction, {
         subcommand,
         keyword,
+        file: fileFilter.normalizedFilter,
         mode,
         related,
         summary,

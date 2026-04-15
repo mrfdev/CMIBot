@@ -12,12 +12,20 @@ function pluralize(count, singular, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
 }
 
+function formatProfileFileLabel(profile) {
+  if (profile.statsFileLabel) {
+    return profile.fileCount === 1 ? profile.statsFileLabel.replace(/s$/, "") : profile.statsFileLabel;
+  }
+
+  return pluralize(profile.fileCount, "file");
+}
+
 export function formatCacheSummary(summary, { verb = "Loaded", suffix = "." } = {}) {
   const entryLabel = pluralize(summary.totalEntries, "entry", "entries");
   const fileLabel = pluralize(summary.totalFiles, "file");
   const profileLines = summary.profileSummaries.map((profile) => {
     const profileEntryLabel = pluralize(profile.entryCount, "entry", "entries");
-    const profileFileLabel = pluralize(profile.fileCount, "file");
+    const profileFileLabel = formatProfileFileLabel(profile);
     return `- ${profile.profileDisplayName ?? profile.profileName}: ${profile.entryCount} ${profileEntryLabel} from ${profile.fileCount} ${profileFileLabel}`;
   });
 
@@ -46,6 +54,7 @@ export function createSearchCache(config) {
     return {
       profileName: profile.name,
       profileDisplayName: profile.displayName ?? profile.name,
+      statsFileLabel: profile.statsFileLabel ?? "",
       ...summary,
     };
   }

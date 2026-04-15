@@ -4,13 +4,21 @@ import { loadConfig } from "./config.js";
 import { buildLanguageCategoryStats, formatLanguageCategoryStats } from "./langStats.js";
 import { loadEntriesForProfile } from "./profileIndex.js";
 import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
+import { resolveFileFilter } from "./security.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 
 async function main() {
   const config = loadConfig();
   const args = process.argv.slice(2);
   const rawSubcommand = args.shift();
-  const subcommand = rawSubcommand === "lang" ? "language" : rawSubcommand;
+  const subcommand =
+    rawSubcommand === "lang"
+      ? "language"
+      : rawSubcommand === "cmd"
+        ? "command"
+        : rawSubcommand === "perm"
+          ? "permission"
+          : rawSubcommand;
 
   if (subcommand === "stats") {
     const searchCache = createSearchCache(config);
@@ -34,27 +42,41 @@ async function main() {
   let mode = "exact";
   let related = false;
   let summary = false;
+  let file = "";
 
-  if (args[0] === "--mode") {
-    mode = args[1] ?? mode;
-    args.splice(0, 2);
-  }
+  while (args.length > 0) {
+    if (args[0] === "--mode") {
+      mode = args[1] ?? mode;
+      args.splice(0, 2);
+      continue;
+    }
 
-  if (args[0] === "--related") {
-    related = true;
-    args.splice(0, 1);
-  }
+    if (args[0] === "--file") {
+      file = args[1] ?? file;
+      args.splice(0, 2);
+      continue;
+    }
 
-  if (args[0] === "--summary") {
-    summary = true;
-    args.splice(0, 1);
+    if (args[0] === "--related") {
+      related = true;
+      args.splice(0, 1);
+      continue;
+    }
+
+    if (args[0] === "--summary") {
+      summary = true;
+      args.splice(0, 1);
+      continue;
+    }
+
+    break;
   }
 
   const keyword = args.join(" ").trim();
 
   if (!subcommand || !config.search.profiles[subcommand]) {
     console.error(
-      "Usage: npm run lookup -- <config|language|lang|placeholder|material|command|permission|faq|tabcomplete|langstats|stats> [--mode exact|whole|broad] [--related] [--summary] <keyword>",
+      "Usage: npm run lookup -- <config|language|lang|placeholder|material|command|cmd|permission|perm|faq|tabcomplete|langstats|stats> [--mode exact|whole|broad] [--file Chat.yml] [--related] [--summary] <keyword>",
     );
     process.exitCode = 1;
     return;
@@ -72,7 +94,18 @@ async function main() {
     return;
   }
 
-  const entries = await loadEntriesForProfile(config.search.profiles[subcommand], config.workspaceRoot);
+  const allEntries = await loadEntriesForProfile(config.search.profiles[subcommand], config.workspaceRoot);
+  const fileFilter = resolveFileFilter(file, allEntries, {
+    profileLabel: subcommand === "config" ? "config" : subcommand,
+  });
+
+  if (!fileFilter.ok) {
+    console.error(fileFilter.reason);
+    process.exitCode = 1;
+    return;
+  }
+
+  const entries = fileFilter.filteredEntries;
   const lexicalMatches = lexicalSearch(keyword, entries, { limit: 25, mode });
   const reranker = new AiReranker(config.openai);
   const rerankedMatches = await reranker.rerank(keyword, lexicalMatches);

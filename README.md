@@ -7,6 +7,7 @@ It is designed for support workflows like:
 ```text
 /cmibot help
 /cmibot config dynmap
+/cmibot config chat file:Chat.yml
 /cmibot config cuff
 /cmibot config bluemap related:true
 /cmibot config dynmap summary:true
@@ -17,8 +18,8 @@ It is designed for support workflows like:
 /cmibot placeholder balance
 /cmibot placeholder %cmi_user_balance% mode:whole
 /cmibot material shulker
-/cmibot command balance
-/cmibot permission cmi.command.balance
+/cmibot cmd balance
+/cmibot perm cmi.command.balance
 /cmibot faq refund
 /cmibot tabcomplete [playername] mode:whole
 /cmibot langstats
@@ -31,7 +32,7 @@ Git note: the live SQLite database at `CMI/cmi.sqlite.db` is runtime data and is
 
 ## What It Does
 
-- Registers a `/cmibot` slash command with `config`, `language`, `lang`, `placeholder`, `material`, `command`, `permission`, `faq`, `tabcomplete`, `langstats`, and `stats` subcommands
+- Registers a `/cmibot` slash command with `config`, `language`, `lang`, `placeholder`, `material`, `command`, `cmd`, `permission`, `perm`, `faq`, `tabcomplete`, `langstats`, and `stats` subcommands
 - Registers a `/cmibot help` command for channel-local usage guidance
 - Registers an admin-only `/cmibot reload` command for rebuilding the in-memory search cache
 - Restricts usage to your configured guild, channel, and allowed roles
@@ -40,6 +41,7 @@ Git note: the live SQLite database at `CMI/cmi.sqlite.db` is runtime data and is
 - Uses lexical search first and optionally uses OpenAI to rerank the best candidates
 - Groups visible results by file and shows them top-to-bottom inside each file
 - Supports `mode: exact|whole|broad` for tighter or looser matching
+- Supports `file: ...` on `config` to narrow searches to a specific indexed config file
 - Supports `related: true|false` for nearby YAML context entries
 - Supports `summary: true|false` for an optional AI-generated explanation, restricted to configured AI role IDs
 - Applies per-user cooldowns, query validation, no-mention replies, and audit logging for safer operation
@@ -115,7 +117,7 @@ The bot reads its settings from `.env`.
 This project already defaults to:
 
 - Guild ID: `452792793631555594`
-- Allowed channel: `526402563847880725` (`#cmi`)
+- Allowed channels: `526402563847880725` (`#cmi`), `1493976695152054353` (`#bot-test`)
 - Allowed role IDs: `526407132224946186`, `452793620471218186`, `526451949051314188`, `526452401239228416`, `893444734138322984`, `1037695349667659848`
 - Reload admin role ID: `526407132224946186`
 
@@ -136,12 +138,11 @@ With the current recommended setup, keep `OPENAI_ENABLED=false` until API billin
 Regular config lookup, language lookup, and exported-data lookups are kept separate on purpose.
 
 - `/cmibot config <keyword>` searches regular config files
-- `/cmibot language <keyword>` searches English locale/translation files
-- `/cmibot lang <keyword>` is the short alias for `language`
+- `/cmibot language|lang <keyword>` searches English locale/translation files
 - `/cmibot placeholder <keyword>` searches exported placeholder entries
 - `/cmibot material <keyword>` searches exported material names
-- `/cmibot command <keyword>` searches exported command usage entries
-- `/cmibot permission <keyword>` searches exported permission entries from both `permissions.log` and `cmdperms.log`
+- `/cmibot command|cmd <keyword>` searches exported command usage entries
+- `/cmibot permission|perm <keyword>` searches exported permission entries from both `permissions.log` and `cmdperms.log`
 - `/cmibot faq <keyword>` searches curated FAQ titles, links, and short notes
 - `/cmibot tabcomplete <keyword>` searches exported tab-complete entries
 - `/cmibot langstats` shows locale categories and available languages without requiring a keyword
@@ -154,7 +155,7 @@ You can adjust the file scopes in `.env` without changing code.
 
 ### `/cmibot help`
 
-Shows the bot's current capabilities in `#cmi`.
+Shows the bot's current capabilities in the configured support channels.
 
 - Available to anyone in the configured channel
 - If the user is not in an allowed support/admin role, the help output includes a notice that command access is limited
@@ -168,6 +169,7 @@ Searches regular config files such as `CMI/config.yml`, `CMI/Settings/**/*.yml`,
 Options:
 
 - `keyword`: required search phrase
+- `file`: optional indexed config filename or relative path, such as `Chat.yml`, `config.yml`, or `CMI/Settings/Chat.yml`
 - `mode`: optional, `exact`, `whole`, or `broad`
 - `limit`: optional number of visible results, up to `15`
 - `related`: optional, `true` or `false`
@@ -178,6 +180,7 @@ Examples:
 ```text
 /cmibot help
 /cmibot config dynmap
+/cmibot config chat file:Chat.yml
 /cmibot config tho mode:whole
 /cmibot config bluemap limit:5
 /cmibot config "mini message" mode:exact
@@ -248,6 +251,8 @@ Examples:
 
 Searches exported CMI command usage entries from `data/commands.log`.
 
+`/cmibot cmd` is a short alias for the same search.
+
 Options:
 
 - `keyword`: required search phrase, command name, or usage fragment
@@ -259,12 +264,14 @@ Examples:
 
 ```text
 /cmibot command balance
-/cmibot command "/cmi baltop" mode:whole
+/cmibot cmd "/cmi baltop" mode:whole
 ```
 
 ### `/cmibot permission`
 
 Searches exported permission data from `data/permissions.log` and `data/cmdperms.log`.
+
+`/cmibot perm` is a short alias for the same search.
 
 Options:
 
@@ -276,7 +283,7 @@ Options:
 Examples:
 
 ```text
-/cmibot permission cmi.command.balance
+/cmibot perm cmi.command.balance
 /cmibot permission randomteleport
 ```
 
@@ -289,7 +296,7 @@ This dataset currently combines:
 - The FAQ links you pinned in Discord for CMI support topics
 - Short pre-sales Q&A entries based on the [Zrips FAQ](https://www.zrips.net/faq/)
 
-FAQ results keep the info block in a code fence and print the source URL on its own line underneath as a clickable raw link.
+FAQ results use the FAQ title itself as the clickable link, with the supporting notes shown underneath in a code fence and without exposing the internal `data/faq.log` file heading in Discord output.
 
 Options:
 
@@ -341,6 +348,8 @@ The output is grouped one category at a time so the file path stays on its own l
 ### `/cmibot stats`
 
 Shows the current in-memory cache totals and the per-profile entry/file counts, similar to the startup console summary.
+
+This uses the same descriptive per-profile file labels as startup and `/cmibot reload`, such as `YAML configuration files` and `YAML locale files`.
 
 Use this when you want a quick bot-health snapshot such as:
 
@@ -396,6 +405,7 @@ Run a search without Discord:
 
 ```bash
 npm run lookup -- config dynmap
+npm run lookup -- config --file Chat.yml chat
 npm run lookup -- config --mode broad "mini message"
 npm run lookup -- config --mode whole "mini message"
 npm run lookup -- config --mode whole tho
@@ -406,8 +416,8 @@ npm run lookup -- lang "was fireballed by"
 npm run lookup -- placeholder balance
 npm run lookup -- placeholder --mode whole %cmi_user_balance%
 npm run lookup -- material shulker
-npm run lookup -- command balance
-npm run lookup -- permission cmi.command.balance
+npm run lookup -- cmd balance
+npm run lookup -- perm cmi.command.balance
 npm run lookup -- faq refund
 npm run lookup -- tabcomplete "[playername]"
 npm run lookup -- langstats
@@ -420,13 +430,14 @@ npm run lookup -- stats
 - When you update, add, or remove indexed YAML or log files, use `/cmibot reload` or restart the bot.
 - `/cmibot help` should be kept in sync with new features as the bot evolves.
 - Search results can use the default exact search, a stricter whole-word or whole-phrase search, or a broader search, depending on `mode`.
+- `config` searches can optionally be narrowed to a specific indexed file with `file:`.
 - Search results can include nearby related YAML entries when `related:true` is used.
 - `langstats` shows the language-category overview without needing a search keyword.
 - `stats` shows the live cache totals and per-profile counts.
 - `placeholder` searches the exported placeholder dataset and its description comments.
 - `material` searches the exported material list.
-- `command` searches the exported command usage list.
-- `permission` searches both the standalone permission list and the YAML-like command permission export.
+- `command` and `cmd` search the exported command usage list.
+- `permission` and `perm` search both the standalone permission list and the YAML-like command permission export.
 - `faq` searches curated FAQ titles, links, and short policy notes.
 - `tabcomplete` searches exported tab-complete tokens and their explanations.
 - Search results can include an AI-generated explanation when `summary:true` is used.
