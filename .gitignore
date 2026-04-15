@@ -7,6 +7,7 @@ npm-debug.log*
 logs/
 .DS_Store
 CMI/cmi.sqlite.db
+CMIPlugin/CMI/cmi.sqlite.db
 *.sqlite-shm
 *.sqlite-wal
 security.key

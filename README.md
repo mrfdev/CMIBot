@@ -35,10 +35,13 @@ The CMI context is fully wired and currently supports:
 
 ### Jobs
 
-The Jobs context is architecturally present but not populated with data yet.
+The Jobs context is partially wired now.
 
 Right now Jobs supports:
 
+- `config`
+- `language|lang`
+- `command|cmd`
 - `help`
 - `stats`
 - `langstats`
@@ -47,10 +50,7 @@ Right now Jobs supports:
 
 These Jobs commands are prepared but currently reply that they are still being worked on:
 
-- `config`
-- `language|lang`
 - `placeholder`
-- `command|cmd`
 - `permission|perm`
 - `faq`
 
@@ -177,6 +177,8 @@ The bot already includes:
 
 Because file filtering uses the active plugin context, a Jobs channel cannot search CMI config files and vice versa.
 
+At the moment, Jobs `config` and `language` are intentionally backed by shared `CMILibPlugin/CMILib/...` data until you add more Jobs-specific YAML sources.
+
 ## Environment
 
 Copy `.env.example` to `.env` and fill in the values.
@@ -255,13 +257,14 @@ These are already present so you can drop in Jobs data later without restructuri
 Right now the live CMI data remains where it already works:
 
 ```text
-CMI/
-CMILib/
-data/
+CMIPlugin/CMI/
+CMIPlugin/data/
+CMILibPlugin/CMILib/
+JobsPlugin/data/
 src/
 ```
 
-This refactor focused on plugin-aware architecture first, without physically moving the CMI files yet.
+This refactor now supports the plugin-folder layout you created, while still keeping the data-loading rules driven by env globs.
 
 That means:
 
@@ -293,7 +296,7 @@ npm start
 - `.env` is ignored
 - `.env.example` is tracked
 - `logs/` is ignored
-- `CMI/cmi.sqlite.db` is ignored as runtime data
+- `CMIPlugin/CMI/cmi.sqlite.db` is ignored as runtime data
 
 ## Next Planned Steps
 

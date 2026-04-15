@@ -2,10 +2,10 @@ import path from "node:path";
 import fg from "fast-glob";
 
 const KNOWN_CATEGORY_LABELS = new Map([
-  ["CMI/Translations/Locale_EN.yml", "CMI (plugin locale)"],
-  ["CMI/Translations/DeathMessages/Locale_EN.yml", "CMI (death messages locale)"],
-  ["CMILib/Translations/Locale_EN.yml", "CMILib (global locale)"],
-  ["CMILib/Translations/Items/items_EN.yml", "CMILib (items locale)"],
+  ["CMIPlugin/CMI/Translations/Locale_EN.yml", "CMI (plugin locale)"],
+  ["CMIPlugin/CMI/Translations/DeathMessages/Locale_EN.yml", "CMI (death messages locale)"],
+  ["CMILibPlugin/CMILib/Translations/Locale_EN.yml", "CMILib (global locale)"],
+  ["CMILibPlugin/CMILib/Translations/Items/items_EN.yml", "CMILib (items locale)"],
 ]);
 
 const KNOWN_CATEGORY_ORDER = [...KNOWN_CATEGORY_LABELS.keys()];

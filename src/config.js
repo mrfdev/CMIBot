@@ -60,7 +60,10 @@ function buildCmiProfiles() {
       sourceType: "yaml",
       entryLabel: "YAML entries",
       statsFileLabel: "YAML configuration files",
-      include: parseCsv(process.env.LOOKUP_INCLUDE_GLOBS ?? "CMI/config.yml,CMI/Settings/**/*.yml,CMILib/config.yml"),
+      include: parseCsv(
+        process.env.LOOKUP_INCLUDE_GLOBS ??
+          "CMIPlugin/CMI/config.yml,CMIPlugin/CMI/Settings/**/*.yml,CMILibPlugin/CMILib/config.yml",
+      ),
       exclude: parseCsv(
         process.env.LOOKUP_EXCLUDE_GLOBS ??
           "**/Translations/**,**/DatabaseBackups/**,**/FileBackups/**,**/Logs/**,**/moneyLog/**,**/sellLogs/**",
@@ -71,7 +74,8 @@ function buildCmiProfiles() {
       entryLabel: "YAML entries",
       statsFileLabel: "YAML locale files",
       include: parseCsv(
-        process.env.LANGLOOKUP_INCLUDE_GLOBS ?? "CMI/Translations/**/Locale_EN.yml,CMILib/Translations/**/*_EN.yml",
+        process.env.LANGLOOKUP_INCLUDE_GLOBS ??
+          "CMIPlugin/CMI/Translations/**/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
       ),
       exclude: parseCsv(process.env.LANGLOOKUP_EXCLUDE_GLOBS),
     }),
@@ -81,7 +85,7 @@ function buildCmiProfiles() {
       statsFileLabel: "placeholder data files",
       parserType: "commentBlocks",
       codeLanguage: "yml",
-      include: parseCsv(process.env.PLACEHOLDER_INCLUDE_GLOBS ?? "data/placeholders.log"),
+      include: parseCsv(process.env.PLACEHOLDER_INCLUDE_GLOBS ?? "CMIPlugin/data/placeholders.log"),
       exclude: parseCsv(process.env.PLACEHOLDER_EXCLUDE_GLOBS),
     }),
     material: createProfile("material", {
@@ -91,7 +95,7 @@ function buildCmiProfiles() {
       parserType: "tokenList",
       defaultResultLimit: 25,
       maxResultLimit: 25,
-      include: parseCsv(process.env.MATERIAL_INCLUDE_GLOBS ?? "data/materials.log"),
+      include: parseCsv(process.env.MATERIAL_INCLUDE_GLOBS ?? "CMIPlugin/data/materials.log"),
       exclude: parseCsv(process.env.MATERIAL_EXCLUDE_GLOBS),
     }),
     command: createProfile("command", {
@@ -99,7 +103,7 @@ function buildCmiProfiles() {
       entryLabel: "command entries",
       statsFileLabel: "command data files",
       parserType: "delimited",
-      include: parseCsv(process.env.COMMAND_INCLUDE_GLOBS ?? "data/commands.log"),
+      include: parseCsv(process.env.COMMAND_INCLUDE_GLOBS ?? "CMIPlugin/data/commands.log"),
       exclude: parseCsv(process.env.COMMAND_EXCLUDE_GLOBS),
     }),
     permission: createProfile("permission", {
@@ -107,7 +111,9 @@ function buildCmiProfiles() {
       entryLabel: "permission entries",
       statsFileLabel: "permission data files",
       parserType: "permissionMixed",
-      include: parseCsv(process.env.PERMISSION_INCLUDE_GLOBS ?? "data/permissions.log,data/cmdperms.log"),
+      include: parseCsv(
+        process.env.PERMISSION_INCLUDE_GLOBS ?? "CMIPlugin/data/permissions.log,CMIPlugin/data/cmdperms.log",
+      ),
       exclude: parseCsv(process.env.PERMISSION_EXCLUDE_GLOBS),
     }),
     faq: createProfile("faq", {
@@ -115,7 +121,7 @@ function buildCmiProfiles() {
       entryLabel: "FAQ entries",
       statsFileLabel: "FAQ data files",
       parserType: "commentBlocks",
-      include: parseCsv(process.env.FAQ_INCLUDE_GLOBS ?? "data/faq.log"),
+      include: parseCsv(process.env.FAQ_INCLUDE_GLOBS ?? "CMIPlugin/data/faq.log"),
       exclude: parseCsv(process.env.FAQ_EXCLUDE_GLOBS),
     }),
     tabcomplete: createProfile("tabcomplete", {
@@ -123,7 +129,7 @@ function buildCmiProfiles() {
       entryLabel: "tab-complete entries",
       statsFileLabel: "tab-complete data files",
       parserType: "delimited",
-      include: parseCsv(process.env.TABCOMPLETE_INCLUDE_GLOBS ?? "data/tabcompletes.log"),
+      include: parseCsv(process.env.TABCOMPLETE_INCLUDE_GLOBS ?? "CMIPlugin/data/tabcompletes.log"),
       exclude: parseCsv(process.env.TABCOMPLETE_EXCLUDE_GLOBS),
     }),
   };
@@ -135,14 +141,14 @@ function buildJobsProfiles() {
       sourceType: "yaml",
       entryLabel: "YAML entries",
       statsFileLabel: "YAML configuration files",
-      include: parseCsv(process.env.JOBS_LOOKUP_INCLUDE_GLOBS),
+      include: parseCsv(process.env.JOBS_LOOKUP_INCLUDE_GLOBS ?? "CMILibPlugin/CMILib/config.yml"),
       exclude: parseCsv(process.env.JOBS_LOOKUP_EXCLUDE_GLOBS),
     }),
     language: createProfile("language", {
       sourceType: "yaml",
       entryLabel: "YAML entries",
       statsFileLabel: "YAML locale files",
-      include: parseCsv(process.env.JOBS_LANGUAGE_INCLUDE_GLOBS),
+      include: parseCsv(process.env.JOBS_LANGUAGE_INCLUDE_GLOBS ?? "CMILibPlugin/CMILib/Translations/**/*_EN.yml"),
       exclude: parseCsv(process.env.JOBS_LANGUAGE_EXCLUDE_GLOBS),
     }),
     placeholder: createProfile("placeholder", {
@@ -159,7 +165,7 @@ function buildJobsProfiles() {
       entryLabel: "command entries",
       statsFileLabel: "command data files",
       parserType: "delimited",
-      include: parseCsv(process.env.JOBS_COMMAND_INCLUDE_GLOBS),
+      include: parseCsv(process.env.JOBS_COMMAND_INCLUDE_GLOBS ?? "JobsPlugin/data/commands.log"),
       exclude: parseCsv(process.env.JOBS_COMMAND_EXCLUDE_GLOBS),
     }),
     permission: createProfile("permission", {
@@ -250,11 +256,11 @@ export function loadConfig() {
         label: "Jobs",
         profiles: jobsProfiles,
         commandAvailability: buildPluginCommandAvailability({
-          config: "coming_soon",
-          language: "coming_soon",
+          config: "ready",
+          language: "ready",
           placeholder: "coming_soon",
           material: "unsupported",
-          command: "coming_soon",
+          command: "ready",
           permission: "coming_soon",
           faq: "coming_soon",
           tabcomplete: "unsupported",

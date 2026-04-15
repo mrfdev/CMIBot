@@ -141,7 +141,7 @@ export function resolveFileFilter(rawFileFilter, entries, { profileLabel = "inde
   ) {
     return {
       ok: false,
-      reason: "Please use only an indexed file name like Chat.yml, config.yml, or CMI/Settings/Chat.yml.",
+      reason: "Please use only an indexed file name like Chat.yml, config.yml, or a plugin-relative config path.",
       normalizedFilter,
       matchedPaths: [],
       filteredEntries: [],
@@ -159,7 +159,7 @@ export function resolveFileFilter(rawFileFilter, entries, { profileLabel = "inde
   if (!matchedPaths.length) {
     return {
       ok: false,
-      reason: `That file filter does not match an indexed ${profileLabel} file. Try Chat.yml, config.yml, or CMI/Settings/Chat.yml.`,
+      reason: `That file filter does not match an indexed ${profileLabel} file. Try Chat.yml, config.yml, or a plugin-relative config path.`,
       normalizedFilter,
       matchedPaths: [],
       filteredEntries: [],

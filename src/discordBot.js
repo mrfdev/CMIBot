@@ -98,7 +98,7 @@ function addCommonLookupOptions(
     builder = builder.addStringOption((option) =>
       option
         .setName("file")
-        .setDescription("Optional indexed config file filter, like Chat.yml or CMI/Settings/Chat.yml."),
+        .setDescription("Optional indexed config file filter, like Chat.yml, config.yml, or a plugin-relative path."),
     );
   }
 
