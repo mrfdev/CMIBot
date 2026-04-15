@@ -269,7 +269,12 @@ export async function loadEntriesFromLogProfile(profile, workspaceRoot) {
   for (const relativePath of relativePaths.sort()) {
     const absolutePath = path.join(workspaceRoot, relativePath);
     const fileText = await fs.readFile(absolutePath, "utf8");
-    entries.push(...extractEntriesByParser(profile.parserType ?? "commentBlocks", fileText, relativePath));
+    const parsedEntries = extractEntriesByParser(profile.parserType ?? "commentBlocks", fileText, relativePath);
+    if (profile.codeLanguage) {
+      entries.push(...parsedEntries.map((entry) => ({ ...entry, codeLanguage: profile.codeLanguage })));
+    } else {
+      entries.push(...parsedEntries);
+    }
   }
 
   return entries;

@@ -23,6 +23,7 @@ It is designed for support workflows like:
 /cmibot faq refund
 /cmibot tabcomplete [playername] mode:whole
 /cmibot langstats
+/cmibot debug
 /cmibot reload
 ```
 
@@ -32,7 +33,7 @@ Git note: the live SQLite database at `CMI/cmi.sqlite.db` is runtime data and is
 
 ## What It Does
 
-- Registers a `/cmibot` slash command with `config`, `language`, `lang`, `placeholder`, `material`, `command`, `cmd`, `permission`, `perm`, `faq`, `tabcomplete`, `langstats`, and `stats` subcommands
+- Registers a `/cmibot` slash command with `config`, `language`, `lang`, `placeholder`, `material`, `command`, `cmd`, `permission`, `perm`, `faq`, `tabcomplete`, `langstats`, `stats`, and `debug` subcommands
 - Registers a `/cmibot help` command for channel-local usage guidance
 - Registers an admin-only `/cmibot reload` command for rebuilding the in-memory search cache
 - Restricts usage to your configured guild, channel, and allowed roles
@@ -72,6 +73,9 @@ The bot reads its settings from `.env`.
 - `DISCORD_APPLICATION_ID`: Discord application ID
 - `DISCORD_GUILD_ID`: Guild/server ID
 - `DISCORD_ALLOWED_CHANNEL_IDS`: Comma-separated channel IDs allowed to use the bot
+- `DISCORD_CMI_CHANNEL_IDS`: Channel IDs that should route as CMI support channels
+- `DISCORD_CMI_TEST_CHANNEL_IDS`: Channel IDs that should route as CMI test channels
+- `DISCORD_JOBS_CHANNEL_IDS`: Channel IDs that should route as Jobs support channels for future multi-plugin routing
 - `ALLOWED_ROLE_IDS`: Comma-separated role IDs allowed to use CMIBot search and stats commands
 - `ADMIN_ROLE_IDS`: Comma-separated role IDs allowed to use `/cmibot reload`
 - `AI_ROLE_IDS`: Comma-separated role IDs allowed to use AI-backed features like reranking and `summary:true`
@@ -118,6 +122,9 @@ This project already defaults to:
 
 - Guild ID: `452792793631555594`
 - Allowed channels: `526402563847880725` (`#cmi`), `1493976695152054353` (`#bot-test`)
+- CMI context channels: `526402563847880725` (`#cmi`)
+- CMI test channels: `1493976695152054353` (`#bot-test`)
+- Jobs context channels: `526402919826849804`
 - Allowed role IDs: `526407132224946186`, `452793620471218186`, `526451949051314188`, `526452401239228416`, `893444734138322984`, `1037695349667659848`
 - Reload admin role ID: `526407132224946186`
 
@@ -147,6 +154,7 @@ Regular config lookup, language lookup, and exported-data lookups are kept separ
 - `/cmibot tabcomplete <keyword>` searches exported tab-complete entries
 - `/cmibot langstats` shows locale categories and available languages without requiring a keyword
 - `/cmibot stats` shows cache totals and per-profile counts
+- `/cmibot debug` shows which configured plugin/channel context the current channel maps to
 - `/cmibot help` shows command usage in the configured channel
 
 You can adjust the file scopes in `.env` without changing code.
@@ -161,6 +169,14 @@ Shows the bot's current capabilities in the configured support channels.
 - If the user is not in an allowed support/admin role, the help output includes a notice that command access is limited
 - Kept intentionally concise so it stays within Discord's message length limits
 - Intended to stay in sync with the current command set as the bot grows
+
+### `/cmibot debug`
+
+Shows the detected channel/plugin context for the current channel.
+
+- Available in configured support and test channels
+- Intended as a temporary verification command while channel-based routing is being explored
+- Distinguishes between CMI support, CMI test, and Jobs channel mappings when those IDs are configured
 
 ### `/cmibot config`
 
@@ -219,6 +235,8 @@ Options:
 
 This placeholder log is currently enriched with comment descriptions based on the [Zrips CMI placeholders reference](https://www.zrips.net/cmi/placeholders/), so searches can match both the token and its explanation.
 
+Discord output for `placeholder` uses placeholder-focused wording and keeps the code fence highlighted as `yml`.
+
 Examples:
 
 ```text
@@ -240,6 +258,8 @@ Options:
 
 Material lookups use a bigger default window so common grouped searches like `shulker` or `wool` can be shown in one response.
 
+Discord output for `material` is intentionally simplified to read like a single NMS material list instead of an internal file dump.
+
 Examples:
 
 ```text
@@ -252,6 +272,8 @@ Examples:
 Searches exported CMI command usage entries from `data/commands.log`.
 
 `/cmibot cmd` is a short alias for the same search.
+
+Discord output for `command` uses command-focused wording and omits the redundant pre-code-block lead line.
 
 Options:
 
@@ -272,6 +294,8 @@ Examples:
 Searches exported permission data from `data/permissions.log` and `data/cmdperms.log`.
 
 `/cmibot perm` is a short alias for the same search.
+
+Discord output for `permission` uses permission-focused wording instead of exposing the internal log filename.
 
 Options:
 
@@ -317,6 +341,8 @@ Examples:
 ### `/cmibot tabcomplete`
 
 Searches exported tab-complete token entries from `data/tabcompletes.log`.
+
+Discord output for `tabcomplete` uses tabcomplete-focused wording instead of exposing the internal log filename.
 
 Options:
 
@@ -480,30 +506,28 @@ Found [25] mentions in [2] files for Icon (Chat.yml / config.yml)
 
 Example placeholder response:
 
-```text
-Found [2] mentions in [1] file for balance
-
-From bot's: `data/placeholders.log`
+````text
+Found [2] placeholder mentions for `balance`
 
 Look around line 167 -> %cmi_user_balance_formatted%
+```yml
 # Formatted users balance
 %cmi_user_balance_formatted%
+```
 
 Look around line 170 -> %cmi_user_balance%
+```yml
 # Clean users balance
 %cmi_user_balance%
+```
 
 Showing 2 results.
-```
+````
 
 Example material response:
 
 ````text
-Found [19] mentions in [1] file for shulker
-
-From bot's: `data/materials.log`
-
-Lines: 57, 74, 105, 190, 344, 356, 441, 454, 470, 485, 561, 585, 652, 693, 720, 721, 722, 833, 858
+Found [19] mentions in the NMS material list for `shulker`
 ```text
 BLACK_SHULKER_BOX
 BLUE_SHULKER_BOX
@@ -527,4 +551,22 @@ YELLOW_SHULKER_BOX
 ```
 
 Showing 19 results.
+````
+
+Example command response:
+
+````text
+Found [2] command mentions for `balance`
+
+```yml
+# Check money balance
+/cmi balance (playerName)
+```
+
+```yml
+# Check top money list
+/cmi baltop (playerName)
+```
+
+Showing 2 results.
 ````

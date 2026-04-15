@@ -178,6 +178,11 @@ function buildCommandData(config) {
           .setDescription("Show cache totals and per-profile entry/file counts."),
       )
       .addSubcommand((subcommand) =>
+        subcommand
+          .setName("debug")
+          .setDescription("Show which plugin/channel context this channel is mapped to."),
+      )
+      .addSubcommand((subcommand) =>
         subcommand.setName("reload").setDescription("Reload the in-memory search cache."),
       )
       .toJSON(),
@@ -217,6 +222,7 @@ function formatHelpMessage(config, member) {
     "- `/cmibot tabcomplete <keyword>` searches exported tab-complete entries",
     "- `/cmibot langstats` shows English locale categories and language codes",
     "- `/cmibot stats` shows cache totals and per-profile counts",
+    "- `/cmibot debug` shows which channel/plugin context this channel is mapped to",
     "- `/cmibot reload` refreshes the in-memory search cache from disk",
     "",
     "Options:",
@@ -243,12 +249,13 @@ function formatHelpMessage(config, member) {
     "- `/cmibot faq refund`",
     "- `/cmibot tabcomplete [playername] mode:whole`",
     "- `/cmibot stats`",
+    "- `/cmibot debug`",
   ];
 
   if (!canLookup) {
     lines.push(
       "",
-      "Notice: config, language, lang, placeholder, material, command, permission, faq, tabcomplete, langstats, stats, and reload are limited to certain support/admin groups.",
+      "Notice: config, language, lang, placeholder, material, command, permission, faq, tabcomplete, langstats, stats, and reload are limited to certain support/admin groups. `debug` is available in recognized debug/support channels.",
     );
   } else if (aiEnabled && !canReload && !canUseAi) {
     lines.push(
@@ -269,6 +276,59 @@ function formatHelpMessage(config, member) {
 
 function formatStatsMessage(summary) {
   return [`### CMIBot Stats`, formatCacheSummary(summary)].join("\n");
+}
+
+function resolveChannelContext(channelId, config) {
+  if (config.discord.cmiTestChannelIds.includes(channelId)) {
+    return {
+      key: "cmi",
+      label: "CMI",
+      variant: "test",
+      channelType: "test channel",
+      routingNote: "This channel is intentionally treated as CMI for safe testing.",
+    };
+  }
+
+  if (config.discord.cmiChannelIds.includes(channelId) || config.discord.allowedChannelIds.includes(channelId)) {
+    return {
+      key: "cmi",
+      label: "CMI",
+      variant: "support",
+      channelType: "support channel",
+      routingNote: "This channel is mapped to the CMI lookup set.",
+    };
+  }
+
+  if (config.discord.jobsChannelIds.includes(channelId)) {
+    return {
+      key: "jobs",
+      label: "Jobs",
+      variant: "support",
+      channelType: "support channel",
+      routingNote: "This channel is mapped to a Jobs-specific context placeholder for future routing.",
+    };
+  }
+
+  return {
+    key: "unknown",
+    label: "Unknown",
+    variant: "unknown",
+    channelType: "unmapped channel",
+    routingNote: "This channel does not currently map to a known plugin context.",
+  };
+}
+
+function formatDebugMessage(interaction, config) {
+  const context = resolveChannelContext(interaction.channelId, config);
+
+  return [
+    "### CMIBot Debug",
+    `Detected context: \`${context.label}\``,
+    `Channel type: \`${context.channelType}\``,
+    `Channel ID: \`${interaction.channelId}\``,
+    "",
+    context.routingNote,
+  ].join("\n");
 }
 
 function resolveProfileName(subcommand) {
@@ -410,6 +470,10 @@ function formatLangStatsOnlyMessage(languageCategories, formatDisplayPath) {
     .join("\n");
 }
 
+function linkedReferenceLabel(label, url) {
+  return `[${label}](<${url}>)`;
+}
+
 function formatResultsMessage(
   keyword,
   results,
@@ -439,10 +503,11 @@ function formatResultsMessage(
   }
 
   const blocks = [];
+  const hideInternalHeading = ["faq", "placeholder", "tabcomplete", "command", "permission"].includes(options.layout);
 
   for (const [displayPath, fileResults] of groupedResults.entries()) {
     const heading =
-      options.layout === "faq"
+      hideInternalHeading
         ? ""
         : fileResults[0]?.sourceType === "log"
           ? `From bot's: \`${displayPath}\``
@@ -468,6 +533,14 @@ function formatResultsMessage(
   const header =
     options.layout === "faq"
       ? `### Found [${totalMentions}] ${mentionLabel} for \`${safeKeyword}\``
+      : options.layout === "placeholder"
+        ? `### Found [${totalMentions}] ${mentionLabel} for ${linkedReferenceLabel("placeholders", "https://www.zrips.net/cmi/placeholders/")} matching \`${safeKeyword}\``
+        : options.layout === "tabcomplete"
+          ? `### Found [${totalMentions}] ${mentionLabel} for tabcompletes matching \`${safeKeyword}\``
+          : options.layout === "command"
+            ? `### Found [${totalMentions}] ${mentionLabel} for ${linkedReferenceLabel("commands", "https://www.zrips.net/cmi/commands/")} matching \`${safeKeyword}\``
+            : options.layout === "permission"
+              ? `### Found [${totalMentions}] ${mentionLabel} for ${linkedReferenceLabel("permissions", "https://www.zrips.net/cmi/permissions/")} matching \`${safeKeyword}\``
       : `### Found [${totalMentions}] ${mentionLabel} in [${fileCount}] ${fileLabel} for \`${safeKeyword}\`${fileHint}`;
 
   let footer = "";
@@ -484,9 +557,8 @@ function formatResultsMessage(
 
 function formatMaterialResultsMessage(keyword, results, totalMentions, fileCount, allMatchedFiles) {
   const mentionLabel = pluralize(totalMentions, "mention");
-  const fileLabel = pluralize(fileCount, "file");
   const safeKeyword = sanitizeForDisplay(keyword);
-  const header = `### Found [${totalMentions}] ${mentionLabel} in [${fileCount}] ${fileLabel} for \`${safeKeyword}\``;
+  const header = `### Found [${totalMentions}] ${mentionLabel} in the NMS material list for \`${safeKeyword}\``;
   const groups = new Map();
 
   for (const result of results) {
@@ -498,10 +570,9 @@ function formatMaterialResultsMessage(keyword, results, totalMentions, fileCount
   }
 
   const blocks = [];
-  for (const [displayPath, fileResults] of groups.entries()) {
-    const lines = fileResults.map((result) => result.lineNumber).join(", ");
+  for (const [, fileResults] of groups.entries()) {
     const values = fileResults.map((result) => result.yamlPath).join("\n");
-    blocks.push(`From bot's: \`${displayPath}\`\nLines: ${lines}\n\`\`\`text\n${values}\n\`\`\``);
+    blocks.push(`\`\`\`text\n${values}\n\`\`\``);
   }
 
   const footer = `_Showing ${results.length} ${pluralize(results.length, "result")}${totalMentions > results.length ? ", but there are more." : "."}_`;
@@ -562,6 +633,38 @@ export function createInteractionHandler(config, searchCache) {
       return;
     }
 
+    const subcommand = interaction.options.getSubcommand();
+    const channelContext = resolveChannelContext(interaction.channelId, config);
+
+    if (subcommand === "debug") {
+      if (channelContext.key === "unknown") {
+        await logEvent(interaction, {
+          subcommand,
+          outcome: "denied",
+          reason: "debug-channel",
+        });
+        await interaction.reply({
+          content: "This debug command can only be used in a configured support or test channel.",
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+        return;
+      }
+
+      await logEvent(interaction, {
+        subcommand,
+        outcome: "success",
+        detectedContext: channelContext.key,
+        channelVariant: channelContext.variant,
+      });
+      await interaction.reply({
+        content: formatDebugMessage(interaction, config),
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
     if (!config.discord.allowedChannelIds.includes(interaction.channelId)) {
       await interaction.reply({
         content: "This command can only be used in the configured support channel.",
@@ -570,8 +673,6 @@ export function createInteractionHandler(config, searchCache) {
       });
       return;
     }
-
-    const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === "help") {
       await logEvent(interaction, {
@@ -906,6 +1007,10 @@ export function createInteractionHandler(config, searchCache) {
               ? "materialList"
               : profile.name === "faq"
                 ? "faq"
+                : profile.name === "placeholder"
+                  ? "placeholder"
+                  : profile.name === "tabcomplete"
+                    ? "tabcomplete"
                 : profile.name === "permission"
                   ? "permission"
                   : profile.name === "command"
