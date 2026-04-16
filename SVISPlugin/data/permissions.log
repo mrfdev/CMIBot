@@ -1,0 +1,34 @@
+Each command requires a permission node related to that command in the same format as sv.command.[commandName] (in example sv.command.chunk) and missing permission node will be shown while hovering over the error message
+
+sv.worldedit.use – allows to see WE selections
+sv.factions.use – allows to see Factions claim on land claiming/unclaiming
+sv.kingdoms.use – allows to see Kingdoms claim on land claiming/unclaiming
+sv.izone.use – allows seeing izone selections
+sv.towny.use – allows to see Towny claim on land claiming/unclaiming
+sv.gp.use – allows to see GriefPrevention claims on edit or info tool usage
+sv.cb.use – allows to see CommandBlock selection areas
+sv.jobs.use – allows seeing your current selection with Jobs selection tool
+sv.furniture.use – allows using Dice Furniture feature
+sv.command.[command] – gives access to specific command
+sv.versioncheck – gives access to see when new plugin version is available
+sv.command.svgui.bypass – Bypasses set limits when using GUI
+
+Permission for GUI editing particular type. All of them are given by default, so negate to prevent editing of them. This will not disable particular visualizer, just prevents GUI
+sv.selectiontypeconfig.wepaste
+sv.selectiontypeconfig.wecyl
+sv.selectiontypeconfig.wepoly
+sv.selectiontypeconfig.weconvex
+sv.selectiontypeconfig.point
+sv.selectiontypeconfig.chunk
+sv.selectiontypeconfig.grid
+sv.selectiontypeconfig.spawner
+sv.selectiontypeconfig.kingdoms
+sv.selectiontypeconfig.factions
+sv.selectiontypeconfig.gp
+sv.selectiontypeconfig.worldguard
+sv.selectiontypeconfig.residence
+sv.selectiontypeconfig.towny
+sv.selectiontypeconfig.dicefurniture
+sv.selectiontypeconfig.jobs
+sv.selectiontypeconfig.wesphere
+sv.selectiontypeconfig.wecuboid

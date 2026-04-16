@@ -1,0 +1,219 @@
+# Group: Help and information
+# Shows the Residence help pages.
+/res ? [page]
+
+# Group: Help and information
+# Shows command help for a specific subcommand.
+/res ? [command]
+
+# Group: Help and information
+# Shows plugin version information.
+/res version
+
+# Group: Help and information
+# Lists all residences owned by a player.
+/res list [player]
+
+# Group: Help and information
+# Lists every residence on the server.
+/res listall
+
+# Group: Help and information
+# Lists nearby residences in your area.
+/res nearby
+
+# Group: Help and information
+# Shows detailed info for a residence.
+/res info [residence]
+
+# Group: Help and information
+# Shows the current residence where you are standing.
+/res current
+
+# Group: Help and information
+# Shows all residence flags.
+/res flags
+
+# Group: Help and information
+# Lists residences available for sale.
+/res market list
+
+# Group: Help and information
+# Lists residences available for rent.
+/res market rent
+
+# Group: Selection
+# Gives or shows the residence selection tool.
+/res select [player]
+
+# Group: Selection
+# Clears the current selection.
+/res select clear
+
+# Group: Selection
+# Auto-selects the residence you are standing in.
+/res select residence [residence]
+
+# Group: Selection
+# Shows a visual preview of the current selection.
+/res select visual
+
+# Group: Selection
+# Sets the first selection position.
+/res pos1
+
+# Group: Selection
+# Sets the second selection position.
+/res pos2
+
+# Group: Selection
+# Centers the selection around your position.
+/res area add [radius]
+
+# Group: Creation and editing
+# Creates a new residence from the current selection.
+/res create [name]
+
+# Group: Creation and editing
+# Creates a subzone inside an existing residence.
+/res subzone [parent] [name]
+
+# Group: Creation and editing
+# Expands a residence in a direction.
+/res expand [amount] [direction]
+
+# Group: Creation and editing
+# Contracts a residence in a direction.
+/res contract [amount] [direction]
+
+# Group: Creation and editing
+# Resizes a residence using the current selection.
+/res resize [residence]
+
+# Group: Creation and editing
+# Renames a residence.
+/res rename [oldName] [newName]
+
+# Group: Creation and editing
+# Deletes a residence.
+/res remove [residence]
+
+# Group: Creation and editing
+# Deletes a subzone.
+/res removesubzone [subzone]
+
+# Group: Teleportation and movement
+# Teleports you to a residence.
+/res tp [residence]
+
+# Group: Teleportation and movement
+# Teleports you to the first spawn point of a residence.
+/res tpset
+
+# Group: Teleportation and movement
+# Sets the teleport location for a residence.
+/res set [residence]
+
+# Group: Teleportation and movement
+# Returns you to your previous position if supported.
+/res back
+
+# Group: Economy and market
+# Buys a residence that is for sale.
+/res buy [residence]
+
+# Group: Economy and market
+# Sells your residence.
+/res sell [residence] [price]
+
+# Group: Economy and market
+# Sets a residence for rent.
+/res rent [residence] [price] [days]
+
+# Group: Economy and market
+# Cancels renting for a residence.
+/res unrent [residence]
+
+# Group: Economy and market
+# Sets or adds money to a residence bank.
+/res bank [residence] [amount]
+
+# Group: Economy and market
+# Evicts a renter from a residence.
+/res evict [residence]
+
+# Group: Permissions and flags
+# Shows permissions for a residence.
+/res pset [residence]
+
+# Group: Permissions and flags
+# Sets player permissions in a residence.
+/res pset [residence] [player] [permission] [true|false|remove]
+
+# Group: Permissions and flags
+# Sets group permissions in a residence.
+/res gset [residence] [group] [permission] [true|false|remove]
+
+# Group: Permissions and flags
+# Sets a flag value for a residence.
+/res setflag [residence] [flag] [true|false|remove]
+
+# Group: Permissions and flags
+# Shows the message shown when entering a residence.
+/res message enter [residence]
+
+# Group: Permissions and flags
+# Shows the message shown when leaving a residence.
+/res message leave [residence]
+
+# Group: Permissions and flags
+# Sets the enter message for a residence.
+/res message enter [residence] [message]
+
+# Group: Permissions and flags
+# Sets the leave message for a residence.
+/res message leave [residence] [message]
+
+# Group: Permissions and flags
+# Removes the enter message for a residence.
+/res message enter remove [residence]
+
+# Group: Permissions and flags
+# Removes the leave message for a residence.
+/res message leave remove [residence]
+
+# Group: Ownership and trusted players
+# Adds another player as owner.
+/res owneradd [residence] [player]
+
+# Group: Ownership and trusted players
+# Removes an added owner from a residence.
+/res ownerremove [residence] [player]
+
+# Group: Ownership and trusted players
+# Gives a residence to another player.
+/res give [residence] [player]
+
+# Group: Ownership and trusted players
+# Kicks a player out of your residence.
+/res kick [player]
+
+# Group: Ownership and trusted players
+# Lists players with trusted access.
+/res trusted [residence]
+
+# Group: Admin tools
+# Reloads the Residence plugin configuration.
+/res reload
+
+# Group: Admin tools
+# Turns admin mode on or off.
+/resadmin [on|off]
+
+# Group: Admin tools
+# Teleports another player to a residence.
+/res tp [player] [residence]
+
+# Group: Admin tools
+# Shows or edits another player's selections.
+/res select [player]

@@ -113,19 +113,26 @@ function makeSyntheticComment(description) {
 }
 
 function splitDelimitedLine(line) {
-  const delimiter = " - ";
-  const index = line.indexOf(delimiter);
-  if (index === -1) {
+  const delimiters = [" - ", " – ", " — "];
+  const matchedDelimiter = delimiters.find((delimiter) => line.includes(delimiter));
+
+  if (!matchedDelimiter) {
     return {
       key: line.trim(),
       description: "",
     };
   }
 
+  const index = line.indexOf(matchedDelimiter);
+
   return {
     key: line.slice(0, index).trim(),
-    description: line.slice(index + delimiter.length).trim(),
+    description: line.slice(index + matchedDelimiter.length).trim(),
   };
+}
+
+function looksLikePermissionNode(line) {
+  return /^[a-z0-9_.:[\]-]+$/i.test(line.trim());
 }
 
 function stripHtml(line) {
@@ -404,6 +411,43 @@ export function extractEntriesFromDelimitedText(fileText, relativePath, { preser
   return entries;
 }
 
+export function extractEntriesFromPermissionListText(fileText, relativePath) {
+  const lines = fileText.split(/\r?\n/);
+  const entries = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const trimmed = line.trim();
+    if (!trimmed) {
+      continue;
+    }
+
+    const { key, description } = splitDelimitedLine(trimmed);
+    const lineNumber = index + 1;
+
+    if (!description && !looksLikePermissionNode(key)) {
+      continue;
+    }
+
+    const comments = makeSyntheticComment(description);
+
+    entries.push(
+      buildEntry({
+        relativePath,
+        lineNumber,
+        key,
+        value: description,
+        yamlPath: key,
+        comments,
+        snippet: [...comments, key].join("\n").trimEnd(),
+        codeLanguage: "yml",
+      }),
+    );
+  }
+
+  return entries;
+}
+
 export function extractEntriesFromCmdPermsText(fileText, relativePath) {
   const lines = fileText.split(/\r?\n/);
   const entries = [];
@@ -493,6 +537,8 @@ function extractEntriesByParser(parserType, fileText, relativePath) {
       return path.posix.basename(toPosixPath(relativePath)) === "cmdperms.log"
         ? extractEntriesFromCmdPermsText(fileText, relativePath)
         : extractEntriesFromDelimitedText(fileText, relativePath);
+    case "permissionList":
+      return extractEntriesFromPermissionListText(fileText, relativePath);
     case "faqMixed":
       return path.posix.extname(toPosixPath(relativePath)).toLowerCase() === ".md"
         ? extractEntriesFromMarkdownFaqText(fileText, relativePath)

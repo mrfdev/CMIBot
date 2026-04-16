@@ -1,0 +1,15 @@
+/svis gui (type) – open GUI for setting your personal visualiser settings
+/svis we (paste) (lock/tp) – if the paste variable not used will show WE selection (Keep in mind that WE selection is shown automatically on selection, this is only re-enables it if the timer runs out). If the paste variable is used then a possible paste location will be shown for accurate positioning even after using rotate or flip functions. Option to lock current position to enable movement around and get a closer look where paste ends up. Option to teleport to locked position for simple adjustments or actual paste.
+/svis fc (fixy) – Shows factions claim lands in 3 different colors depending on your relationship with that faction.
+/svis towny (fixy) – Shows towny claim lands in 3 different colors depending on your relationship with that town.
+/svis wg (regionName) – shows region boundaries you are currently in (the region with the lowest priority will be shown if there is more than 1 percent) or by defined name
+/svis res (residenceName) (-s) (-a) – shows residence boundaries you currently in or by defined name. -s variable stands for subzones, so by providing it you will see subzones too (only one layer deep for convenience purposes). -a variable is to show all surrounding residences, useful if you want to check what is protected and what is not in area
+/svis gp (fixy) – shows GriefPrevention claim boundaries you currently in.
+/svis izone – shows iZone selection.
+/svis spawner – shows spawner activation range and mob spawning range around it
+/svis grid (fixy) – shows chunk grid (Factions server friendly feature)
+/svis cb – Shows command block selection area if it’s set. Need to be looking at the block itself.
+/svis chunk – shows current chunk
+/svis toggle – Toggles visualizer for player
+/svis watch [nickname/info/stop] – option to see other people selections
+/svis reload – reload configuration file

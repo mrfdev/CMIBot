@@ -1,0 +1,25 @@
+%residence_user_current_owner% – returns current residence owner name
+%residence_user_current_rentends% – returns time when rent ends
+%residence_user_current_rentdays% – returns number of days you can rent area
+%residence_user_current_rentedby% – returns player name who is renting area
+%residence_user_current_rentprice% – returns area price if its for rent
+%residence_user_current_forrent% – returns true or false if area is for rent
+%residence_user_current_saleprice% – return sale price
+%residence_user_current_forsale% – return true or false if area is for sale
+%residence_user_current_ssize% – returns residence size in squares (x*z)
+%residence_user_current_qsize% – returns residence size in cubes (x*z*y)
+%residence_user_current_bank% – returns residence bank amount
+%residence_user_current_res% – returns name of current residence
+%residence_user_blocksell% – returns players block sell amount
+%residence_user_blockcost% – returns players block buy cost
+%residence_user_maxrentdays% – returns players max rent days
+%residence_user_maxrents% – returns players max rentable residences player can have
+%residence_user_maxsubdepth% – returns max allowed subzone depth
+%residence_user_maxsub% – returns max subzone amount player can have
+%residence_user_maxud% – returns max size in height
+%residence_user_maxew% – returns max size in length
+%residence_user_maxres% – returns max residences a player can have
+%residence_user_cancreate% – returns true or false if player can create residences
+%residence_user_amount% – returns amount of residences player currently have
+%residence_user_admin% – returns true or false depending if player is res admin or not
+%residence_user_group% – returns players residence group

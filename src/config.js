@@ -50,6 +50,7 @@ function toDisplayRelativePath(relativePath) {
     ["CMILibPlugin/CMILib/", "CMILib/"],
     ["CMILibPlugin/data/", "CMILib/data/"],
     ["JobsPlugin/", "Jobs/"],
+    ["ResidencePlugin/", "Residence/"],
     ["SVISPlugin/", "SelectionVisualizer/"],
     ["MFMPlugin/", "MobFarmManager/"],
     ["TryMePlugin/", "TryMe/"],
@@ -261,15 +262,37 @@ function buildJobsProfiles() {
 }
 
 function buildSvisProfiles() {
-  return buildSimplePluginProfiles({
-    configInclude:
-      process.env.SVIS_LOOKUP_INCLUDE_GLOBS ?? "SVISPlugin/config.yml,CMILibPlugin/CMILib/config.yml",
-    configExcludeEnv: process.env.SVIS_LOOKUP_EXCLUDE_GLOBS,
-    languageInclude:
-      process.env.SVIS_LANGUAGE_INCLUDE_GLOBS ??
-      "SVISPlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
-    languageExcludeEnv: process.env.SVIS_LANGUAGE_EXCLUDE_GLOBS,
-  });
+  return {
+    ...buildSimplePluginProfiles({
+      configInclude:
+        process.env.SVIS_LOOKUP_INCLUDE_GLOBS ?? "SVISPlugin/config.yml,CMILibPlugin/CMILib/config.yml",
+      configExcludeEnv: process.env.SVIS_LOOKUP_EXCLUDE_GLOBS,
+      languageInclude:
+        process.env.SVIS_LANGUAGE_INCLUDE_GLOBS ??
+        "SVISPlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+      languageExcludeEnv: process.env.SVIS_LANGUAGE_EXCLUDE_GLOBS,
+    }),
+    command: createProfile("command", {
+      sourceType: "log",
+      entryLabel: "command entries",
+      statsFileLabel: "command data files",
+      referenceLabel: "commands",
+      referenceUrl: "https://www.zrips.net/svis/",
+      parserType: "delimited",
+      include: parseCsv(process.env.SVIS_COMMAND_INCLUDE_GLOBS ?? "SVISPlugin/data/commands.log"),
+      exclude: parseCsv(process.env.SVIS_COMMAND_EXCLUDE_GLOBS),
+    }),
+    permission: createProfile("permission", {
+      sourceType: "log",
+      entryLabel: "permission entries",
+      statsFileLabel: "permission data files",
+      referenceLabel: "permissions",
+      referenceUrl: "https://www.zrips.net/svis/",
+      parserType: "permissionList",
+      include: parseCsv(process.env.SVIS_PERMISSION_INCLUDE_GLOBS ?? "SVISPlugin/data/permissions.log"),
+      exclude: parseCsv(process.env.SVIS_PERMISSION_EXCLUDE_GLOBS),
+    }),
+  };
 }
 
 function buildMfmProfiles() {
@@ -308,6 +331,43 @@ function buildTrademeProfiles() {
   });
 }
 
+function buildResidenceProfiles() {
+  return {
+    placeholder: createProfile("placeholder", {
+      sourceType: "log",
+      entryLabel: "placeholder entries",
+      statsFileLabel: "placeholder data files",
+      referenceLabel: "placeholders",
+      referenceUrl: "https://www.zrips.net/residence/placeholders/",
+      parserType: "delimited",
+      codeLanguage: "yml",
+      include: parseCsv(process.env.RESIDENCE_PLACEHOLDER_INCLUDE_GLOBS ?? "ResidencePlugin/data/placeholders.log"),
+      exclude: parseCsv(process.env.RESIDENCE_PLACEHOLDER_EXCLUDE_GLOBS),
+    }),
+    command: createProfile("command", {
+      sourceType: "log",
+      entryLabel: "command entries",
+      statsFileLabel: "command data files",
+      referenceLabel: "commands",
+      referenceUrl: "https://www.zrips.net/residence/commands/",
+      parserType: "commentBlocks",
+      codeLanguage: "yml",
+      include: parseCsv(process.env.RESIDENCE_COMMAND_INCLUDE_GLOBS ?? "ResidencePlugin/data/commands.log"),
+      exclude: parseCsv(process.env.RESIDENCE_COMMAND_EXCLUDE_GLOBS),
+    }),
+    permission: createProfile("permission", {
+      sourceType: "log",
+      entryLabel: "permission entries",
+      statsFileLabel: "permission data files",
+      referenceLabel: "permissions",
+      referenceUrl: "https://www.zrips.net/residence/permissions/",
+      parserType: "permissionList",
+      include: parseCsv(process.env.RESIDENCE_PERMISSION_INCLUDE_GLOBS ?? "ResidencePlugin/data/permissions.log"),
+      exclude: parseCsv(process.env.RESIDENCE_PERMISSION_EXCLUDE_GLOBS),
+    }),
+  };
+}
+
 function buildPluginCommandAvailability(overrides = {}) {
   return {
     help: "ready",
@@ -336,6 +396,7 @@ export function loadConfig() {
   const mfmProfiles = buildMfmProfiles();
   const trymeProfiles = buildTrymeProfiles();
   const trademeProfiles = buildTrademeProfiles();
+  const residenceProfiles = buildResidenceProfiles();
   const configuredTestChannelIds = parseCsv(process.env.DISCORD_TEST_CHANNEL_IDS);
   const fallbackLegacyTestChannelIds = parseCsv(process.env.DISCORD_CMI_TEST_CHANNEL_IDS);
   const testChannelIds = configuredTestChannelIds.length ? configuredTestChannelIds : fallbackLegacyTestChannelIds;
@@ -347,6 +408,7 @@ export function loadConfig() {
     mfm: parseCsv(process.env.DISCORD_MFM_CHANNEL_IDS),
     tryme: parseCsv(process.env.DISCORD_TRYME_CHANNEL_IDS),
     trademe: parseCsv(process.env.DISCORD_TRADEME_CHANNEL_IDS),
+    residence: parseCsv(process.env.DISCORD_RESIDENCE_CHANNEL_IDS),
   };
 
   return {
@@ -411,8 +473,8 @@ export function loadConfig() {
         commandAvailability: buildPluginCommandAvailability({
           placeholder: "unsupported",
           material: "unsupported",
-          command: "unsupported",
-          permission: "unsupported",
+          command: "ready",
+          permission: "ready",
           faq: "unsupported",
           tabcomplete: "unsupported",
         }),
@@ -455,6 +517,22 @@ export function loadConfig() {
           material: "unsupported",
           command: "unsupported",
           permission: "unsupported",
+          faq: "unsupported",
+          tabcomplete: "unsupported",
+        }),
+      },
+      residence: {
+        id: "residence",
+        label: "Residence",
+        debugRoots: ["ResidencePlugin"],
+        profiles: residenceProfiles,
+        commandAvailability: buildPluginCommandAvailability({
+          config: "unsupported",
+          language: "unsupported",
+          placeholder: "ready",
+          material: "unsupported",
+          command: "ready",
+          permission: "ready",
           faq: "unsupported",
           tabcomplete: "unsupported",
         }),

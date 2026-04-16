@@ -2,7 +2,7 @@
 
 CMIBot is a Discord support bot built around a channel-aware `/lookup` workflow.
 
-Today it fully supports the CMI context, includes a working Jobs context, and now also supports lightweight YAML-only contexts for SVIS, MFM, TryMe, and TradeMe, with the active plugin decided by the Discord channel ID.
+Today it fully supports the CMI context, includes a working Jobs context, and now also supports lightweight plugin contexts for SVIS, Residence, MFM, TryMe, and TradeMe, with the active plugin decided by the Discord channel ID.
 
 ## Current Direction
 
@@ -62,7 +62,21 @@ The SVIS context currently supports:
 
 - `config`
 - `language|lang`
+- `command|cmd`
+- `permission|perm`
 - `langstats`
+- `stats`
+- `debug`
+- `reload`
+- `help`
+
+### Residence
+
+The Residence context currently supports:
+
+- `placeholder`
+- `command|cmd`
+- `permission|perm`
 - `stats`
 - `debug`
 - `reload`
@@ -147,7 +161,19 @@ The TradeMe context currently supports:
 /lookup help
 /lookup config particle
 /lookup language selection
+/lookup cmd gui
+/lookup perm sv.worldedit.use
 /lookup langstats
+/lookup stats
+```
+
+### Residence examples
+
+```text
+/lookup help
+/lookup placeholder owner
+/lookup cmd set
+/lookup perm residence.select
 /lookup stats
 ```
 
@@ -204,6 +230,7 @@ The bot uses explicit channel IDs from `.env`:
 - `DISCORD_MFM_CHANNEL_IDS`: channels that should route to the MFM context
 - `DISCORD_TRYME_CHANNEL_IDS`: channels that should route to the TryMe context
 - `DISCORD_TRADEME_CHANNEL_IDS`: channels that should route to the TradeMe context
+- `DISCORD_RESIDENCE_CHANNEL_IDS`: channels that should route to the Residence context
 - `DISCORD_TEST_CHANNEL_IDS`: channels that are allowed to override context live
 - `DISCORD_TEST_DEFAULT_CONTEXT`: default context for test channels, currently `cmi`
 
@@ -215,6 +242,7 @@ Current defaults:
 - `#mobfarmmanager`: `713838315572559892`
 - `#tryme`: `714111148059787285`
 - `#trademe`: `713838991744434277`
+- `#residence`: `526403195476639744`
 - `#test`: `1493976695152054353`
 
 If a channel is not in `DISCORD_ALLOWED_CHANNEL_IDS`, the bot refuses to run there.
@@ -341,6 +369,7 @@ Copy `.env.example` to `.env` and fill in the values.
 - `DISCORD_SVIS_CHANNEL_IDS`
 - `DISCORD_MFM_CHANNEL_IDS`
 - `DISCORD_TRYME_CHANNEL_IDS`
+- `DISCORD_RESIDENCE_CHANNEL_IDS`
 - `DISCORD_TEST_CHANNEL_IDS`
 - `DISCORD_TEST_DEFAULT_CONTEXT`
 - `ALLOWED_ROLE_IDS`
@@ -410,6 +439,16 @@ These are the current YAML-only plugin search scopes:
 - `SVIS_LOOKUP_EXCLUDE_GLOBS`
 - `SVIS_LANGUAGE_INCLUDE_GLOBS`
 - `SVIS_LANGUAGE_EXCLUDE_GLOBS`
+- `SVIS_COMMAND_INCLUDE_GLOBS`
+- `SVIS_COMMAND_EXCLUDE_GLOBS`
+- `SVIS_PERMISSION_INCLUDE_GLOBS`
+- `SVIS_PERMISSION_EXCLUDE_GLOBS`
+- `RESIDENCE_PLACEHOLDER_INCLUDE_GLOBS`
+- `RESIDENCE_PLACEHOLDER_EXCLUDE_GLOBS`
+- `RESIDENCE_COMMAND_INCLUDE_GLOBS`
+- `RESIDENCE_COMMAND_EXCLUDE_GLOBS`
+- `RESIDENCE_PERMISSION_INCLUDE_GLOBS`
+- `RESIDENCE_PERMISSION_EXCLUDE_GLOBS`
 - `MFM_LOOKUP_INCLUDE_GLOBS`
 - `MFM_LOOKUP_EXCLUDE_GLOBS`
 - `MFM_LANGUAGE_INCLUDE_GLOBS`
@@ -433,6 +472,7 @@ CMIPlugin/data/
 CMILibPlugin/CMILib/
 JobsPlugin/data/
 SVISPlugin/
+ResidencePlugin/
 MFMPlugin/
 TryMePlugin/
 TradeMePlugin/
@@ -476,4 +516,4 @@ npm start
 ## Next Planned Steps
 
 - add real Jobs YAML config data when you are ready to index more than the shared CMILib files
-- extend the multi-plugin structure to more support channels like Residence
+- extend the multi-plugin structure to more support channels beyond the current CMI, Jobs, SVIS, Residence, MFM, TryMe, and TradeMe setup

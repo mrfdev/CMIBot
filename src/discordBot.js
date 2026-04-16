@@ -709,6 +709,8 @@ function formatHelpMessage(config, member, context, commandName) {
   } else if (plugin.id === "svis") {
     lines.push(`- \`${prefix} config selection\``);
     lines.push(`- \`${prefix} language particle\``);
+    lines.push(`- \`${prefix} cmd gui\``);
+    lines.push(`- \`${prefix} perm sv.worldedit.use\``);
     lines.push(`- \`${prefix} langstats\``);
   } else if (plugin.id === "mfm") {
     lines.push(`- \`${prefix} config farm\``);
@@ -722,6 +724,11 @@ function formatHelpMessage(config, member, context, commandName) {
     lines.push(`- \`${prefix} config trade\``);
     lines.push(`- \`${prefix} language seller\``);
     lines.push(`- \`${prefix} langstats\``);
+  } else if (plugin.id === "residence") {
+    lines.push(`- \`${prefix} placeholder owner\``);
+    lines.push(`- \`${prefix} cmd set\``);
+    lines.push(`- \`${prefix} perm residence.select\``);
+    lines.push(`- \`${prefix} stats\``);
   } else {
     lines.push(`- \`${prefix} config setting\``);
     lines.push(`- \`${prefix} language message\``);

@@ -77,8 +77,9 @@ async function main() {
   const keyword = args.join(" ").trim();
 
   if (!subcommand || !plugin.profiles[subcommand]) {
+    const pluginList = Object.keys(config.plugins).join("|");
     console.error(
-      "Usage: npm run lookup -- [cmi|jobs] <config|language|lang|placeholder|material|command|cmd|permission|perm|faq|tabcomplete|langstats|stats> [--mode exact|whole|broad] [--file Chat.yml] [--related] [--summary] <keyword>",
+      `Usage: npm run lookup -- [${pluginList}] <config|language|lang|placeholder|material|command|cmd|permission|perm|faq|tabcomplete|langstats|stats> [--mode exact|whole|broad] [--file Chat.yml] [--related] [--summary] <keyword>`,
     );
     process.exitCode = 1;
     return;
