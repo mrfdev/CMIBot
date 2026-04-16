@@ -725,9 +725,12 @@ function formatHelpMessage(config, member, context, commandName) {
     lines.push(`- \`${prefix} language seller\``);
     lines.push(`- \`${prefix} langstats\``);
   } else if (plugin.id === "residence") {
+    lines.push(`- \`${prefix} config build\``);
+    lines.push(`- \`${prefix} language invalid\``);
     lines.push(`- \`${prefix} placeholder owner\``);
     lines.push(`- \`${prefix} cmd set\``);
     lines.push(`- \`${prefix} perm residence.select\``);
+    lines.push(`- \`${prefix} langstats\``);
     lines.push(`- \`${prefix} stats\``);
   } else {
     lines.push(`- \`${prefix} config setting\``);
@@ -866,6 +869,17 @@ function formatLanguageStatsMessage(languageCategories, pluginId, formatDisplayP
                     matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
                   },
                 ]
+              : pluginId === "residence"
+                ? [
+                    {
+                      title: "Residence language data:",
+                      matcher: (category) => category.englishRelativePath.startsWith("ResidencePlugin/"),
+                    },
+                    {
+                      title: "Shared CMILib language data:",
+                      matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+                    },
+                  ]
       : [
           {
             title: "CMI language data:",

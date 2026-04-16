@@ -333,6 +333,26 @@ function buildTrademeProfiles() {
 
 function buildResidenceProfiles() {
   return {
+    config: createProfile("config", {
+      sourceType: "yaml",
+      entryLabel: "YAML entries",
+      statsFileLabel: "YAML configuration files",
+      include: parseCsv(
+        process.env.RESIDENCE_LOOKUP_INCLUDE_GLOBS ??
+          "ResidencePlugin/config.yml,ResidencePlugin/groups.yml,ResidencePlugin/flags.yml,CMILibPlugin/CMILib/config.yml",
+      ),
+      exclude: parseCsv(process.env.RESIDENCE_LOOKUP_EXCLUDE_GLOBS),
+    }),
+    language: createProfile("language", {
+      sourceType: "yaml",
+      entryLabel: "YAML entries",
+      statsFileLabel: "YAML locale files",
+      include: parseCsv(
+        process.env.RESIDENCE_LANGUAGE_INCLUDE_GLOBS ??
+          "ResidencePlugin/Language/English.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+      ),
+      exclude: parseCsv(process.env.RESIDENCE_LANGUAGE_EXCLUDE_GLOBS),
+    }),
     placeholder: createProfile("placeholder", {
       sourceType: "log",
       entryLabel: "placeholder entries",
@@ -527,8 +547,8 @@ export function loadConfig() {
         debugRoots: ["ResidencePlugin"],
         profiles: residenceProfiles,
         commandAvailability: buildPluginCommandAvailability({
-          config: "unsupported",
-          language: "unsupported",
+          config: "ready",
+          language: "ready",
           placeholder: "ready",
           material: "unsupported",
           command: "ready",

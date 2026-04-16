@@ -12,6 +12,7 @@ const KNOWN_CATEGORY_LABELS = new Map([
   ["MFMPlugin/Locale/Locale_EN.yml", "MFM (plugin locale)"],
   ["TryMePlugin/Locale_EN.yml", "TryMe (plugin locale)"],
   ["TradeMePlugin/Locale_EN.yml", "TradeMe (plugin locale)"],
+  ["ResidencePlugin/Language/English.yml", "Residence (plugin locale)"],
 ]);
 
 const KNOWN_CATEGORY_ORDER = [...KNOWN_CATEGORY_LABELS.keys()];
@@ -39,7 +40,18 @@ function extractLanguageCode(relativePath) {
     return suffixMatch[1].toUpperCase();
   }
 
-  return null;
+  const namedLanguageCodes = new Map([
+    ["english", "EN"],
+    ["spanish", "ES"],
+    ["french", "FR"],
+    ["russian", "RU"],
+    ["ukrainian", "UA"],
+    ["czech", "CZ"],
+    ["chinese", "CN"],
+    ["chinesetw", "TW"],
+  ]);
+
+  return namedLanguageCodes.get(baseName.toLowerCase()) ?? null;
 }
 
 function buildSiblingPattern(englishRelativePath) {
@@ -48,6 +60,10 @@ function buildSiblingPattern(englishRelativePath) {
 
   if (/^Locale_EN\.yml$/i.test(baseName)) {
     return `${directory}/Locale_*.yml`;
+  }
+
+  if (/^English\.yml$/i.test(baseName)) {
+    return `${directory}/*.yml`;
   }
 
   return `${directory}/${baseName.replace(/_EN\.yml$/i, "_*.yml")}`;
@@ -186,6 +202,17 @@ export function formatLanguageCategoryStats(categories, formatDisplayPath, plugi
                   {
                     title: "TradeMe language data:",
                     matcher: (category) => category.englishRelativePath.startsWith("TradeMePlugin/"),
+                  },
+                  {
+                    title: "Shared CMILib language data:",
+                    matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+                  },
+                ]
+            : pluginId === "residence"
+              ? [
+                  {
+                    title: "Residence language data:",
+                    matcher: (category) => category.englishRelativePath.startsWith("ResidencePlugin/"),
                   },
                   {
                     title: "Shared CMILib language data:",

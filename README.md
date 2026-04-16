@@ -74,9 +74,12 @@ The SVIS context currently supports:
 
 The Residence context currently supports:
 
+- `config`
+- `language|lang`
 - `placeholder`
 - `command|cmd`
 - `permission|perm`
+- `langstats`
 - `stats`
 - `debug`
 - `reload`
@@ -171,9 +174,12 @@ The TradeMe context currently supports:
 
 ```text
 /lookup help
+/lookup config build
+/lookup language invalid
 /lookup placeholder owner
 /lookup cmd set
 /lookup perm residence.select
+/lookup langstats
 /lookup stats
 ```
 
@@ -445,6 +451,10 @@ These are the current YAML-only plugin search scopes:
 - `SVIS_PERMISSION_EXCLUDE_GLOBS`
 - `RESIDENCE_PLACEHOLDER_INCLUDE_GLOBS`
 - `RESIDENCE_PLACEHOLDER_EXCLUDE_GLOBS`
+- `RESIDENCE_LOOKUP_INCLUDE_GLOBS`
+- `RESIDENCE_LOOKUP_EXCLUDE_GLOBS`
+- `RESIDENCE_LANGUAGE_INCLUDE_GLOBS`
+- `RESIDENCE_LANGUAGE_EXCLUDE_GLOBS`
 - `RESIDENCE_COMMAND_INCLUDE_GLOBS`
 - `RESIDENCE_COMMAND_EXCLUDE_GLOBS`
 - `RESIDENCE_PERMISSION_INCLUDE_GLOBS`
