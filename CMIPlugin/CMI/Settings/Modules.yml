@@ -11,7 +11,7 @@ silentChest: true
 #  
 # Version check when player logs in
 # Applies for servers from 1.7.x and up
-versionCheck: false
+versionCheck: true
 #  
 # World limitations: fly, game mode and god mode
 # Applies for servers from 1.7.x and up
@@ -59,7 +59,7 @@ durabilityLoss: true
 #  
 # Handling of mirror feature, which checks block place and break actions
 # Applies for servers from 1.7.x and up
-mirror: false
+mirror: true
 #  
 # Spawner handling, like drop, place, egg interactions
 # Applies for servers from 1.7.x and up
@@ -163,7 +163,7 @@ votifier: true
 #  
 # Handles player combat system
 # Applies for servers from 1.7.x and up
-playerCombat: false
+playerCombat: true
 #  
 # Handles head drops system
 # Applies for servers from 1.16.x and up
@@ -187,7 +187,7 @@ jail: true
 #  
 # Handles cmi flight charge system
 # Applies for servers from 1.7.x and up
-flightCharge: false
+flightCharge: true
 #  
 # Handles shulker box as backpacks
 # Applies for servers from 1.11.x and up
@@ -223,7 +223,7 @@ eventCommands: true
 #  
 # Handling of disabled enchants in inventory
 # Applies for servers from 1.7.x and up
-disabledEnchants: false
+disabledEnchants: true
 #  
 # Handling of siting on blocks
 # Applies for servers from 1.8.x and up
@@ -235,7 +235,7 @@ rideAnimation: true
 #  
 # Handling of boss bar compass
 # Applies for servers from 1.9.x and up
-bossBarCompass: false
+bossBarCompass: true
 #  
 # Elytra boost
 # Applies for servers from 1.9.x and up
@@ -280,3 +280,11 @@ hat: true
 # Handling of some dialogs UI aspects
 # Applies for servers from 1.21.x and up
 dialogs: true
+#  
+# Handling of speed tracking
+# Applies for servers from 1.9.x and up
+speedtracking: true
+#  
+# Handling of view distance listeners
+# Applies for servers from 1.20.x and up
+viewdistance: true

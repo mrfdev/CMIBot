@@ -71,7 +71,7 @@ Alias:
     Enabled: true
     Tab: true
   bal:
-    Enabled: true
+    Enabled: false
     Tab: true
   # /cmi baltop $1-
   baltop:
@@ -114,7 +114,7 @@ Alias:
     Enabled: true
     Tab: true
   bc:
-    Enabled: true
+    Enabled: false
     Tab: true
   # /cmi burn $1-
   burn:
@@ -253,7 +253,7 @@ Alias:
     Enabled: true
     Tab: true
   trash:
-    Enabled: true
+    Enabled: false
     Tab: true
   # /cmi distance $1-
   distance:
@@ -315,13 +315,13 @@ Alias:
     Enabled: false
     Tab: true
   ec:
-    Enabled: true
+    Enabled: false
     Tab: true
   cend:
     Enabled: false
     Tab: true
   enderchest:
-    Enabled: true
+    Enabled: false
     Tab: true
   oe:
     Enabled: false
@@ -424,7 +424,7 @@ Alias:
     Enabled: true
     Tab: true
   gamemode:
-    Enabled: true
+    Enabled: false
     Tab: true
   # /cmi gm creative $1-
   gmc:
@@ -567,7 +567,7 @@ Alias:
     Tab: true
   # /cmi invsave $1-
   invsave:
-    Enabled: false
+    Enabled: true
     Tab: true
   # /cmi ipban $1-
   ipban:
@@ -619,15 +619,15 @@ Alias:
     Tab: true
   # /cmi jail $1-
   jail:
-    Enabled: false
+    Enabled: true
     Tab: true
   # /cmi jailedit $1-
   jailedit:
-    Enabled: false
+    Enabled: true
     Tab: true
   # /cmi jaillist $1-
   jaillist:
-    Enabled: false
+    Enabled: true
     Tab: true
   # /cmi jump $1-
   jump:
@@ -643,14 +643,14 @@ Alias:
     Tab: true
   # /cmi killall $1-
   killall:
-    Enabled: false
+    Enabled: true
     Tab: true
   # /cmi kit $1-
   kit:
     Enabled: true
     Tab: true
   kits:
-    Enabled: true
+    Enabled: false
     Tab: true
   # /cmi kit -preview $1-
   kitpreview:
@@ -686,7 +686,7 @@ Alias:
     Tab: true
   # /cmi list $1-
   list:
-    Enabled: false
+    Enabled: true
     Tab: true
   # /cmi lockip $1-
   lockip:
@@ -900,7 +900,7 @@ Alias:
     Enabled: true
     Tab: true
   delhome:
-    Enabled: true
+    Enabled: false
     Tab: true
   # /cmi removeuser $1-
   removeuser:
@@ -915,11 +915,11 @@ Alias:
     Tab: true
   # /cmi repair $1-
   repair:
-    Enabled: false
+    Enabled: true
     Tab: true
   # /cmi repaircost $1-
   repaircost:
-    Enabled: false
+    Enabled: true
     Tab: true
   # /cmi replaceblock $1-
   replaceblock:
@@ -930,7 +930,7 @@ Alias:
     Enabled: true
     Tab: true
   r:
-    Enabled: true
+    Enabled: false
     Tab: true
   # /cmi resetback $1-
   resetback:
@@ -949,7 +949,7 @@ Alias:
     Tab: true
   # /cmi rt $1-
   rt:
-    Enabled: false
+    Enabled: true
     Tab: true
   rtp:
     Enabled: false
@@ -1017,7 +1017,7 @@ Alias:
     Tab: true
   # /cmi sell $1-
   sell:
-    Enabled: false
+    Enabled: true
     Tab: true
   # /cmi sendall $1-
   sendall:
@@ -1386,7 +1386,7 @@ Alias:
     Enabled: true
     Tab: true
   warps:
-    Enabled: true
+    Enabled: false
     Tab: true
   # /cmi warpgroups $1-
   warpgroups:
@@ -1416,7 +1416,7 @@ Alias:
     Enabled: false
     Tab: true
   craft:
-    Enabled: true
+    Enabled: false
     Tab: true
   # /cmi world $1-
   world:

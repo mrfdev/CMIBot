@@ -1665,6 +1665,37 @@ ItemList:
   NETHERITE_HORSE_ARMOR: Netherite Horse Armor
   GOLDEN_DANDELION: Golden Dandelion
   POTTED_GOLDEN_DANDELION: Potted Golden Dandelion
+  CHISELED_CINNABAR: Chiseled Cinnabar
+  CHISELED_SULFUR: Chiseled Sulfur
+  CINNABAR: Cinnabar
+  CINNABAR_BRICKS: Cinnabar Bricks
+  CINNABAR_BRICK_SLAB: Cinnabar Brick Slab
+  CINNABAR_BRICK_STAIRS: Cinnabar Brick Stairs
+  CINNABAR_BRICK_WALL: Cinnabar Brick Wall
+  CINNABAR_SLAB: Cinnabar Slab
+  CINNABAR_STAIRS: Cinnabar Stairs
+  CINNABAR_WALL: Cinnabar Wall
+  MUSIC_DISC_BOUNCE: Music Disc Bounce
+  POLISHED_CINNABAR: Polished Cinnabar
+  POLISHED_CINNABAR_SLAB: Polished Cinnabar Slab
+  POLISHED_CINNABAR_STAIRS: Polished Cinnabar Stairs
+  POLISHED_CINNABAR_WALL: Polished Cinnabar Wall
+  POLISHED_SULFUR: Polished Sulfur
+  POLISHED_SULFUR_SLAB: Polished Sulfur Slab
+  POLISHED_SULFUR_STAIRS: Polished Sulfur Stairs
+  POLISHED_SULFUR_WALL: Polished Sulfur Wall
+  POTENT_SULFUR: Potent Sulfur
+  SULFUR: Sulfur
+  SULFUR_BRICKS: Sulfur Bricks
+  SULFUR_BRICK_SLAB: Sulfur Brick Slab
+  SULFUR_BRICK_STAIRS: Sulfur Brick Stairs
+  SULFUR_BRICK_WALL: Sulfur Brick Wall
+  SULFUR_CUBE_BUCKET: Sulfur Cube Bucket
+  SULFUR_CUBE_SPAWN_EGG: Sulfur Cube Spawn Egg
+  SULFUR_SLAB: Sulfur Slab
+  SULFUR_SPIKE: Sulfur Spike
+  SULFUR_STAIRS: Sulfur Stairs
+  SULFUR_WALL: Sulfur Wall
   SIGN: Akazienholzschild
   GRASS: Grasblock
   LEGACY_STATIONARY_WATER: Wasser
@@ -1769,6 +1800,7 @@ EntityList:
   0-SQUID: Squid
   0-STRAY: Stray
   0-STRIDER: Strider
+  0-SULFUR_CUBE: Sulfur Cube
   0-TADPOLE: Tadpole
   0-TRADER_LLAMA: Trader Llama
   0-TROPICAL_FISH: Tropical Fish

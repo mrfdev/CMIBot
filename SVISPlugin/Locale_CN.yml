@@ -49,7 +49,7 @@ modes:
   DiceFurnitureArea: Dice Furniture家具
   WorldBorderArea: World Border世界边界
   JobsArea: 工作
-modePlaces:
+modeNames:
   WEPaste:
   - 框架
   - 边

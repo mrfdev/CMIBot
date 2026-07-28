@@ -5,6 +5,7 @@ import { writeAuditLog } from "./auditLog.js";
 import { formatCacheSummary } from "./cache.js";
 import { createCooldownManager, resolveFileFilter, sanitizeForDisplay, validateQuery } from "./security.js";
 import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
+import { formatLatestVersions, formatVersionServiceSummary } from "./versionCatalog.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 
 const PRIMARY_COMMAND_NAME = "lookup";
@@ -130,7 +131,7 @@ function buildCommandTree(commandName, config) {
 
   return new SlashCommandBuilder()
     .setName(commandName)
-    .setDescription("Look up plugin config, locale, and exported support data by keyword.")
+    .setDescription("Look up plugin config, locale, and indexed support data by keyword.")
     .addSubcommand((subcommand) =>
       subcommand.setName("help").setDescription("Show available commands and usage notes for this channel context."),
     )
@@ -159,38 +160,38 @@ function buildCommandTree(commandName, config) {
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
-        subcommand.setName("placeholder").setDescription("Search exported placeholder entries."),
+        subcommand.setName("placeholder").setDescription("Search indexed placeholder entries."),
         defaultResultLimit,
       ),
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
-        subcommand.setName("material").setDescription("Search exported material names."),
+        subcommand.setName("material").setDescription("Search indexed material names."),
         materialDefaultLimit,
         { maxResultLimit: MATERIAL_MAX_RESULT_LIMIT },
       ),
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
-        subcommand.setName("command").setDescription("Search exported command usage entries."),
+        subcommand.setName("command").setDescription("Search indexed command usage entries."),
         defaultResultLimit,
       ),
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
-        subcommand.setName("cmd").setDescription("Alias for the exported command usage search."),
+        subcommand.setName("cmd").setDescription("Alias for the indexed command usage search."),
         defaultResultLimit,
       ),
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
-        subcommand.setName("permission").setDescription("Search exported permission entries."),
+        subcommand.setName("permission").setDescription("Search indexed permission entries."),
         defaultResultLimit,
       ),
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
-        subcommand.setName("perm").setDescription("Alias for the exported permission search."),
+        subcommand.setName("perm").setDescription("Alias for the indexed permission search."),
         defaultResultLimit,
       ),
     )
@@ -202,7 +203,7 @@ function buildCommandTree(commandName, config) {
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
-        subcommand.setName("tabcomplete").setDescription("Search exported tab-complete token entries."),
+        subcommand.setName("tabcomplete").setDescription("Search indexed tab-complete token entries."),
         defaultResultLimit,
       ),
     )
@@ -215,6 +216,20 @@ function buildCommandTree(commandName, config) {
       subcommand
         .setName("stats")
         .setDescription("Show cache totals and per-profile counts for the active plugin context."),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("latest")
+        .setDescription("Show clean-snapshot and current upstream plugin versions.")
+        .addStringOption((option) =>
+          option
+            .setName("scope")
+            .setDescription("Show this channel context or every resource in the clean server.")
+            .addChoices(
+              { name: "current context", value: "context" },
+              { name: "all resources", value: "all" },
+            ),
+        ),
     )
     .addSubcommand((subcommand) =>
       subcommand
@@ -413,7 +428,7 @@ function formatCommandAvailabilitySummary(plugin) {
   const unavailable = [];
 
   for (const [commandName, availability] of Object.entries(plugin.commandAvailability)) {
-    if (["help", "stats", "langstats", "debug", "reload"].includes(commandName)) {
+    if (["help", "stats", "langstats", "latest", "debug", "reload"].includes(commandName)) {
       continue;
     }
 
@@ -526,7 +541,7 @@ function resolveChannelContext(channelId, config, testOverrides) {
   };
 }
 
-async function formatDebugMessage(interaction, context, config, searchCache, testOverrides) {
+async function formatDebugMessage(interaction, context, config, searchCache, versionService, testOverrides) {
   const memory = process.memoryUsage();
   const workspaceSize = await getDirectorySize(config.workspaceRoot);
   const globalSummary = searchCache.getGlobalSummary();
@@ -534,6 +549,8 @@ async function formatDebugMessage(interaction, context, config, searchCache, tes
   const largestBucket = getLargestCacheBucket(globalSummary);
   const diskFootprint = await getTrackedDiskFootprint(config);
   const commandAvailability = context.plugin ? formatCommandAvailabilitySummary(context.plugin) : null;
+  const versionSnapshot = versionService.getSnapshot();
+  const paperRuntime = versionSnapshot.catalog?.paper;
   const lines = [
     "### Lookup Debug",
     `Detected context: \`${context.plugin?.label ?? "Unknown"}\``,
@@ -549,6 +566,13 @@ async function formatDebugMessage(interaction, context, config, searchCache, tes
     `Process heap used: \`${formatBytes(memory.heapUsed)}\``,
     `Global cache: \`${globalSummary.totalEntries ?? 0}\` entries from \`${globalSummary.totalFiles ?? 0}\` files`,
     `Last cache reload: \`${formatTimestamp(globalSummary.lastReloadedAt)}\``,
+    `Version catalog: \`${versionSnapshot.catalog?.plugins.length ?? 0} plugins, generated ${formatTimestamp(versionSnapshot.catalog?.generatedAt)}\``,
+    `Paper runtime: \`${
+      paperRuntime
+        ? `${paperRuntime.version} build ${paperRuntime.build ?? "unknown"} ${paperRuntime.channel ?? "unknown"}, API ${paperRuntime.apiCoordinate ?? "unknown"}, exporter Java ${paperRuntime.javaTarget ?? "unknown"}`
+        : "unknown"
+    }\``,
+    `Upstream versions: \`${versionSnapshot.checkedAt ? `${formatTimestamp(versionSnapshot.checkedAt)}, ${versionSnapshot.errorCount} unavailable` : versionSnapshot.checkEnabled ? "pending" : "disabled"}\``,
     `Largest cache bucket: \`${largestBucket ? `${largestBucket.scopeLabel} ${largestBucket.profileLabel} (${largestBucket.entryCount} entries / ${largestBucket.fileCount} files)` : "unknown"}\``,
     `Active test overrides: \`${formatTestOverrideSummary(config.discord.testChannelIds, testOverrides, config)}\``,
     `Disk footprint: \`${diskFootprint}\``,
@@ -583,7 +607,7 @@ function formatCommandUnavailableMessage(plugin, canonicalSubcommand, commandNam
   return `${commandLabel} is not a feature of the ${plugin.label} context.`;
 }
 
-function formatHelpMessage(config, member, context, commandName) {
+export function formatHelpMessage(config, member, context, commandName) {
   const plugin = context.plugin;
   const canLookup = hasRole(member, { roleIds: config.discord.allowedRoleIds });
   const canReload = hasRole(member, { roleIds: config.discord.adminRoleIds });
@@ -612,10 +636,10 @@ function formatHelpMessage(config, member, context, commandName) {
   const commandDescriptions = new Map([
     ["config", "searches indexed config files"],
     ["language", "searches indexed English locale files"],
-    ["placeholder", "searches exported placeholder entries"],
-    ["material", "searches exported material names"],
-    ["command", "searches exported command entries"],
-    ["permission", "searches exported permission entries"],
+    ["placeholder", "searches indexed placeholder entries"],
+    ["material", "searches indexed material names"],
+    ["command", "searches indexed command entries"],
+    ["permission", "searches indexed permission entries"],
     ["faq", "searches curated FAQ entries"],
     ["tabcomplete", "searches exported tab-complete entries"],
   ]);
@@ -636,6 +660,8 @@ function formatHelpMessage(config, member, context, commandName) {
 
   lines.push(`- \`${prefix} langstats\` shows language-category stats for this plugin context`);
   lines.push(`- \`${prefix} stats\` shows cache totals for this plugin context`);
+  lines.push(`- \`${prefix} latest\` shows versions for this plugin and CMILib`);
+  lines.push(`- \`${prefix} latest scope:all\` shows every clean-server resource`);
   lines.push(`- \`${prefix} debug\` shows the current channel context`);
   lines.push(`- \`${prefix} reload\` refreshes the cache for every plugin context`);
 
@@ -684,7 +710,7 @@ function formatHelpMessage(config, member, context, commandName) {
 
   if (context.isTestChannel) {
     lines.push(
-      "- `debug context:auto|cmi|jobs` can switch the test channel context live when used by an admin",
+      "- `debug context:<plugin>|auto` can switch the test channel context live when used by an admin",
     );
   }
 
@@ -715,14 +741,22 @@ function formatHelpMessage(config, member, context, commandName) {
   } else if (plugin.id === "mfm") {
     lines.push(`- \`${prefix} config farm\``);
     lines.push(`- \`${prefix} language mob\``);
+    lines.push(`- \`${prefix} cmd mfm\``);
+    lines.push(`- \`${prefix} perm mfm.command.reload\``);
     lines.push(`- \`${prefix} langstats\``);
   } else if (plugin.id === "tryme") {
     lines.push(`- \`${prefix} config tryme\``);
     lines.push(`- \`${prefix} language message\``);
+    lines.push(`- \`${prefix} placeholder current\``);
+    lines.push(`- \`${prefix} cmd answer\``);
+    lines.push(`- \`${prefix} perm tryme.command.qmode\``);
     lines.push(`- \`${prefix} langstats\``);
   } else if (plugin.id === "trademe") {
     lines.push(`- \`${prefix} config trade\``);
     lines.push(`- \`${prefix} language seller\``);
+    lines.push(`- \`${prefix} placeholder trade\``);
+    lines.push(`- \`${prefix} cmd trade\``);
+    lines.push(`- \`${prefix} perm trademe.itembypass\``);
     lines.push(`- \`${prefix} langstats\``);
   } else if (plugin.id === "residence") {
     lines.push(`- \`${prefix} config build\``);
@@ -732,6 +766,13 @@ function formatHelpMessage(config, member, context, commandName) {
     lines.push(`- \`${prefix} perm residence.select\``);
     lines.push(`- \`${prefix} langstats\``);
     lines.push(`- \`${prefix} stats\``);
+  } else if (plugin.id === "bottledexp") {
+    lines.push(`- \`${prefix} config bottle\``);
+    lines.push(`- \`${prefix} config recipe file:recipes.yml\``);
+    lines.push(`- \`${prefix} language experience\``);
+    lines.push(`- \`${prefix} cmd bottle\``);
+    lines.push(`- \`${prefix} perm bottledexp.command.consume\``);
+    lines.push(`- \`${prefix} latest\``);
   } else {
     lines.push(`- \`${prefix} config setting\``);
     lines.push(`- \`${prefix} language message\``);
@@ -1104,6 +1145,51 @@ function truncateDiscordMessage(message) {
   return `${message.slice(0, 1900)}\n\n_(Trimmed to fit Discord message limits.)_`;
 }
 
+export function splitDiscordMessages(message, maxLength = 1900) {
+  const blocks = [];
+  let blockLines = [];
+  for (const line of message.split("\n")) {
+    const startsSection = blockLines.length && !line.startsWith("-") && line.endsWith(":");
+    if (startsSection) {
+      blocks.push(blockLines.join("\n"));
+      blockLines = [];
+    }
+    blockLines.push(line);
+  }
+  if (blockLines.length) {
+    blocks.push(blockLines.join("\n"));
+  }
+
+  const chunks = [];
+  let current = "";
+  for (const block of blocks) {
+    const candidate = current ? `${current}\n${block}` : block;
+    if (candidate.length <= maxLength) {
+      current = candidate;
+      continue;
+    }
+    if (current) {
+      chunks.push(current);
+    }
+    current = block;
+  }
+
+  if (current || !chunks.length) {
+    chunks.push(current);
+  }
+
+  return chunks.flatMap((chunk) => {
+    if (chunk.length <= maxLength) {
+      return [chunk];
+    }
+    const parts = [];
+    for (let index = 0; index < chunk.length; index += maxLength) {
+      parts.push(chunk.slice(index, index + maxLength));
+    }
+    return parts;
+  });
+}
+
 export async function registerCommands(config) {
   const rest = new REST({ version: "10" }).setToken(config.discord.token);
   const body = buildCommandData(config);
@@ -1113,7 +1199,7 @@ export async function registerCommands(config) {
   });
 }
 
-export function createInteractionHandler(config, searchCache) {
+export function createInteractionHandler(config, searchCache, versionService) {
   const reranker = new AiReranker(config.openai);
   const cooldowns = createCooldownManager();
   const testOverrides = new Map();
@@ -1204,7 +1290,9 @@ export function createInteractionHandler(config, searchCache) {
         override: context.overridePluginId || "auto",
       });
       await interaction.reply({
-        content: truncateDiscordMessage(await formatDebugMessage(interaction, context, config, searchCache, testOverrides)),
+        content: truncateDiscordMessage(
+          await formatDebugMessage(interaction, context, config, searchCache, versionService, testOverrides),
+        ),
         flags: MessageFlags.Ephemeral,
         allowedMentions: NO_MENTIONS,
       });
@@ -1253,7 +1341,7 @@ export function createInteractionHandler(config, searchCache) {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
       try {
-        const summary = await searchCache.reloadAll();
+        const [summary, versionSnapshot] = await Promise.all([searchCache.reloadAll(), versionService.reload()]);
         await logEvent(interaction, {
           subcommand,
           outcome: "success",
@@ -1261,12 +1349,22 @@ export function createInteractionHandler(config, searchCache) {
           totalFiles: summary.totalFiles,
         });
         console.log(
-          `[LookupBot] Cache reloaded by ${interaction.user.tag} in channel ${interaction.channelId}.\n${formatCacheSummary(summary, { verb: "Reloaded" })}`,
+          `[LookupBot] Cache reloaded by ${interaction.user.tag} in channel ${interaction.channelId}.\n${formatCacheSummary(summary, { verb: "Reloaded" })}\n${formatVersionServiceSummary(versionSnapshot)}`,
+        );
+        const reloadMessages = splitDiscordMessages(
+          `${formatReloadMessage(summary)}\nVersion catalog and upstream checks refreshed.`,
         );
         await interaction.editReply({
-          content: formatReloadMessage(summary),
+          content: reloadMessages[0],
           allowedMentions: NO_MENTIONS,
         });
+        for (const message of reloadMessages.slice(1)) {
+          await interaction.followUp({
+            content: message,
+            flags: MessageFlags.Ephemeral,
+            allowedMentions: NO_MENTIONS,
+          });
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
         await logEvent(interaction, {
@@ -1294,6 +1392,38 @@ export function createInteractionHandler(config, searchCache) {
         flags: MessageFlags.Ephemeral,
         allowedMentions: NO_MENTIONS,
       });
+      return;
+    }
+
+    if (canonicalSubcommand === "latest") {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      try {
+        const scope = interaction.options.getString("scope") ?? "context";
+        const snapshot = versionService.getSnapshot();
+        await logEvent(interaction, {
+          subcommand,
+          scope,
+          outcome: "success",
+          detectedContext: context.pluginId,
+          versionCheckErrors: snapshot.errorCount,
+        });
+        await interaction.editReply({
+          content: truncateDiscordMessage(formatLatestVersions(snapshot, context.plugin, scope)),
+          allowedMentions: NO_MENTIONS,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        await logEvent(interaction, {
+          subcommand,
+          outcome: "error",
+          reason: message,
+          detectedContext: context.pluginId,
+        });
+        await interaction.editReply({
+          content: `The bot hit an error while loading version information: ${message}`,
+          allowedMentions: NO_MENTIONS,
+        });
+      }
       return;
     }
 

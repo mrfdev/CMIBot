@@ -348,10 +348,12 @@ info:
     BADLANDS_PLATEAU: Badlands plateau
     BAMBOO_JUNGLE: Bamboo jungle
     BAMBOO_JUNGLE_HILLS: Bamboo jungle hills
+    BASALT_DELTAS: Basalt deltas
     BEACH: Beach
     BIRCH_FOREST: Birch forest
     BIRCH_FOREST_HILLS: Birch forest hills
     COLD_OCEAN: Cold ocean
+    CRIMSON_FOREST: Crimson forest
     DARK_FOREST: Dark forest
     DARK_FOREST_HILLS: Dark forest hills
     DEEP_COLD_OCEAN: Deep cold ocean
@@ -389,7 +391,7 @@ info:
     MOUNTAIN_EDGE: Mountain edge
     MUSHROOM_FIELDS: Mushroom fields
     MUSHROOM_FIELD_SHORE: Mushroom field shore
-    NETHER: Nether
+    NETHER_WASTES: Nether wastes
     OCEAN: Ocean
     PLAINS: Plains
     RIVER: River
@@ -404,6 +406,7 @@ info:
     SNOWY_TAIGA_HILLS: Snowy taiga hills
     SNOWY_TAIGA_MOUNTAINS: Snowy taiga mountains
     SNOWY_TUNDRA: Snowy tundra
+    SOUL_SAND_VALLEY: Soul sand valley
     STONE_SHORE: Stone shore
     SUNFLOWER_PLAINS: Sunflower plains
     SWAMP: Swamp
@@ -416,6 +419,7 @@ info:
     THE_END: The end
     THE_VOID: The void
     WARM_OCEAN: Warm ocean
+    WARPED_FOREST: Warped forest
     WOODED_BADLANDS_PLATEAU: Wooded badlands plateau
     WOODED_HILLS: Wooded hills
     WOODED_MOUNTAINS: Wooded mountains
@@ -457,6 +461,7 @@ info:
     ghast: Ghast
     giant: Giant
     guardian: Guardian
+    hoglin: Hoglin
     horse: Horse
     husk: Husk
     illusioner: Illusioner
@@ -482,7 +487,7 @@ info:
     parrot: Parrot
     phantom: Phantom
     pig: Pig
-    pig_zombie: Pig zombie
+    piglin: Piglin
     pillager: Pillager
     player: Player
     polar_bear: Polar bear
@@ -506,6 +511,7 @@ info:
     splash_potion: Splash potion
     squid: Squid
     stray: Stray
+    strider: Strider
     thrown_exp_bottle: Thrown exp bottle
     trader_llama: Trader llama
     trident: Trident
@@ -521,9 +527,11 @@ info:
     wither_skeleton: Wither skeleton
     wither_skull: Wither skull
     wolf: Wolf
+    zoglin: Zoglin
     zombie: Zombie
     zombie_horse: Zombie horse
     zombie_villager: Zombie villager
+    zombified_piglin: Zombified piglin
   EnchantAliases:
     protection_fire:
     - FireProtection
@@ -531,6 +539,8 @@ info:
     - Sharpness
     arrow_fire:
     - Flame
+    soul_speed:
+    - SOULSPEED
     water_worker:
     - AquaAffinity
     arrow_knockback:
@@ -540,7 +550,7 @@ info:
     depth_strider:
     - DepthStrider
     vanishing_curse:
-    - vanishing_curse
+    - VanishingCurse
     durability:
     - Unbreaking
     knockback:
@@ -548,7 +558,7 @@ info:
     luck:
     - Luck
     binding_curse:
-    - binding_curse
+    - BindingCurse
     loot_bonus_blocks:
     - Fortune
     protection_environmental:
@@ -556,7 +566,7 @@ info:
     dig_speed:
     - Efficiency
     mending:
-    - mending
+    - Mending
     frost_walker:
     - FrostWalker
     lure:
@@ -576,7 +586,7 @@ info:
     channeling:
     - CHANNELING
     sweeping_edge:
-    - sweeping_edge
+    - SweepingEdge
     thorns:
     - Thorns
     damage_arthropods:
@@ -595,65 +605,66 @@ info:
     - IMPALING
     protection_fall:
     - FallProtection
+    - FeatherFalling
     arrow_damage:
     - Power
     arrow_infinite:
     - Infinity
   PotionEffectAliases:
     speed:
-    - speed
+    - Speed
     slow:
-    - slow
+    - Slow
     fast_digging:
-    - fast_digging
+    - Fast digging
     slow_digging:
-    - slow_digging
+    - Slow digging
     increase_damage:
-    - increase_damage
+    - Increase damage
     heal:
-    - heal
+    - Heal
     harm:
-    - harm
+    - Harm
     jump:
-    - jump
+    - Jump
     confusion:
-    - confusion
+    - Confusion
     regeneration:
-    - regeneration
+    - Regeneration
     damage_resistance:
-    - damage_resistance
+    - Damage resistance
     fire_resistance:
-    - fire_resistance
+    - Fire resistance
     water_breathing:
-    - water_breathing
+    - Water breathing
     invisibility:
-    - invisibility
+    - Invisibility
     blindness:
-    - blindness
+    - Blindness
     night_vision:
-    - night_vision
+    - Night vision
     hunger:
-    - hunger
+    - Hunger
     weakness:
-    - weakness
+    - Weakness
     poison:
-    - poison
+    - Poison
     wither:
-    - wither
+    - Wither
     health_boost:
-    - health_boost
+    - Health boost
     absorption:
-    - absorption
+    - Absorption
     saturation:
-    - saturation
+    - Saturation
     glowing:
-    - glowing
+    - Glowing
     levitation:
-    - levitation
+    - Levitation
     luck:
-    - luck
+    - Luck
     unluck:
-    - unluck
+    - Unluck
     slow_falling:
     - Slow falling
     conduit_power:
@@ -770,7 +781,7 @@ Information:
 econ:
   disabled: '&cDu kan ikke bruke denne kommandoen mens økonomistøtte er deaktivert'
   noMoney: '&cIkke nok penger'
-  charged: '!actionbar!&fCharged: &6[amount]'
+  charged: '!actionbar!&fBelastet: &6[amount]'
   notEnoughMoney: '&cDu har ikke nok penger. Kreves (&6[amount]&c)'
   tooMuchMoney: '&cDu har for mye penger'
   commandCost: '&7This command cost is &6[cost] &7repeat it or click here to confirm'

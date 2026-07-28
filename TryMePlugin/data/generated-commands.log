@@ -1,0 +1,29 @@
+/answ - TryMe answer command
+/answer - TryMe answer command
+/tryme - basic command
+/tryme add [category] [questionname] - Add new question
+/tryme amode (-c QCat) (-r RCat) - All game modes
+/tryme bmode (-c BCat) (-r RCat) - Block brake game mode
+/tryme cmode (-c QCat) (-r RCat) - Custom game mode
+/tryme delete [category] [questionName] - Delete existing question
+/tryme dmode (-c QCat) (-r RCat) - Decode game mode
+/tryme edit [category] [questionName] - Edit existing question
+/tryme emode (-c ECat) (-r RCat) - Eat task game mode
+/tryme fmode (-c QCat) (-r RCat) - Flash game mode
+/tryme hmode (-c HCat) (-r RCat) - HangMan game mode
+/tryme holocreate [gamemode] [answers/average/besttime] [ASC/DESC] [lineCount] - Create hologram for top list. CMI plugin required
+/tryme holoupdate [gamemode] - Update holograms manually by game mode
+/tryme info - Shows currently running game information (for admins)
+/tryme kmode (-c KCat) (-r RCat) - Entity kill task game mode
+/tryme mmode (-c QCat) (-r RCat) - Math game mode
+/tryme next - Gives next question/string/code
+/tryme pmode (-c PCat) (-r RCat) - Block place task game mode
+/tryme qmode (-c QCat) (-r RCat) - Question game mode
+/tryme reload - Reload config and locale file
+/tryme signupdate [gamemode] - Update signs manually by game mode
+/tryme startsc - Start scheduler
+/tryme stats (playername) - Show players stats
+/tryme stop - Stops all game modes
+/tryme stopsc - Stop scheduler
+/tryme toggle (playerName) - Toggle question visibility
+/tryme top [gamemode] (-f answers/besttime/average) (-o asc/desc) - Get top list of players

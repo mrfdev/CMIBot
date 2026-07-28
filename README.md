@@ -1,529 +1,342 @@
-# CMIBot
+# LookupBot
 
-CMIBot is a Discord support bot built around a channel-aware `/lookup` workflow.
+LookupBot is a channel-aware Discord support bot for Zrips plugins. The same `/lookup` command automatically searches the plugin assigned to the current Discord channel, so CMI questions stay inside the CMI data set, Jobs questions stay inside Jobs, and file filters cannot cross plugin boundaries.
 
-Today it fully supports the CMI context, includes a working Jobs context, and now also supports lightweight plugin contexts for SVIS, Residence, MFM, TryMe, and TradeMe, with the active plugin decided by the Discord channel ID.
+The repository is still named `CMIBot`, but `/lookup` is the only registered slash command.
 
-## Current Direction
+## Current Features
 
-- `/lookup` is now the primary slash command
-- Channel ID decides which plugin context is active
-- `#test` can be switched live between plugin contexts through the debug command
-- `/lookup reload` is global and rebuilds caches for every plugin context
-- `/lookup stats` and `/lookup langstats` are context-aware and only show data for the active plugin
-- `/lookup debug` shows channel routing, tracked plugins, file counts, uptime, runtime versions, cache health, memory usage, disk footprint, and active test overrides
+- Channel-ID-based plugin routing
+- Exact, whole-word, and broad searches
+- Safe indexed-file filtering for config searches
+- English locale searches with shared CMILib data
+- Curated command, permission, placeholder, FAQ, material, and tab-complete indexes where available
+- Automatic runtime extraction of commands, permissions, and placeholders from initialized plugin jars
+- In-memory caches with global admin-only reloads
+- Clean first-install plugin data generated from a disposable Paper server
+- Local version inventory plus scheduled Paper and Spigot resource checks
+- Paper 26.2 stable/API drift checks plus Java 25 and Java 26 smoke commands
+- Per-user cooldowns, input validation, disabled mentions, role-ID access checks, and JSONL audit logs
+- Context-aware help, stats, language stats, latest versions, and debug output
 
-## Current Contexts
+## Plugin Contexts
 
-### CMI
+| Context | Search features |
+| --- | --- |
+| CMI | config, language, placeholder, material, command, permission, FAQ, tab-complete |
+| Jobs | config, language, placeholder, command, permission, FAQ |
+| Residence | config, language, placeholder, command, permission |
+| SelectionVisualizer (SVIS) | config, language, command, permission |
+| MobFarmManager (MFM) | config, language, generated command, generated permission |
+| TryMe | config, language, generated placeholder, generated command, generated permission |
+| TradeMe | config, language, generated placeholder, generated command, generated permission |
+| BottledExp | config, language, generated command, generated permission |
 
-The CMI context is fully wired and currently supports:
+All contexts also support `help`, `stats`, `langstats`, `latest`, `debug`, and the global admin-only `reload` command. Unsupported search features are hidden from the context-specific available list and are reported clearly if called directly.
 
-- `config`
-- `language|lang`
-- `placeholder`
-- `material`
-- `command|cmd`
-- `permission|perm`
-- `faq`
-- `tabcomplete`
-- `langstats`
-- `stats`
-- `debug`
-- `reload`
-- `help`
+CMILib config and English locale files are shared with every plugin context.
 
-### Jobs
-
-The Jobs context is now wired for Jobs locale files, Jobs translatable-word files, shared CMILib YAML search, and Jobs log-based support data.
-
-Right now Jobs supports:
-
-- `config`
-- `language|lang`
-- `placeholder`
-- `command|cmd`
-- `permission|perm`
-- `faq`
-- `help`
-- `stats`
-- `langstats`
-- `debug`
-- `reload`
-
-These are currently not part of the Jobs scope:
-
-- `material`
-- `tabcomplete`
-
-### SVIS
-
-The SVIS context currently supports:
-
-- `config`
-- `language|lang`
-- `command|cmd`
-- `permission|perm`
-- `langstats`
-- `stats`
-- `debug`
-- `reload`
-- `help`
-
-### Residence
-
-The Residence context currently supports:
-
-- `config`
-- `language|lang`
-- `placeholder`
-- `command|cmd`
-- `permission|perm`
-- `langstats`
-- `stats`
-- `debug`
-- `reload`
-- `help`
-
-### MFM
-
-The MFM context currently supports:
-
-- `config`
-- `language|lang`
-- `langstats`
-- `stats`
-- `debug`
-- `reload`
-- `help`
-
-### TryMe
-
-The TryMe context currently supports:
-
-- `config`
-- `language|lang`
-- `langstats`
-- `stats`
-- `debug`
-- `reload`
-- `help`
-
-### TradeMe
-
-The TradeMe context currently supports:
-
-- `config`
-- `language|lang`
-- `langstats`
-- `stats`
-- `debug`
-- `reload`
-- `help`
-
-## Example Commands
-
-### CMI examples
+## Commands
 
 ```text
 /lookup help
+/lookup config <keyword>
+/lookup language <keyword>
+/lookup lang <keyword>
+/lookup placeholder <keyword>
+/lookup material <keyword>
+/lookup command <keyword>
+/lookup cmd <keyword>
+/lookup permission <keyword>
+/lookup perm <keyword>
+/lookup faq <keyword>
+/lookup tabcomplete <keyword>
+/lookup langstats
+/lookup stats
+/lookup latest
+/lookup latest scope:all
+/lookup debug
+/lookup reload
+```
+
+`language|lang`, `command|cmd`, and `permission|perm` are equivalent long and short forms.
+
+### Search Options
+
+- `mode:exact` is the default case-insensitive phrase search.
+- `mode:whole` matches complete words or phrases, so `tho` does not match `thousand`.
+- `mode:broad` matches all meaningful query terms when they are not adjacent.
+- `limit:1-15` controls most result lists and defaults to `DEFAULT_RESULT_LIMIT`.
+- CMI `material` supports up to 25 results and defaults to 25.
+- `file:<name>` restricts config results to a valid indexed file in the active context.
+- `related:true` adds nearby YAML entries to config and language results.
+- `summary:true` requests an AI summary only when OpenAI support and the configured AI role are enabled.
+
+### Examples
+
+```text
 /lookup config dynmap
 /lookup config chat file:Chat.yml
+/lookup config coal file:miner.yml
 /lookup config "mini message" mode:whole
-/lookup config bluemap related:true
-/lookup language home
-/lookup lang "was fireballed by"
+/lookup language "was fireballed by"
 /lookup placeholder balance
 /lookup material shulker
 /lookup cmd balance
 /lookup perm cmi.command.balance
 /lookup faq refund
-/lookup tabcomplete [playername] mode:whole
-/lookup stats
-/lookup langstats
-/lookup debug
-/lookup reload
+/lookup cmd bottle
+/lookup perm bottledexp.command.consume
+/lookup latest
+/lookup latest scope:all
 ```
-
-### Jobs examples
-
-```text
-/lookup help
-/lookup language points
-/lookup placeholder jobsr_user_points
-/lookup cmd join
-/lookup perm jobs.use
-/lookup faq vault
-/lookup stats
-/lookup langstats
-```
-
-### SVIS examples
-
-```text
-/lookup help
-/lookup config particle
-/lookup language selection
-/lookup cmd gui
-/lookup perm sv.worldedit.use
-/lookup langstats
-/lookup stats
-```
-
-### Residence examples
-
-```text
-/lookup help
-/lookup config build
-/lookup language invalid
-/lookup placeholder owner
-/lookup cmd set
-/lookup perm residence.select
-/lookup langstats
-/lookup stats
-```
-
-### MFM examples
-
-```text
-/lookup help
-/lookup config farm
-/lookup language mob
-/lookup langstats
-/lookup stats
-```
-
-### TryMe examples
-
-```text
-/lookup help
-/lookup config tryme
-/lookup language message
-/lookup langstats
-/lookup stats
-```
-
-### TradeMe examples
-
-```text
-/lookup help
-/lookup config trade
-/lookup language seller
-/lookup langstats
-/lookup stats
-```
-
-### Test-channel context switching
-
-When used in a configured test channel by an admin:
-
-```text
-/lookup debug context:cmi
-/lookup debug context:jobs
-/lookup debug context:auto
-```
-
-`auto` clears the manual override and returns the test channel to its default configured context.
 
 ## Channel Routing
 
-The bot uses explicit channel IDs from `.env`:
+Only IDs listed in `DISCORD_ALLOWED_CHANNEL_IDS` can use the bot. The active plugin is then selected from these explicit mappings:
 
-- `DISCORD_ALLOWED_CHANNEL_IDS`: every channel where the bot is allowed to run
-- `DISCORD_CMI_CHANNEL_IDS`: channels that should route to the CMI context
-- `DISCORD_JOBS_CHANNEL_IDS`: channels that should route to the Jobs context
-- `DISCORD_SVIS_CHANNEL_IDS`: channels that should route to the SVIS context
-- `DISCORD_MFM_CHANNEL_IDS`: channels that should route to the MFM context
-- `DISCORD_TRYME_CHANNEL_IDS`: channels that should route to the TryMe context
-- `DISCORD_TRADEME_CHANNEL_IDS`: channels that should route to the TradeMe context
-- `DISCORD_RESIDENCE_CHANNEL_IDS`: channels that should route to the Residence context
-- `DISCORD_TEST_CHANNEL_IDS`: channels that are allowed to override context live
-- `DISCORD_TEST_DEFAULT_CONTEXT`: default context for test channels, currently `cmi`
-
-Current defaults:
-
-- `#cmi`: `526402563847880725`
-- `#jobs-reborn`: `526402919826849804`
-- `#selectionvisualizer`: `714110524731686962`
-- `#mobfarmmanager`: `713838315572559892`
-- `#tryme`: `714111148059787285`
-- `#trademe`: `713838991744434277`
-- `#residence`: `526403195476639744`
-- `#test`: `1493976695152054353`
-
-If a channel is not in `DISCORD_ALLOWED_CHANNEL_IDS`, the bot refuses to run there.
-
-## What Loads On Startup
-
-On `npm start`, the bot now warms a global cache and prints totals grouped by plugin context, for example:
-
-```text
-Loaded 19563 entries from 74 files into the search cache.
-CMI:
-- config: 4499 entries from 21 YAML configuration files
-- language: 4145 entries from 2 YAML locale files
-- placeholder: 224 entries from 1 placeholder data file
-- material: 1697 entries from 1 material data file
-- command: 306 entries from 1 command data file
-- permission: 778 entries from 2 permission data files
-- faq: 54 entries from 1 FAQ data file
-- tabcomplete: 77 entries from 1 tab-complete data file
-Jobs:
-- config: 347 entries from 1 YAML configuration file
-- language: 2655 entries from 2 YAML locale files
-- placeholder: 72 entries from 1 placeholder data file
-- command: 57 entries from 1 command data file
-- permission: 65 entries from 1 permission data file
-- faq: 35 entries from 32 FAQ data files
-Shared CMILib data:
-- config: 36 entries from 1 YAML configuration file
-- language: 2240 entries from 2 YAML locale files
-```
-
-`/lookup reload` rebuilds this cache globally for every configured plugin context.
-
-For startup and reload summaries, shared `CMILib` config and language data is shown in its own `Shared CMILib data:` section at the bottom so it does not visually look like plugin-owned data inside the CMI or Jobs blocks.
-
-## Debug Output
-
-`/lookup debug` is a compact health dashboard for the current channel context. It now reports:
-
-- detected plugin context
-- channel type and channel ID
-- tracked plugin list
-- known channel-route counts
-- current context file counts
-- uptime
-- Node and `discord.js` versions
-- project disk size
-- RAM RSS and heap usage
-- global and current-context cache totals
-- last cache reload timestamp
-- largest cache bucket
-- active test-channel overrides
-- tracked plugin disk footprint
-- which commands are available or unsupported in the current context
-
-## Search Behavior
-
-### Shared options
-
-- `mode: exact|whole|broad`
-- `limit: 1-15` for most commands
-- `summary: true|false`
-
-### CMI-specific extras
-
-- `config` supports `file: <name>`
-- `config`, `language`, and `lang` support `related: true|false`
-- `material` uses `limit: 1-25` and defaults to `25`
-
-### AI summary
-
-AI support is behind two gates:
-
-- `OPENAI_ENABLED=true`
-- the user must have one of the configured `AI_ROLE_IDS`
-
-If AI is disabled, `summary:true` is rejected cleanly.
-
-## Security and Abuse Controls
-
-The bot already includes:
-
-- per-user cooldowns
-- query length checks
-- blocklisted filler-word rejection
-- allowlisted short-token exceptions
-- disallowed `@` and backtick input rejection
-- no-mention Discord replies
-- audit logging to `logs/cmibot-usage.jsonl`
-- safe `file:` filtering against indexed files only
-
-Because file filtering uses the active plugin context, a Jobs channel cannot search CMI config files and vice versa.
-
-At the moment, Jobs `config` includes:
-
-- `JobsPlugin/generalConfig.yml`
-- shared `CMILibPlugin/CMILib/config.yml`
-
-Jobs `language` now includes:
-
-- `JobsPlugin/locale/messages_en.yml`
-- `JobsPlugin/TranslatableWords/Words_en.yml`
-- shared `CMILibPlugin/CMILib/Translations/**/*_EN.yml`
-
-Jobs `faq` can now load from both:
-
-- `JobsPlugin/data/faq.log`
-- `JobsPlugin/data/faq/*.md`
-
-That means new markdown FAQ files dropped into the Jobs FAQ folder are picked up on `/lookup reload` without needing a separate conversion step.
-
-## Environment
-
-Copy `.env.example` to `.env` and fill in the values.
-
-### Discord
-
-- `DISCORD_TOKEN`
-- `DISCORD_APPLICATION_ID`
-- `DISCORD_GUILD_ID`
-- `DISCORD_ALLOWED_CHANNEL_IDS`
 - `DISCORD_CMI_CHANNEL_IDS`
 - `DISCORD_JOBS_CHANNEL_IDS`
 - `DISCORD_SVIS_CHANNEL_IDS`
 - `DISCORD_MFM_CHANNEL_IDS`
 - `DISCORD_TRYME_CHANNEL_IDS`
+- `DISCORD_TRADEME_CHANNEL_IDS`
 - `DISCORD_RESIDENCE_CHANNEL_IDS`
-- `DISCORD_TEST_CHANNEL_IDS`
-- `DISCORD_TEST_DEFAULT_CONTEXT`
-- `ALLOWED_ROLE_IDS`
-- `ADMIN_ROLE_IDS`
-- `AI_ROLE_IDS`
+- `DISCORD_BOTTLEDEXP_CHANNEL_IDS`
 
-### OpenAI
+Current default routes are documented in `.env.example`. BottledExp has no production channel assigned yet, so its channel list is empty by default.
 
-- `OPENAI_ENABLED`
-- `OPENAI_API_KEY`
-- `OPENAI_MODEL`
-
-### Shared bot behavior
-
-- `DISPLAY_PATH_PREFIX`
-- `DEFAULT_RESULT_LIMIT`
-- `LOOKUP_COOLDOWN_SECONDS`
-- `SUMMARY_COOLDOWN_SECONDS`
-- `QUERY_MIN_LENGTH`
-- `QUERY_MAX_LENGTH`
-- `QUERY_BLOCKLIST`
-- `QUERY_ALLOWLIST`
-- `QUERY_DEBUG_ERRORS`
-- `AUDIT_LOG_PATH`
-
-### CMI data scopes
-
-- `LOOKUP_INCLUDE_GLOBS`
-- `LOOKUP_EXCLUDE_GLOBS`
-- `LANGLOOKUP_INCLUDE_GLOBS`
-- `LANGLOOKUP_EXCLUDE_GLOBS`
-- `PLACEHOLDER_INCLUDE_GLOBS`
-- `PLACEHOLDER_EXCLUDE_GLOBS`
-- `MATERIAL_INCLUDE_GLOBS`
-- `MATERIAL_EXCLUDE_GLOBS`
-- `COMMAND_INCLUDE_GLOBS`
-- `COMMAND_EXCLUDE_GLOBS`
-- `PERMISSION_INCLUDE_GLOBS`
-- `PERMISSION_EXCLUDE_GLOBS`
-- `FAQ_INCLUDE_GLOBS`
-- `FAQ_EXCLUDE_GLOBS`
-- `TABCOMPLETE_INCLUDE_GLOBS`
-- `TABCOMPLETE_EXCLUDE_GLOBS`
-
-### Jobs data scopes
-
-These are the current Jobs search scopes:
-
-- `JOBS_LOOKUP_INCLUDE_GLOBS`
-- `JOBS_LOOKUP_EXCLUDE_GLOBS`
-- `JOBS_LANGUAGE_INCLUDE_GLOBS`
-- `JOBS_LANGUAGE_EXCLUDE_GLOBS`
-- `JOBS_PLACEHOLDER_INCLUDE_GLOBS`
-- `JOBS_PLACEHOLDER_EXCLUDE_GLOBS`
-- `JOBS_COMMAND_INCLUDE_GLOBS`
-- `JOBS_COMMAND_EXCLUDE_GLOBS`
-- `JOBS_PERMISSION_INCLUDE_GLOBS`
-- `JOBS_PERMISSION_EXCLUDE_GLOBS`
-- `JOBS_FAQ_INCLUDE_GLOBS`
-- `JOBS_FAQ_EXCLUDE_GLOBS`
-
-### Lightweight plugin data scopes
-
-These are the current YAML-only plugin search scopes:
-
-- `SVIS_LOOKUP_INCLUDE_GLOBS`
-- `SVIS_LOOKUP_EXCLUDE_GLOBS`
-- `SVIS_LANGUAGE_INCLUDE_GLOBS`
-- `SVIS_LANGUAGE_EXCLUDE_GLOBS`
-- `SVIS_COMMAND_INCLUDE_GLOBS`
-- `SVIS_COMMAND_EXCLUDE_GLOBS`
-- `SVIS_PERMISSION_INCLUDE_GLOBS`
-- `SVIS_PERMISSION_EXCLUDE_GLOBS`
-- `RESIDENCE_PLACEHOLDER_INCLUDE_GLOBS`
-- `RESIDENCE_PLACEHOLDER_EXCLUDE_GLOBS`
-- `RESIDENCE_LOOKUP_INCLUDE_GLOBS`
-- `RESIDENCE_LOOKUP_EXCLUDE_GLOBS`
-- `RESIDENCE_LANGUAGE_INCLUDE_GLOBS`
-- `RESIDENCE_LANGUAGE_EXCLUDE_GLOBS`
-- `RESIDENCE_COMMAND_INCLUDE_GLOBS`
-- `RESIDENCE_COMMAND_EXCLUDE_GLOBS`
-- `RESIDENCE_PERMISSION_INCLUDE_GLOBS`
-- `RESIDENCE_PERMISSION_EXCLUDE_GLOBS`
-- `MFM_LOOKUP_INCLUDE_GLOBS`
-- `MFM_LOOKUP_EXCLUDE_GLOBS`
-- `MFM_LANGUAGE_INCLUDE_GLOBS`
-- `MFM_LANGUAGE_EXCLUDE_GLOBS`
-- `TRYME_LOOKUP_INCLUDE_GLOBS`
-- `TRYME_LOOKUP_EXCLUDE_GLOBS`
-- `TRYME_LANGUAGE_INCLUDE_GLOBS`
-- `TRYME_LANGUAGE_EXCLUDE_GLOBS`
-- `TRADEME_LOOKUP_INCLUDE_GLOBS`
-- `TRADEME_LOOKUP_EXCLUDE_GLOBS`
-- `TRADEME_LANGUAGE_INCLUDE_GLOBS`
-- `TRADEME_LANGUAGE_EXCLUDE_GLOBS`
-
-## Current Data Layout
-
-Right now the live CMI data remains where it already works:
+Configured test channels can switch context without restarting the bot:
 
 ```text
+/lookup debug context:cmi
+/lookup debug context:jobs
+/lookup debug context:bottledexp
+/lookup debug context:auto
+```
+
+Only an admin role can change the test-channel override. `auto` returns the test channel to `DISCORD_TEST_DEFAULT_CONTEXT`.
+
+## Clean Reference Data
+
+The bot's YAML data is generated from a clean first-install Paper server instead of copied from a customized live server.
+
+### Server Layout
+
+```text
+servers/
+|- _template-Paper-26.2/
+`- Paper-26.2/
+```
+
+`servers/` is ignored by Git. Never start or modify `_template-Paper-26.2` directly. It is a reusable source containing Paper, its cache/libraries, and the plugin jars.
+
+The maintained template uses PaperScript's `STABLE` channel, same-version build upgrades, and the fixed `Paper-{version}.jar` filename. Its broad process-name fallback is disabled because another project can legitimately run a jar with the same name; exact test-port detection remains enabled.
+
+Run the complete refresh with:
+
+```bash
+npm run refresh:data
+```
+
+The refresh script performs these steps:
+
+1. Moves the existing `servers/Paper-26.2` to a temporary backup.
+2. Clones `_template-Paper-26.2` into a new disposable working server.
+3. Removes generated plugin, world, log, and Paper config state from the clone only.
+4. Runs Paperclip's documented patch-only mode in the clone so the exact stable Paper API and runtime libraries are present without starting the template.
+5. Builds `LookupRuntimeExporter` with JDK 25 against the API coordinate in `runtime-exporter/compatibility.json`, verifies Java 25 class bytecode, and places the jar in the disposable clone only.
+6. Starts Paper with a 2 GB ceiling and waits for the server's `Done` state.
+7. Runs the exporter after every plugin is initialized, waits for its explicit completion marker, then sends a clean `stop` and requires a successful shutdown.
+8. Verifies every core config and English locale exists, then synchronizes generated Zrips config, locale, text, JSON, and image files into the plugin directories.
+9. Regenerates supplemental command, permission, and placeholder indexes from runtime metadata, with each jar's `plugin.yml` as a fallback for root commands and declared permissions.
+10. Writes `data/versions.json` from Paper state and every jar's `plugin.yml` metadata. The internal exporter is excluded from this catalog.
+11. Removes the temporary backup only after the entire refresh succeeds.
+
+Before synchronization, the workflow also backs up every managed repository plugin tree and `data/versions.json`. If startup, synchronization, index generation, or version generation fails, both the previous working server and repository lookup data are restored automatically; the failed clone is retained under `servers/Paper-26.2.failed-*` for diagnosis.
+
+Runtime databases, logs, backups, `.DS_Store`, and `security.key` are never synchronized. Curated files under each plugin's `data/` directory are preserved, including FAQ, detailed command, permission, placeholder, material, and tab-complete indexes. Only `generated-commands.log`, `generated-permissions.log`, and `generated-placeholders.log` are rebuilt automatically.
+
+Curated entries always win when a generated key describes the same command, permission, or placeholder. Generated entries fill missing coverage, while variable spellings such as `$1` and `[playerName]` are normalized for deduplication. This keeps hand-written descriptions and examples intact without losing newly added upstream entries.
+
+To regenerate the repository index files from the most recent runtime export and current `plugin.yml` files without starting Paper again:
+
+```bash
+npm run refresh:indexes
+```
+
+The runtime exporter can inspect initialized command classes, permission enums, and placeholder enums that are not declared in `plugin.yml`. Its reflection is intentionally isolated to third-party plugin metadata whose public APIs do not expose a complete enumerable index; it does not use Paper NMS or CraftBukkit internals. Values created only for a particular online player, external expansion, or live server state may still be impossible to enumerate. `plugin.yml` remains the fallback, and curated indexes remain authoritative.
+
+The exporter source lives under `runtime-exporter/`. Its compiled jar and raw TSV output stay inside ignored `servers/` paths; neither is deployed with LookupBot. You can compile it independently with:
+
+```bash
+npm run build:exporter
+```
+
+Use this lighter command to rebuild only `data/versions.json` from an already generated server:
+
+```bash
+npm run refresh:versions
+```
+
+## Generated Data Layout
+
+```text
+BottledExpPlugin/
 CMIPlugin/CMI/
 CMIPlugin/data/
 CMILibPlugin/CMILib/
+CMILibPlugin/data/
+JobsPlugin/
 JobsPlugin/data/
-SVISPlugin/
-ResidencePlugin/
 MFMPlugin/
-TryMePlugin/
+MFMPlugin/data/
+ResidencePlugin/
+ResidencePlugin/data/
+SVISPlugin/
+SVISPlugin/data/
 TradeMePlugin/
+TradeMePlugin/data/
+TryMePlugin/
+TryMePlugin/data/
+data/versions.json
+runtime-exporter/
+|- compatibility.json
+scripts/
 src/
 ```
 
-This refactor now supports the plugin-folder layout you created, while still keeping the data-loading rules driven by env globs.
+Generated files outside `data/` are replaced on each clean refresh so removed or renamed upstream settings disappear from the bot too. Curated files belong in a plugin's `data/` directory so the refresh preserves them. The clearly named `generated-*.log` files are the only generated exception inside those directories.
 
-That means:
+## Version Checks
 
-- CMI behavior stays stable
-- Jobs can be added incrementally
-- new plugin contexts can follow the same folder-and-glob pattern later
+`/lookup latest` shows the clean snapshot version for the active plugin, CMILib, and Paper. `/lookup latest scope:all` also lists every jar in the clean reference server, including support dependencies such as LuckPerms, PlaceholderAPI, and the custom CMI Vault build.
 
-## Local CLI
+The inventory is deliberately driven by jars that are physically present in `_template-Paper-26.2`. CMI Economy Injector, CMI API, CMI Bungee, CMI Velocity, or another companion resource will be included after its jar is added to that template and `npm run refresh:data` is run again.
 
-The local CLI now understands plugin context too:
+Tracked Zrips resource versions are checked through the public Spiget API. Paper builds are checked through Paper's official Fill API. A failed or disabled network check never prevents the bot from starting; the command continues to show the local clean snapshot.
+
+Version controls:
+
+- `VERSION_CATALOG_PATH=data/versions.json`
+- `VERSION_CHECK_ENABLED=true`
+- `VERSION_CHECK_INTERVAL_HOURS=12`
+- `VERSION_CHECK_TIMEOUT_SECONDS=8`
+- `PAPER_VERSION=26.2`
+- `PAPER_VERSION_CHANNELS=STABLE`
+
+The scheduled timer is in memory and starts with the bot. Restarting the bot resets the timer; no separate cron job is required.
+
+### Paper Compatibility
+
+`runtime-exporter/compatibility.json` is the source of truth for the internal Paper tooling. It currently pins Paper `26.2` build `84` on `STABLE`, API `26.2.build.84-stable`, exporter `1.0.1`, and Java target `25`.
+
+Verify the tracked metadata, PaperScript source/config, installed jar checksum, exact API jar, JDKs, and the live latest-stable build:
 
 ```bash
-node src/cli.js cmi stats
-node src/cli.js jobs stats
-node src/cli.js cmi config --file Chat.yml dynmap
+npm run check:paper
 ```
 
-If no plugin is provided, it defaults to `cmi`.
+Run maintained-server startup, plugin-list, exporter-enable, and clean-shutdown checks:
 
-## Install and Run
+```bash
+npm run smoke:java25
+npm run smoke:java26
+```
+
+The scripts use the exact JDK paths from the compatibility manifest by default. `JAVA_HOME` or `JAVA_25_HOME`/`JAVA_26_HOME` can select another matching JDK installation; `JAVA_BIN`, `JAVAC_BIN`, and `JAR_BIN` can override individual tools. Feature mismatches fail before build or startup, and the exporter remains Java 25 bytecode even when tested on Java 26.
+
+`npm run check` performs syntax plus offline compatibility drift validation. `npm run check:paper` additionally contacts Paper's official Fill API and fails if the pinned build is no longer the latest stable 26.2 build.
+
+## Cache Behavior
+
+All indexed YAML plus curated and jar-generated log data is loaded into RAM during startup. `/lookup reload` globally rebuilds every plugin cache, reloads the version catalog, and refreshes upstream version checks.
+
+Use reload after adding, replacing, renaming, or removing indexed files:
+
+```text
+/lookup reload
+```
+
+The command is restricted to `ADMIN_ROLE_IDS`. Regular searches continue to use the old in-memory snapshot until reload or restart completes.
+
+Reload reports are private. If the global per-plugin breakdown exceeds one Discord message, the bot continues it in additional ephemeral follow-ups instead of trimming contexts from the end.
+
+`/lookup stats` reports only the current plugin context. Startup and `/lookup reload` report every context, followed by a separate `Shared CMILib data` section.
+
+## Debug Output
+
+`/lookup debug` is ephemeral and reports:
+
+- active plugin and channel route
+- tracked contexts and supported commands
+- context/global cache totals and largest bucket
+- cache and version-check timestamps
+- clean version-catalog plugin count
+- Paper build, stable API coordinate, and exporter Java target
+- Node and discord.js versions
+- process uptime, RSS, and heap usage
+- project and per-plugin disk footprints
+- active test-channel overrides
+
+## Security
+
+- Access is matched by immutable Discord role IDs, never role names.
+- Reload and test-context changes are admin-only.
+- AI features use their own role-ID list and hard enable switch.
+- Queries have configurable length, filler-word, and character validation.
+- Short valid terms such as `rt`, `rtp`, `tp`, and placeholders can be allowlisted.
+- Discord mentions are disabled on all bot responses.
+- `file:` only resolves against files already indexed in the active plugin profile.
+- Per-user cooldowns limit lookup and AI-summary abuse.
+- Usage is written as JSON lines to `logs/cmibot-usage.jsonl`.
+
+## Install
+
+Requirements:
+
+- Node.js 20 or newer
+- JDK 25.0.4 at `/Library/Java/JavaVirtualMachines/jdk-25.0.4.jdk/Contents/Home` for Paper and Java 25 exporter bytecode
+- JDK 26.0.2 at `/Library/Java/JavaVirtualMachines/jdk-26.0.2.jdk/Contents/Home` for the optional forward-runtime smoke test
+- `unzip` for reading plugin metadata from jars
+
+Install and start:
 
 ```bash
 npm install
+cp .env.example .env
 npm start
 ```
 
-## Git Notes
+Fill in the Discord token, application ID, guild ID, channel IDs, and role IDs in `.env`. The real `.env` is ignored and must be created independently on each machine.
 
-- `.env` is ignored
-- `.env.example` is tracked
-- `logs/` is ignored
-- `CMIPlugin/CMI/cmi.sqlite.db` is ignored as runtime data
+OpenAI support is optional and disabled by default with `OPENAI_ENABLED=false`.
 
-## Next Planned Steps
+## Local CLI
 
-- add real Jobs YAML config data when you are ready to index more than the shared CMILib files
-- extend the multi-plugin structure to more support channels beyond the current CMI, Jobs, SVIS, Residence, MFM, TryMe, and TradeMe setup
+The CLI defaults to CMI, or accepts a plugin context first:
+
+```bash
+npm run lookup -- cmi stats
+npm run lookup -- jobs config --file generalConfig.yml income
+npm run lookup -- tryme config reward
+npm run lookup -- bottledexp language experience
+npm run lookup -- cmi latest
+npm run lookup -- cmi latest all
+```
+
+## Verification
+
+```bash
+npm run check
+npm run build:exporter
+VERSION_CHECK_ENABLED=false npm run lookup -- cmi stats
+VERSION_CHECK_ENABLED=false npm run lookup -- jobs stats
+VERSION_CHECK_ENABLED=false npm run lookup -- bottledexp stats
+```
+
+## Git Safety
+
+- `.env`, `logs/`, `node_modules/`, databases, keys, macOS metadata, and the entire `servers/` tree are ignored.
+- `.env.example`, generated clean plugin files, curated and jar-generated `data/` files, refresh scripts, and `data/versions.json` are tracked.
+- Always inspect `git status --ignored --short` before the first push from a new machine.

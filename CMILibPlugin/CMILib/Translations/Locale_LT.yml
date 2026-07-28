@@ -137,7 +137,7 @@ info:
   teleported: '&bJus nusiteleportavote.'
   BlackList: '&7[material] [amount] &bDidžiausias: [max]'
   PlayerSpliter: '&7----- &b[playerDisplayName] &7-----'
-  Spliter: '&r'
+  Spliter: '&e-------------------------------------------'
   SpliterValue: '&e------------------ &6[value] &e------------------'
   singleSpliter: '&e-'
   SpliterMiddle: ' &6[value] '
@@ -332,6 +332,7 @@ info:
     fire: Ugnis
     fire_tick: Ugnis
     fly_into_wall: Skrisdamas atsimušo į sieną
+    freeze: freeze
     hot_floor: Magmaos Blokas
     lava: Lava
     lightning: Žaibas
@@ -350,10 +351,13 @@ info:
     BADLANDS_PLATEAU: Badlands plateau
     BAMBOO_JUNGLE: Bamboo jungle
     BAMBOO_JUNGLE_HILLS: Bamboo jungle hills
+    BASALT_DELTAS: Basalt deltas
     BEACH: Beach
     BIRCH_FOREST: Birch forest
     BIRCH_FOREST_HILLS: Birch forest hills
     COLD_OCEAN: Cold ocean
+    CRIMSON_FOREST: Crimson forest
+    CUSTOM: Custom
     DARK_FOREST: Dark forest
     DARK_FOREST_HILLS: Dark forest hills
     DEEP_COLD_OCEAN: Deep cold ocean
@@ -364,6 +368,7 @@ info:
     DESERT: Desert
     DESERT_HILLS: Desert hills
     DESERT_LAKES: Desert lakes
+    DRIPSTONE_CAVES: Dripstone caves
     END_BARRENS: End barrens
     END_HIGHLANDS: End highlands
     END_MIDLANDS: End midlands
@@ -382,6 +387,7 @@ info:
     JUNGLE_EDGE: Jungle edge
     JUNGLE_HILLS: Jungle hills
     LUKEWARM_OCEAN: Lukewarm ocean
+    LUSH_CAVES: Lush caves
     MODIFIED_BADLANDS_PLATEAU: Modified badlands plateau
     MODIFIED_GRAVELLY_MOUNTAINS: Modified gravelly mountains
     MODIFIED_JUNGLE: Modified jungle
@@ -391,7 +397,7 @@ info:
     MOUNTAIN_EDGE: Mountain edge
     MUSHROOM_FIELDS: Mushroom fields
     MUSHROOM_FIELD_SHORE: Mushroom field shore
-    NETHER: Nether
+    NETHER_WASTES: Nether wastes
     OCEAN: Ocean
     PLAINS: Plains
     RIVER: River
@@ -406,6 +412,7 @@ info:
     SNOWY_TAIGA_HILLS: Snowy taiga hills
     SNOWY_TAIGA_MOUNTAINS: Snowy taiga mountains
     SNOWY_TUNDRA: Snowy tundra
+    SOUL_SAND_VALLEY: Soul sand valley
     STONE_SHORE: Stone shore
     SUNFLOWER_PLAINS: Sunflower plains
     SWAMP: Swamp
@@ -418,6 +425,7 @@ info:
     THE_END: The end
     THE_VOID: The void
     WARM_OCEAN: Warm ocean
+    WARPED_FOREST: Warped forest
     WOODED_BADLANDS_PLATEAU: Wooded badlands plateau
     WOODED_HILLS: Wooded hills
     WOODED_MOUNTAINS: Wooded mountains
@@ -425,7 +433,9 @@ info:
     area_effect_cloud: Area effect cloud
     armor_stand: Armor stand
     arrow: Arrow
+    axolotl: Axolotl
     bat: Bat
+    bee: Bee
     blaze: Blaze
     boat: Boat
     cat: Cat
@@ -457,7 +467,11 @@ info:
     fox: Fox
     ghast: Ghast
     giant: Giant
+    glow_item_frame: Glow item frame
+    glow_squid: Glow squid
+    goat: Goat
     guardian: Guardian
+    hoglin: Hoglin
     horse: Horse
     husk: Husk
     illusioner: Illusioner
@@ -468,6 +482,7 @@ info:
     llama: Llama
     llama_spit: Llama spit
     magma_cube: Magma cube
+    marker: Marker
     minecart: Minecart
     minecart_chest: Minecart chest
     minecart_command: Minecart command
@@ -483,7 +498,8 @@ info:
     parrot: Parrot
     phantom: Phantom
     pig: Pig
-    pig_zombie: Pig zombie
+    piglin: Piglin
+    piglin_brute: Piglin brute
     pillager: Pillager
     player: Player
     polar_bear: Polar bear
@@ -507,6 +523,7 @@ info:
     splash_potion: Splash potion
     squid: Squid
     stray: Stray
+    strider: Strider
     thrown_exp_bottle: Thrown exp bottle
     trader_llama: Trader llama
     trident: Trident
@@ -522,9 +539,11 @@ info:
     wither_skeleton: Wither skeleton
     wither_skull: Wither skull
     wolf: Wolf
+    zoglin: Zoglin
     zombie: Zombie
     zombie_horse: Zombie horse
     zombie_villager: Zombie villager
+    zombified_piglin: Zombified piglin
   EnchantAliases:
     protection_fire:
     - FireProtection
@@ -532,6 +551,8 @@ info:
     - Sharpness
     arrow_fire:
     - Flame
+    soul_speed:
+    - SOULSPEED
     water_worker:
     - AquaAffinity
     arrow_knockback:
@@ -722,7 +743,7 @@ modify:
   commandAddInfo: '&7Įveskite naują komandą. Rašykite &bcancel &7, kad baigtumėte'
   commandAddInformationHover: "&b[playerName] can be used to get player name \n&eTo\
     \ include delay in commands: \n&edelay! 5 \n&eSpecialized commands are supported.\
-    \ More info at \n&ewww.spigotmc.org/wiki/cmi-specialized-commands/"
+    \ More info at \n&ehttps://www.zrips.net/cmi/commands/specialized/"
   commandEditInfo: '&7Spauskite, kad įklijuotumėte seną tekstą. Rašykite &bcancel
     &7, kad baigtumėte veiksmą. Rašykite &bremove &7, kad ištrintumėte eilutę'
   listLimit: '&eList can''t be bigger than &6[amount] &eentries'
@@ -824,3 +845,24 @@ Chat:
   item: '&7[%cmi_iteminhand_displayname%[amount]&7]'
   itemAmount: ' x[amount]'
   itemEmpty: '&7[Mighty fist]'
+command:
+  help:
+    output:
+      usage: '&eUsage: &7%usage%'
+      cmdInfoFormat: '[command] &f- &e[description]'
+      cmdFormat: '&6/[command]&f[arguments]'
+      helpPageDescription: '&e* [description]'
+      explanation: '&e * [explanation]'
+      title: '&e------ ======= &6Help&e &e======= ------'
+  nocmd:
+    help:
+      info: '&eShows all available commands'
+      args: ''
+  reload:
+    help:
+      info: '&eReloads plugins config and locale files'
+      args: ''
+    info:
+      feedback: '&6Configs and locale files reloaded! Took [ms]ms'
+      failedConfig: '&4Failed to load config file! Check spelling!'
+      failedLocale: '&4Failed to load locale file! Check spelling!'

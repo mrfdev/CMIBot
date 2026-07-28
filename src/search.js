@@ -338,7 +338,7 @@ export class AiReranker {
       return [...ranked, ...itemById.values()];
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.warn(`[CMIBot] OpenAI rerank failed: ${message}`);
+      console.warn(`[LookupBot] OpenAI rerank failed: ${message}`);
       return candidateItems;
     }
   }
@@ -383,7 +383,7 @@ export class AiReranker {
       return summary || null;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.warn(`[CMIBot] OpenAI summary failed: ${message}`);
+      console.warn(`[LookupBot] OpenAI summary failed: ${message}`);
       return null;
     }
   }

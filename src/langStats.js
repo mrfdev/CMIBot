@@ -12,6 +12,7 @@ const KNOWN_CATEGORY_LABELS = new Map([
   ["MFMPlugin/Locale/Locale_EN.yml", "MFM (plugin locale)"],
   ["TryMePlugin/Locale_EN.yml", "TryMe (plugin locale)"],
   ["TradeMePlugin/Locale_EN.yml", "TradeMe (plugin locale)"],
+  ["BottledExpPlugin/Locale_EN.yml", "BottledExp (plugin locale)"],
   ["ResidencePlugin/Language/English.yml", "Residence (plugin locale)"],
 ]);
 
@@ -219,6 +220,17 @@ export function formatLanguageCategoryStats(categories, formatDisplayPath, plugi
                     matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
                   },
                 ]
+              : pluginId === "bottledexp"
+                ? [
+                    {
+                      title: "BottledExp language data:",
+                      matcher: (category) => category.englishRelativePath.startsWith("BottledExpPlugin/"),
+                    },
+                    {
+                      title: "Shared CMILib language data:",
+                      matcher: (category) => category.englishRelativePath.startsWith("CMILibPlugin/CMILib/"),
+                    },
+                  ]
       : [
           {
             title: "CMI language data:",

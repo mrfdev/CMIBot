@@ -1,0 +1,8 @@
+mfm.build.$1 - Allows to build defined entity
+mfm.bypasslimit.$1 - Allows to bypass block or entity limitations
+mfm.cleaninform - Informs player about cleanup results
+mfm.command.$1 - Gives access to command
+mfm.command.clean - Grants access to the clean command; Default: op
+mfm.command.limits.full - Shows full information for limits around you
+mfm.command.reload - Grants access to the clean command; Default: op
+mfm.permisiononerror - Allows to see missing permission on error message

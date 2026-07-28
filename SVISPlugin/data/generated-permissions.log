@@ -1,0 +1,24 @@
+sv.command.$1
+sv.command.gui - Grants access to the gui command; Default: true
+sv.command.svgui.bypass - Allows to bypass limitations on particle updates
+sv.command.toggle - Grants access to the toggle command; Default: true
+sv.permisiononerror - Allows to see missing permission on error message
+sv.selectiontypeconfig.beacon - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.chunk - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.dicefurniture - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.factions - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.gp - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.grid - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.jobs - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.kingdoms - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.point - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.residence - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.spawner - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.towny - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.weconvex - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.wecuboid - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.wecyl - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.wepaste - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.wepoly - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.wesphere - Grants access to particular selection mode configuration; Default: true
+sv.selectiontypeconfig.worldguard - Grants access to particular selection mode configuration; Default: true

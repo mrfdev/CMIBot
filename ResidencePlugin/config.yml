@@ -36,7 +36,7 @@ Global:
     # Keep in mind that this only applies for commands like /res tp
     CanTeleportIncludeOwner: false
     # Name of your main residence world. Usually normal starting world 'world'. Capitalization essential
-    DefaultWorld: spawn
+    DefaultWorld: world
     DisabledWorlds:
       # List Of Worlds where this plugin is disabled
       # Make sure that world names capitalization is correct
@@ -97,7 +97,7 @@ Global:
     KickLocation:
       # By setting this to true, when player kicks another player from residence, he will be teleported to this location instead of getting outside residence
       Use: false
-      World: spawn
+      World: world
       X: 0.5
       Y: 63.0
       Z: 0.5
@@ -107,7 +107,7 @@ Global:
       Yaw: 0.0
     FlyLandLocation:
       # Used when players fly state is being turned to false because of fly flag and there is no solid land where to land for player
-      World: spawn
+      World: world
       X: 0.5
       Y: 63.0
       Z: 0.5
@@ -175,91 +175,19 @@ Global:
     - SomeWorldNames
   RandomTeleportation:
     Worlds:
-      wild:
+      world_the_end:
         Enabled: true
         MaxCoord: 1000
         MinCoord: 500
         CenterX: 0
         CenterZ: 0
-      cave:
+      world:
         Enabled: true
         MaxCoord: 1000
         MinCoord: 500
         CenterX: 0
         CenterZ: 0
-      lumifae:
-        Enabled: true
-        MaxCoord: 1000
-        MinCoord: 500
-        CenterX: 0
-        CenterZ: 0
-      nether:
-        Enabled: true
-        MaxCoord: 1000
-        MinCoord: 500
-        CenterX: 0
-        CenterZ: 0
-      end:
-        Enabled: true
-        MaxCoord: 1000
-        MinCoord: 500
-        CenterX: 0
-        CenterZ: 0
-      legacy:
-        Enabled: true
-        MaxCoord: 1000
-        MinCoord: 500
-        CenterX: 0
-        CenterZ: 0
-      builders:
-        Enabled: true
-        MaxCoord: 1000
-        MinCoord: 500
-        CenterX: 0
-        CenterZ: 0
-      spawnupdate:
-        Enabled: true
-        MaxCoord: 1000
-        MinCoord: 500
-        CenterX: 0
-        CenterZ: 0
-      spawn:
-        Enabled: true
-        MaxCoord: 1000
-        MinCoord: 500
-        CenterX: 0
-        CenterZ: 0
-      skyblock:
-        Enabled: true
-        MaxCoord: 1000
-        MinCoord: 500
-        CenterX: 0
-        CenterZ: 0
-      skygrid:
-        Enabled: true
-        MaxCoord: 1000
-        MinCoord: 500
-        CenterX: 0
-        CenterZ: 0
-      santa:
-        Enabled: true
-        MaxCoord: 1000
-        MinCoord: 500
-        CenterX: 0
-        CenterZ: 0
-      general:
-        Enabled: true
-        MaxCoord: 1000
-        MinCoord: 500
-        CenterX: 0
-        CenterZ: 0
-      oneblock:
-        Enabled: true
-        MaxCoord: 1000
-        MinCoord: 500
-        CenterX: 0
-        CenterZ: 0
-      acid:
+      world_nether:
         Enabled: true
         MaxCoord: 1000
         MinCoord: 500
@@ -303,7 +231,7 @@ Global:
     Regenerate: false
     # Worlds to be included in check list
     Worlds:
-    - spawn
+    - world
     # When enabled we will transfer residence to defined user instead of removing it
     # Defined user will be excluded from cleanup operation
     TrasnferToUser: false
@@ -352,7 +280,7 @@ Global:
       # With this set to true, water flow outside residence is blocked
       NoWaterFlow: false
       Worlds:
-      - spawn
+      - world
     Place:
       # Level from which one to start block lava and water place
       # This don't have effect in residence area
@@ -362,7 +290,7 @@ Global:
       # With this set to true, players cant place water outside residence
       NoWaterPlace: false
       Worlds:
-      - spawn
+      - world
     BlockFall:
       # With this set to true, falling blocks will be deleted if they will land in different area
       Use: true
@@ -370,7 +298,7 @@ Global:
       # This don't have effect in residence area or outside
       Level: 62
       Worlds:
-      - spawn
+      - world
     ResCleaning:
       # With this set to true, after player removes its residence, all blocks listed below, will be replaced with air blocks
       # Effective way to prevent residence creating near greefing target and then remove it
@@ -384,7 +312,7 @@ Global:
       - WATER
       - LAVA
       Worlds:
-      - spawn
+      - world
     Flags:
       # By setting this to true flags from list will be protected from change while there is some one inside residence besides owner
       # Protects in example from people inviting some one and changing pvp flag to true to kill them
@@ -414,7 +342,7 @@ Global:
   LeaseAutoRenew: true
   # Whether or not to use the Permissions system in conjunction with this config.
   EnablePermissions: true
-  # Enable / Disable Residence's Economy System (iConomy, MineConomy, Essentials, BOSEconomy, and RealEconomy supported).
+  # Enable / Disable Residence's Economy System (CMIEconomy, Essentials, Vault supported).
   EnableEconomy: true
   # Defines when we should charge money. Only works if economy is enabled
   ChargeWhen:
@@ -426,8 +354,8 @@ Global:
     AreaAdd: true
   # Defaults to None which will start by looking to default economy engine throw vault API and if it fails to any supported economy engine
   # Custom economy engines can be defined to access economy directly
-  # Supported variables: Vaultinfo_ListSpliteriConomyinfo_ListSpliterEssentialsinfo_ListSpliterRealEconomyinfo_ListSpliterCMIEconomyinfo_ListSpliterNone
-  Type: None
+  # Supported variables: Vault, Essentials, CMIEconomy, Auto
+  Type: Auto
   # When enabled extra message will appear in chat if residence is for rent or for sell to inform how he can rent/buy residence with basic information.
   ExtraEnterMessage: true
   Sell:
@@ -502,7 +430,7 @@ Global:
   # Setting this to true causes subzones to inherit flags from their parent zones.
   ResidenceFlagsInherit: true
   # Setting this to false will allow rented residences to be modified by the renting player.
-  PreventRentModify: true
+  PreventRentModify: false
   # Setting this to true will prevent subzone deletion when subzone owner is not same as parent zone owner.
   PreventSubZoneRemoval: true
   # Setting this to false will cause residence to continue to load even if a error is detected in the save file.
@@ -560,7 +488,7 @@ Global:
     #  droplet, take, mobappearance
 
     # If using spigot based server different particles can be used:
-    # click2, click1, bow_fire, door_toggle, iron_door_toggle, trapdoor_toggle, iron_trapdoor_toggle, fence_gate_toggle, door_close, iron_door_close, trapdoor_close, iron_trapdoor_close, fence_gate_close, extinguish, record_play, ghast_shriek, ghast_shoot, blaze_shoot, zombie_chew_wooden_door, zombie_chew_iron_door, zombie_destroy_door, smoke, step_sound, potion_break, instant_potion_break, ender_signal, mobspawner_flames, brewing_stand_brew, chorus_flower_grow, chorus_flower_death, portal_travel, endereye_launch, firework_shoot, villager_plant_grow, dragon_breath, anvil_break, anvil_use, anvil_land, enderdragon_shoot, wither_break_block, wither_shoot, zombie_infect, zombie_converted_villager, bat_takeoff, end_gateway_spawn, enderdragon_growl, phantom_bite, zombie_converted_to_drowned, husk_converted_to_zombie, grindstone_use, book_page_turn, smithing_table_use, pointed_dripstone_land, pointed_dripstone_drip_lava_into_cauldron, pointed_dripstone_drip_water_into_cauldron, skeleton_converted_to_stray, composter_fill_attempt, lava_interact, redstone_torch_burnout, end_portal_frame_fill, dripping_dripstone, bone_meal_use, ender_dragon_destroy_block, sponge_dry, electric_spark, copper_wax_on, copper_wax_off, oxidised_copper_scrape, wither_spawned, ender_dragon_death, end_portal_created_in_overworld, sound_stop_jukebox_song, crafter_craft, crafter_fail, shoot_white_smoke, bee_growth, turtle_egg_placement, smash_attack, particles_sculk_charge, particles_sculk_shriek, particles_and_sound_brush_block_complete, particles_egg_crack, gust_dust, trial_spawner_spawn, trial_spawner_spawn_mob_at, trial_spawner_detect_player, trial_spawner_eject_item, vault_activate, vault_deactivate, vault_eject_item, spawn_cobweb, trial_spawner_detect_player_ominous, trial_spawner_become_ominous, trial_spawner_spawn_item, sound_with_charge_shot
+    # dispenser_dispense, dispenser_fail, dispenser_projectile_launch, door_toggle, iron_door_toggle, trapdoor_toggle, iron_trapdoor_toggle, fence_gate_toggle, door_close, iron_door_close, trapdoor_close, iron_trapdoor_close, fence_gate_close, endereye_launch, firework_shoot, extinguish, record_play, record_stop, ghast_shriek, ghast_shoot, ender_dragon_shoot, blaze_shoot, zombie_chew_wooden_door, zombie_chew_iron_door, zombie_destroy_door, wither_break_block, wither_spawned, wither_shoot, bat_takeoff, zombie_infect, zombie_converted_to_villager, ender_dragon_death, anvil_break, anvil_use, anvil_land, portal_travel, chorus_flower_grow, chorus_flower_death, brewing_stand_brew, end_portal_created_in_overworld, phantom_bite, zombie_converted_to_drowned, husk_converted_to_zombie, grindstone_use, book_page_turn, smithing_table_use, pointed_dripstone_land, pointed_dripstone_drip_lava_into_cauldron, pointed_dripstone_drip_water_into_cauldron, skeleton_converted_to_stray, crafter_craft, crafter_fail, wind_charge_shoot, sulfur_spike_land, composter_fill_attempt, lava_interact, redstone_torch_burnout, end_portal_frame_fill, dripping_dripstone, bone_meal_use, smoke_shoot, step_sound, destroy_block, potion_break, ender_signal, mobspawner_flames, ender_dragon_breath, instant_potion_break, ender_dragon_destroy_block, sponge_dry, white_smoke_shoot, bee_growth, turtle_egg_placement, smash_attack, end_gateway_spawn, ender_dragon_growl, electric_spark, copper_wax_on, copper_wax_off, oxidised_copper_scrape, sculk_charge, sculk_shriek, brush_block_complete, egg_crack, gust_dust, trial_spawner_spawn, trial_spawner_spawn_mob_at, trial_spawner_detect_player, trial_spawner_eject_item, vault_activate, vault_deactivate, vault_eject_item, spawn_cobweb, trial_spawner_detect_player_ominous, trial_spawner_become_ominous, trial_spawner_spawn_item
     Selected:
       Frame: dust:125,150,150
       Sides: dust:150,255,200

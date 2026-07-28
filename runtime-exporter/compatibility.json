@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "exporterVersion": "1.0.1",
+  "paperVersion": "26.2",
+  "paperBuild": 84,
+  "paperChannel": "STABLE",
+  "paperApiVersion": "26.2",
+  "paperApiCoordinate": "26.2.build.84-stable",
+  "paperJar": "Paper-26.2.jar",
+  "paperScriptCommit": "f600625aa67e0702e0c8e907852c6c4397825299",
+  "paperScriptSourceSha256": "572131b124b7561e43f7fbed32e45156ec35f97224819bb9ccf7872aa5a37720",
+  "javaTarget": 25,
+  "jdk25Home": "/Library/Java/JavaVirtualMachines/jdk-25.0.4.jdk/Contents/Home",
+  "jdk26Home": "/Library/Java/JavaVirtualMachines/jdk-26.0.2.jdk/Contents/Home"
+}

@@ -1,14 +1,14 @@
 # Language file you want to use
 Language: EN
 # Shows if there is an available new version on login with sv.versioncheck permission node
-ShowNewVersion: false
+ShowNewVersion: true
 # Enable or disable world border compatability. In case you don't want world border visualization, just set this to false and restart server
 WorldBorder: true
 PlotSquared:
   Enter:
     # Time in milliseconds for a particle duration when entering plot
     # Set to 0 to disable
-    Duration: 2500
+    Duration: 2000
 Lands:
   Enter:
     # Time in milliseconds for a particle duration when entering plot
@@ -219,14 +219,14 @@ Types:
       Range: 32
       ShowFor: 30000
       ByDefaultIsEnabled: true
-      Climbing: false
+      Climbing: true
     Biome:
       Interval: 3
       SkipBy: 10
       Range: 32
       ShowFor: 30000
       ByDefaultIsEnabled: true
-      Climbing: false
+      Climbing: true
   Spawner:
     Sphere:
       Effect1:
@@ -282,7 +282,7 @@ Types:
       Range: 32
       ShowFor: 30000
       ByDefaultIsEnabled: true
-      Climbing: false
+      Climbing: true
   Factions:
     Area:
       Effect1:
@@ -315,7 +315,7 @@ Types:
       Range: 32
       ShowFor: 30000
       ByDefaultIsEnabled: true
-      Climbing: false
+      Climbing: true
   GriefPrevention:
     Area:
       Effect1:
@@ -498,7 +498,7 @@ Types:
       Range: 32
       ShowFor: 30000
       ByDefaultIsEnabled: true
-      Climbing: false
+      Climbing: true
   DiceFurniture:
     Area:
       Effect1:

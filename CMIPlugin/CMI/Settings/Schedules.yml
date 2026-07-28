@@ -15,6 +15,7 @@
 #       Hour: 22
 #       Minute: 30
 #   You can use week day names to indicate at which day in a week this sheduler should be performed. Example - Day: Monday
+#   FirstMonthDay or LastMonthDay can be used to indicate at which month day this scheduler should be performed. This replaces Day section. Example - FirstMonthDay: Friday which will trigger scheduler at first friday of the month
 #   This will set commands to be performed on 4 a clock in morning and at 22:30. Good way to control server backups when there is less players online
 # Repeat: (true/false) if set to false, action will be performed only once other wise it will be repeated all the time in intervals or on particular time
 # MinPlayers: (amount) Will limit minimum player amount there should be online when command performe
@@ -41,499 +42,81 @@
 # Supports PlaceHolderAPI variables
 # More information about specialized commands can be found at https://www.zrips.net/cmi/commands/specialized/
 
-saveMaps:
-  Enabled: false
-  Delay: 600
-  Repeat: true
-  Commands:
-  - save-all
 GiveDiamonds:
   Enabled: false
   MinPlayers: 3
+  FeedBack: true
   Repeat: true
   PerformOn:
-    '1':
-      Hour: 18
+  - Hour: 18
   Commands:
   - cmi give [randomPlayer] diamond %rand/1-5%
-  - cmi msg [randomPlayer] &eYou just got diamonds!
-resetWeatherTime:
-  Enabled: true
-  PerformOn:
-    '1':
-      Hour: 6
-    '2':
-      Hour: 18
-  Repeat: true
-  Feedback: true
-  Commands:
-  - cmi bossbarmsg all -sec:10 -t:10 -n:cleanground -p:10 -c:red -s:10 {#orange}Pick
-    up your stuff, cleaning ground items in 30s
-  - cmi killall -monsters
-  - cmi killall skeleton -force
-  - delay! 15
-  - cmi bossbarmsg all -sec:10 -t:10 -n:cleanground -p:10 -c:red -s:10 {#orange}Pick
-    up your stuff, cleaning ground items in 15s
-  - cmi time unfreeze general
-  - cmi weather unlock general
-  - delay! 10
-  - cmi bossbarmsg all -sec:10 -t:10 -n:cleanground -p:10 -c:red -s:10 {#orange}Pick
-    up your stuff, cleaning ground items in 5s
-  - cmi time unfreeze skyblock
-  - cmi weather unlock skyblock
-  - delay! 5
-  - cmi groundclean
-  - delay! 1
-  - cmi time unfreeze oneblock
-  - cmi weather unlock oneblock
-  - delay! 1
-  - cmi time unfreeze wild
-  - cmi weather unlock wild
-  - delay! 1
-  - farm reload
-  - delay! 1
-  - save-all
-fishtournament:
-  Enabled: true
-  PerformOn:
-    '1':
-      Day: 1
-    '2':
-      Day: 7
-    '3':
-      Day: 14
-    '4':
-      Day: 21
-  Repeat: true
-  Feedback: true
-  Commands:
-  - asConsole! cmi sound block_bamboo_fall -all
-  - cmi broadcast !{#gold}&l FISHING TOURNAMENT STARTS IN ABOUT 30 MINUTES
-  - 'asConsole! discordsrv broadcast #661710111152275456 :ocean: :fishing_pole_and_fish:
-    **FISHING TOURNAMENT starts in about 30 minutes at /warp fish** \n Prizes for
-    1st, 2nd, and 3rd place winners pay-out automatically. \n The next fishing tournament
-    is in 7 days.'
-  - delay! 1800
-  - asConsole! cmi sound block_bamboo_fall -all
-  - cmi broadcast !{#gold}&l FISHING TOURNAMENT STARTS IN 5 (FIVE) MINUTES
-  - delay! 180
-  - cmi broadcast !{#gold}&l Fishing Tournament starts in 2 (two) minutes
-  - asConsole! cmi sound block_bamboo_fall -all
-  - delay! 60
-  - cmi broadcast !{#gold}&l Fishing Tournament starts in a minute at /warp fish
-  - asConsole! cmi sound block_bamboo_fall -all
-  - delay! 30
-  - cmi broadcast !{#gold}&l Fishing Tournament starts in 30 seconds at /warp fish
-  - asConsole! cmi sound block_bamboo_fall -all
-  - delay! 30
-  - asConsole! cmi sound item_goat_horn_sound_7 -all
-  - cmi broadcast !{#gold} Best of luck Fishing everybody!
-  - asFakeOp! ft start LONGEST_LENGTH 900
-farmtournament:
-  Enabled: true
-  PerformOn:
-    '1':
-      Day: 4
-    '2':
-      Day: 10
-    '3':
-      Day: 17
-    '4':
-      Day: 24
-  Repeat: true
-  Feedback: true
-  Commands:
-  - asConsole! cmi sound block_bamboo_fall -all
-  - cmi broadcast !{#gold}&l FARMING TOURNAMENT STARTS IN ABOUT 30 MINUTES
-  - 'asConsole! discordsrv broadcast #661710111152275456 ## :farmer: :netherite_hoe:
-    **FARMING TOURNAMENT starts in about 30 minutes** \n Prizes for 1st, 2nd, and
-    3rd place winners pay-out automatically. \n The next farming tournament is in
-    7 days.'
-  - delay! 1800
-  - asConsole! cmi sound block_bamboo_fall -all
-  - cmi broadcast !{#gold}&l FARMING TOURNAMENT STARTS IN 5 (FIVE) MINUTES
-  - delay! 180
-  - cmi broadcast !{#gold}&l Farming Tournament starts in 2 (two) minutes
-  - asConsole! cmi sound block_bamboo_fall -all
-  - delay! 60
-  - cmi broadcast !{#gold}&l Farming Tournament starts in a minute
-  - asConsole! cmi sound block_bamboo_fall -all
-  - delay! 30
-  - cmi broadcast !{#gold}&l Farming Tournament starts in 30 seconds
-  - asConsole! cmi sound block_bamboo_fall -all
-  - delay! 30
-  - asConsole! cmi sound item_goat_horn_sound_7 -all
-  - cmi broadcast !{#gold} Best of luck Farming everybody!
-  - asFakeOp! farmt start MOST_POTATOES 900
-mcmmoAutoStart:
-  Enabled: true
-  PerformOn:
-    '1':
-      Day: 2
-    '2':
-      Day: 8
-    '3':
-      Day: 15
-    '4':
-      Day: 22
-  Repeat: true
-  Feedback: true
-  Commands:
-  - asConsole! cmi sound block_bamboo_fall -all
-  - cmi broadcast !{#gold}&l mcMMO TRIPLE EXP HOUR STARTS IN ABOUT 30 MINUTES
-  - 'asConsole! discordsrv broadcast #661710111152275456 **mcMMO BOOSTER starts in
-    about 30 minutes** \n Rate: TRIPLE, Length: 1 hour \n Commands: /mctop, /mcrank,
-    /mcstats'
-  - delay! 1800
-  - asConsole! cmi sound block_bamboo_fall -all
-  - cmi broadcast !{#gold}&l mcMMO TRIPLE EXP HOUR STARTS IN 5 (FIVE) MINUTES
-  - delay! 180
-  - cmi broadcast !{#gold}&l mcMMO Triple Exp Booster starts in 2 (two) minutes
-  - asConsole! cmi sound block_bamboo_fall -all
-  - delay! 60
-  - cmi broadcast !{#gold}&l mcMMO Triple Exp Booster starts in a minute
-  - asConsole! cmi sound block_bamboo_fall -all
-  - delay! 30
-  - cmi broadcast !{#gold}&l mcMMO Triple Exp Booster starts in 30 seconds
-  - asConsole! cmi sound block_bamboo_fall -all
-  - delay! 30
-  - asConsole! cmi sound item_goat_horn_sound_7 -all
-  - cmi broadcast !{#gold} Best of luck grinding /mcstats everybody!
-  - asConsole! xprate 3 true
-  - delay! 3600
-  - asConsole! xprate reset
-jobsAutoStart:
-  Enabled: true
-  PerformOn:
-    '1':
-      Day: 3
-    '2':
-      Day: 9
-    '3':
-      Day: 16
-    '4':
-      Day: 23
-  Repeat: true
-  Feedback: true
-  Commands:
-  - asConsole! cmi sound block_bamboo_fall -all
-  - cmi broadcast !{#gold}&l JOBS TRIPLE EXP HOUR STARTS IN ABOUT 30 MINUTES
-  - 'asConsole! discordsrv broadcast #661710111152275456 **JOBS BOOSTER starts in
-    about 30 minutes** \n Rate: TRIPLE, Length: 1 hour \n Commands: /jobs browse,
-    /jobs stats'
-  - delay! 1800
-  - asConsole! cmi sound block_bamboo_fall -all
-  - cmi broadcast !{#gold}&l JOBS TRIPLE EXP HOUR STARTS IN 5 (FIVE) MINUTES
-  - delay! 180
-  - cmi broadcast !{#gold}&l JOBS Triple Exp Booster starts in 2 (two) minutes
-  - asConsole! cmi sound block_bamboo_fall -all
-  - delay! 60
-  - cmi broadcast !{#gold}&l JOBS Triple Exp Booster starts in a minute
-  - asConsole! cmi sound block_bamboo_fall -all
-  - delay! 30
-  - cmi broadcast !{#gold}&l JOBS Triple Exp Booster starts in 30 seconds
-  - asConsole! cmi sound block_bamboo_fall -all
-  - delay! 30
-  - asConsole! cmi sound item_goat_horn_sound_7 -all
-  - cmi broadcast !{#gold} Best of luck working /jobs stats everybody!
-  - asFakeOp! boostjobs 3
-  - delay! 3600
-  - asFakeOp! boostjobs 0
-mcmmoStart:
-  Enabled: false
-  MinPlayers: 15
-  Delay: 600
-  Repeat: false
-  Feedback: true
-  Commands:
-  - xprate 2 false
-  - cmi broadcast {#Cerulean} 1MB mcMMO »&6 Active (2x)
-mcmmoStop:
-  Enabled: false
-  MinPlayers: 1
-  MaxPlayers: 14
-  Delay: 600
-  Repeat: true
-  Feedback: true
-  Commands:
-  - xprate reset
+  - msg! [randomPlayer] &eYou just got diamonds!
 StopServer:
   Enabled: false
+  PerformOn:
+  - Hour: 3
+    Minute: 59
+    Second: 30
   Commands:
-  - asFakeOp! pinata killall
-  - actionbar! &eRestart for quick maintenance in &620 &esec!
+  - actionbar! &eServer will stop in &630 &esec!
   - delay! 5
-  - actionbar! &eRestart for quick maintenance in &615 &esec!
+  - actionbar! &eServer will stop in &625 &esec!
   - delay! 5
-  - actionbar! &eRestart for quick maintenance in &610 &esec!
+  - actionbar! &eServer will stop in &620 &esec!
   - delay! 5
-  - actionbar! &eRestart for quick maintenance in &65 &esec!
+  - actionbar! &eServer will stop in &615 &esec!
+  - delay! 5
+  - actionbar! &eServer will stop in &610 &esec!
+  - delay! 5
+  - actionbar! &eServer will stop in &65 &esec!
   - delay! 1
-  - actionbar! &eRestart for quick maintenance in &64 &esec!
+  - actionbar! &eServer will stop in &64 &esec!
   - delay! 1
-  - actionbar! &eRestart for quick maintenance in &63 &esec!
+  - actionbar! &eServer will stop in &63 &esec!
   - delay! 1
-  - actionbar! &eRestart for quick maintenance in &62 &esec!
+  - actionbar! &eServer will stop in &62 &esec!
   - delay! 1
-  - actionbar! &eRestart for quick maintenance in &61 &esec!
+  - actionbar! &eServer will stop in &61 &esec!
   - delay! 1
-  - kickall! &eServer will be back online soon Give us a minute!
+  - kickall! &eServer will be back online soon!
   - delay! 1
   - stop
 AllInOneJustExample:
   Enabled: false
   MinPlayers: 3
   MaxPlayers: 10
+  FeedBack: false
   Delay: 600
   Repeat: true
   PerformOn:
-    '1':
-      Month: 12
-      Day: 25
-      Hour: 18
-      Minute: 36
-      Second: 15
-    '2':
-      Hour: 18
+  - Month: 12
+    Day: monday
+    Hour: 18
+    Minute: 36
+    Second: 15
+  - Hour: 18
+  - LastMonthDay: friday
+    Hour: 18
+  - FirstMonthDay: tuesday
+    Hour: 12
+    Minute: 30
   Commands:
   - cmi give [randomPlayer] diamond %rand/1-5%
-  - asConsole! cmi msg [randomPlayer] !{#gold}You just got diamonds!
+  - msg! [randomPlayer] &eYou just got diamonds!
   - broadcast! &e[randomPlayer] just got some stuff!
   - delay! 1
-  - actionbar! &eRestart for quick maintenance in &61 &esec!
+  - actionbar! &eServer will stop in &61 &esec!
   - kickall! &eServer will be back online soon!
-tenyearsweekend:
-  Enabled: false
-  MinPlayers: 1
-  Delay: 600
-  Repeat: true
-  Randomize: true
-  Feedback: false
-  Commands:
-  - asConsole! cmi bossbarmsg all -s:90 -t:90 -n:upgradedA -c:green {#orange}» /santa
-    event is live
-  - asConsole! cmi bossbarmsg all -s:90 -t:90 -n:upgradedA -c:green {#orange}» /santa
-    world is open
-  - asConsole! cmi bossbarmsg all -s:90 -t:90 -n:upgradedC -c:green {#orange}» The
-    winter and santa /kits are live
-  - asConsole! cmi bossbarmsg all -s:90 -t:90 -n:upgradedC -c:green {#orange}» /santa
-    world has an advent calendar
-Halloweeen:
-  Enabled: false
-  MinPlayers: 1
-  Delay: 600
-  Repeat: true
-  Randomize: true
-  Feedback: false
-  Commands:
-  - asConsole! cmi ctellraw all <T>{#buttercup>}The /santa event world is open! Read
-    the lectern at its spawn point! Enjoy.{#orange<}</T>
-  - asConsole! /cmi bossbarmsg all -n:halloween {#orange}&lThe /santa world is open!
-  - asConsole! cmi ctellraw all <T>{#buttercup>}The /santa world has an advent calendar{#orange<}</T>
-  - asConsole! cmi ctellraw all <T>{#buttercup>}The /santa event has a santa kit in
-    /kits{#orange<}</T>
-  - asConsole! cmi ctellraw all <T>{#buttercup>}The /santa world has a winter kit
-    in /kits{#orange<}</T>
-  - asConsole! cmi ctellraw all <T>{#buttercup>}The /santa world is fun to explore,
-    go check it out. Who knows what you might find!{#orange<}</T>
-  - asConsole! cmi ctellraw all <T>{#buttercup>}The /santa event has crackers that
-    give things{#orange<}</T>
-specialbooster:
-  Enabled: false
-  MinPlayers: 1
-  Delay: 2500
-  Repeat: false
-  Randomize: false
-  Feedback: true
-  Commands:
-  - asFakeOp! xprate 5 true
-  - delay! 1500
-  - asFakeOp! xprate reset
-updateNameplate:
-  Enabled: false
-  Repeat: false
-  Randomize: false
-  Feedback: true
-  Commands:
-  - asConsole! allPlayers! cmi nameplate [allPlayers] reset -s
 Announcer:
-  Enabled: true
-  MinPlayers: 2
-  Delay: 1500
+  Enabled: false
+  MinPlayers: 1
+  FeedBack: false
+  Delay: 600
   Repeat: true
   Randomize: true
-  Feedback: false
   Commands:
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    You can {#orange}&l/sit{#feijoa} on stairs by right-clicking empty handed.</T><H>Click
-    to /sit now</H><C>sit</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Tired of regular survival? Try {#orange}&l/oneblock{#feijoa}.</T><H>Click to teleport
-    to /oneblock.</H><C>oneblock</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Type {#orange}&l/menu{#feijoa} to find out what else is on our server.</T><H>Click
-    to open /menu.</H><C>menu</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Learn more about our features on {#orange}&l/forums{#feijoa}.</T><H>Click to go
-    to /forums.</H><C>forums</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Level up for perks from {#orange}&l/mcMMO{#feijoa}.</T><H>Click to go to /mcMMO.</H><C>mcmmo</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Level up for rewards from {#orange}&l/achievements{#feijoa}.</T><H>Click to go
-    to /achievements.</H><C>achievements</C>
-  - 'broadcast! &r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} RPG mcMMO commands:
-    {#orange}&l/mcstats{#feijoa}, {#orange}&l/mcrank{#feijoa}, {#orange}&l/mctop{#feijoa}.'
-  - 'cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} Some features:
-    </T><Next><T>{#orange}&l/fish{#feijoa}, </T><H>Pyro Fishing feature, click to
-    learn more</H><C>fish menu</C><Next><T>{#orange}&l/mine{#feijoa}, </T><H>Pyro
-    Fishing feature, click to learn more</H><C>mine menu</C><Next><T>{#orange}&l/farm{#feijoa}.</T><H>Pyro
-    Fishing feature, click to learn more</H><C>farm menu</C>'
-  - 'cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} RPG features:
-    </T><Next><T>{#orange}&l/jobs{#feijoa}, </T><H>Jobs feature, click to learn more</H><C>jobs
-    browse</C><Next><T>{#orange}&l/pvp{#feijoa}, </T><H>Toggle PVP on or off, click
-    to start</H><C>pvp</C><Next><T>{#orange}&l/party{#feijoa}.</T><H>mcMMO party feature,
-    click to start</H><C>party</C>'
-  - 'asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Protection commands: {#orange}&l/lock{#feijoa}, {#orange}&l/unlock{#feijoa}, {#orange}&l/cmodify&r</T><H>Learn
-    more /chests</H><C>chests</C>'
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Player can have up to 3 {#orange}&l/homes{#feijoa}.</T><H>Click
-    to view your /homes.</H><C>cmi homes</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Member can have up to 6 {#orange}&l/homes{#feijoa}.</T><H>Click
-    to view your /homes.</H><C>cmi homes</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Boosted can have up to 8 {#orange}&l/homes{#feijoa}.</T><H>Click
-    to view your /homes.</H><C>cmi homes</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Builder can have up to 16 {#orange}&l/homes{#feijoa}.</T><H>Click
-    to view your /homes.</H><C>cmi homes</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Rogue can have up to 18 {#orange}&l/homes{#feijoa}.</T><H>Click
-    to view your /homes.</H><C>cmi homes</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Patron can have up to 22 {#orange}&l/homes{#feijoa}.</T><H>Click
-    to view your /homes.</H><C>cmi homes</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group MVP can have up to 23 {#orange}&l/homes{#feijoa}.</T><H>Click
-    to view your /homes.</H><C>cmi homes</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Epic can have up to 28 {#orange}&l/homes{#feijoa}.</T><H>Click
-    to view your /homes.</H><C>cmi homes</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    When both parties are in {#orange}&l/oneblock{#feijoa}, then the island owner
-    can type {#orange}&l/oneblock team invite{#feijoa}</T> <H>Click to invite your
-    friend.</H><C>oneblock team invite</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players have access to {#orange}&l/back{#feijoa} to quickly teleport back to their
-    previous location.</T><H>Click to teleport to your previous location.</H><C>cmi
-    back</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players have access to {#orange}&l/dback{#feijoa} to quickly teleport back to
-    their death location.</T><H>Click to teleport to your death location.</H><C>cmi
-    dback</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Did someone just /msg you? Type {#orange}&l/r{#feijoa} to quickly reply to them.</T><H>Click
-    to paste the command in your chat box.</H><SC>/r</SC>
-  - broadcast! &r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} Players cannot create
-    portals, please use {#orange}/end{#Feijoa} and {#orange}/nether{#Feijoa}.
-  - 'asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Groups: We have quite a few! Check {#orange}&l/groups{#feijoa}.</T><H>Click to
-    view /groups.</H><C>groups</C>'
-  - 'asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Ranks: We have quite a few! Check {#orange}&l/ranks{#feijoa}.</T><H>Click to view
-    /ranks.</H><C>ranks</C>'
-  - broadcast! {#Cerulean} 1MB Community »{#magenta} We started the server 15+ years
-    ago in 2011 WHOOOO!
-  - 'broadcast! {#Cerulean} 1MB Community »{#magenta} Type: {#orange}&l/celebration{#magenta}.'
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa}
-    Found an issue, bug, broken item? Report it as a ticket on {#orange}&l/discord{#feijoa}.
-    tnx</T><H>Click to get /discord link.</H><C>discord</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Learn which mobs you can {#orange}&l/hop{#feijoa} on</T><H>click to learn more</H><C>hop
-    info</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    When you greet someone by their name when they join, you earn {#orange}&l/points{#feijoa}.</T><H>Click
-    to view /points.</H><C>points</C>
-  - broadcast! &r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} Grind mcMMO levels
-    to unlock perks and level up your skill abilities.
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Eat special Pointy Fish to earn {#orange}&l/points{#feijoa}!</T><H>Click to view
-    /points.</H><C>points</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Sell all the types of fish on {#orange}&l/fish shop{#feijoa}.</T><H>Click to view
-    /fish shop.</H><C>fish shop</C>
-  - 'broadcast! &r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} Server: 1MB Third
-    Era (%onemb_1mb_version%) for Minecraft %onemb_mc_version%'
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group First can have up to 1 Chest {#orange}&l/shops{#feijoa}.</T><H>Click
-    to view /shops.</H><C>shops</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Player can have up to 5 Chests {#orange}&l/shops{#feijoa}.</T><H>Click
-    to view /shops.</H><C>shops</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Member can have up to 10 Chests {#orange}&l/shops{#feijoa}.</T><H>Click
-    to view /shops.</H><C>shops</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Boosted can have up to 15 Chests {#orange}&l/shops{#feijoa}.</T><H>Click
-    to view /shops.</H><C>shops</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Builder can have up to 25 Chests {#orange}&l/shops{#feijoa}.</T><H>Click
-    to view /shops.</H><C>shops</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Rogue can have up to 30 Chests {#orange}&l/shops{#feijoa}.</T><H>Click
-    to view /shops.</H><C>shops</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Patron can have up to 35 Chests {#orange}&l/shops{#feijoa}.</T><H>Click
-    to view /shops.</H><C>shops</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group MVP can have up to 40 Chests {#orange}&l/shops{#feijoa}.</T><H>Click
-    to view /shops.</H><C>shops</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Players in the group Epic can have up to 50 Chests {#orange}&l/shops{#feijoa}.</T><H>Click
-    to view /shops.</H><C>shops</C>
-  - broadcast! &r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} {#orange}&l/j{#feijoa}
-    is a little perk for the Green rank. It allows the player to quickly teleport
-    to where they point.
-  - broadcast! &r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} Help grow the server
-    by asking your friends to join!
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Learn about server signs at {#orange}&l/warp signs{#feijoa}.</T><H>Click to check
-    out /warp signs.</H><C>cmi warp signs</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Type {#orange}&l/here{#feijoa} for more information about where you are.</T><H>Click
-    to view /here.</H><C>here</C>
-  - broadcast! &r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} Collect all the vote-tokens
-    for unique OP stuff.
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    You can buy and sell items on {#orange}&l/market{#feijoa}.</T><H>Click to check
-    out /market.</H><C>market</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Stay up2date! We have an Announcement channel on {#orange}&l/discord{#feijoa}.</T><H>Click
-    to join discord.gg/floris</H><C>discord</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    You can {#orange}&l/vote{#feijoa} daily for lots of rewards.</T><H>Click to check
-    out /vote.</H><C>vote</C>
-  - broadcast! &r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} Instead of regular
-    operators, we have community helpers. Ask away!
-  - 'asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    Player and Admin Shops: {#orange}&l/warp shops{#feijoa}.</T><H>Click to check
-    out /warp shops.</H><C>warp shops</C>'
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    You cannot take from chests or break things made by others unless a sign says
-    so. Please read {#orange}&l/rules{#feijoa}, and play fair. Thank you!</T><H>Click
-    to view /rules.</H><C>rules</C>
-  - asConsole! cmi ctellraw all <T>&r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#feijoa}
-    A great way to make money is with jobs. Players can join multiple. Type {#orange}&l/jobs
-    browse{#feijoa} to get started.</T><H>Click to view /jobs browse.</H><C>jobs browse</C>
-  - broadcast! &r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} Four times in the month,
-    there will be a fishing tournament for 30 minutes ({#orange}/fisht info{#Feijoa})
-  - broadcast! &r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} Four times in the month,
-    there will be a farming tournament for 30 minutes ({#orange}/farmt info{#Feijoa})
-  - broadcast! &r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} Four times in the month,
-    there will be an mcMMO booster for an hour ({#orange}/rate{#Feijoa})
-  - broadcast! &r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} Four times in the month,
-    there will be a Jobs booster for an hour
-  - broadcast! &r\n{#Cerulean>} 1MB Tip »{#Lochmara<}{#Feijoa} Players can use {#orange}/craft{#Feijoa},
-    {#orange}/ec{#Feijoa}, {#orange}/anvil{#Feijoa}, and a few more! Check {#orange}/warp
-    signs{#Feijoa}
+  - broadcast! &eRules can be found at &e/rules
+  - broadcast! &eKits can be accesed with &e/kits
+  - broadcast! &eIf you need help, ask staff
+  - broadcast! &eAdvertisement of other servers will be punished

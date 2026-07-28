@@ -1,5 +1,5 @@
 # Shows if there is available new version on login with trademe.versioncheck permission node
-ShowNewVersion: false
+ShowNewVersion: true
 DataBase:
   # Do you want to use Mysql database system or SQLite
   # Use: mysql or sqlite
@@ -24,26 +24,25 @@ Language: EN
 # You can always give or take trade options with permission like trademe.moneytrade or trademe.exptrade
 TradeModes:
   ItemTrade: true
-  ResidenceTrade: false
-  ExpTrade: false
-  GriefPreventionTrade: false
-  JobsTrade: false
-  McMMOTrade: false
+  ExpTrade: true
+  ResidenceTrade: true
+  GriefPreventionTrade: true
+  PlayerPointsTrade: true
+  TokenManagerTrade: true
+  MyPetTrade: true
+  KingdomsTrade: true
+  McMMOTrade: true
+  BeastTokensTrade: true
   MoneyTrade: true
-  KingdomsTrade: false
-  MyPetTrade: false
-  PlayerPointsTrade: false
-  JobsPointsTrade: false
-  TokenManagerTrade: false
-  MMOCoreSkillPointsTrade: false
-  MMOCoreAttributesTrade: false
-  BeastTokensTrade: false
+  JobsTrade: true
+  JobsPointsTrade: true
+  MMOCoreSkillPointsTrade: true
+  MMOCoreAttributesTrade: true
 #  
 # Order of extra trade modes you want to shown in
 # Modes not included int the list will be placed at end of it
 # Valid options: Exp, Residence, GriefPrevention, PlayerPoints, TokenManager, MyPet, Kingdoms, McMMO, BeastTokens, Money, Jobs, JobsPoints, MMOCoreSkillPoints, MMOCoreAttributes
 TradeOrder:
-- Money
 - Exp
 - Residence
 - GriefPrevention
@@ -52,13 +51,15 @@ TradeOrder:
 - MyPet
 - Kingdoms
 - McMMO
+- BeastTokens
+- Money
 - Jobs
 - JobsPoints
 - MMOCoreSkillPoints
 - MMOCoreAttributes
 #  
 # Time to accept trade, in seconds
-AcceptDelay: 16
+AcceptDelay: 15
 #  
 # Do you want to show trade accept/deny message
 # Keep in mind that this only disables clickable buttons, message about trade offer will still be visible
@@ -74,7 +75,7 @@ NonCombat: 10
 # If you want to check for possible item dupping or perform general checks if starting item amount matches amount at trade end, enable this option
 # Players with trademe.exploitwarning will get notification when possible exploit was detected
 Exploiting:
-  Check: false
+  Check: true
   # Time in hours we should keep trade logs in
   # Keep in mind that log cleanup is only performed on plugin startup
   KeepFor: 720
@@ -99,7 +100,7 @@ LockQuickBar: false
 NoTradeBetweenGameModes: true
 #  
 # Allow trading between users with same IP address
-SameIpTrades: true
+SameIpTrades: false
 #  
 # If this set to true, players will be check for appropriate trade permissions between different permission groups for particular trade mode
 # Player should have trademe.moneytrade.[groupname] permission node to trade with that group with money
@@ -114,34 +115,32 @@ BetweenWorlds: true
 # List of sounds to use while trading
 # Provide name and optionally volume and pitch, example: 'BLOCK_SAND_STEP:0.25:2'
 Sounds:
-  clickUp: BLOCK_TRIPWIRE_CLICK_ON:0.3:0.5
-  clickDown: BLOCK_LEVER_CLICK:0.3:0.1
-  switchMode: ENTITY_PLAYER_BURP:0.3:3.0
-  switchSameMode: ENTITY_CHICKEN_EGG:0.3:1.0
-  fullInventory: ENTITY_SHULKER_HURT:0.3:1.0
-  selectMode: ENTITY_CHICKEN_EGG:0.3:3.0
-  confirmTrade: ENTITY_PLAYER_LEVELUP:0.3:2.0
-  confirmBothTrade: ENTITY_PLAYER_LEVELUP:0.5:1.0
-  cancelTrade: BLOCK_GRAVEL_FALL:0.3:2.0
-  counter: ENTITY_ITEM_PICKUP:0.3:1.0
-  finishedTrade: ITEM_TRIDENT_THUNDER:0.2:1.0
+  clickUp: block.nether_wood_button.click_on:0.3:0.5
+  clickDown: block.lever.click:0.3:0.1
+  switchMode: entity.player.burp:0.3:3.0
+  switchSameMode: entity.chicken.egg:0.3:1.0
+  fullInventory: entity.shulker.hurt:0.3:1.0
+  selectMode: entity.chicken.egg:0.3:3.0
+  confirmTrade: block.note_block.guitar:0.3:2.0
+  confirmBothTrade: entity.player.levelup:0.5:1.0
+  cancelTrade: block.lodestone.fall:0.3:2.0
+  counter: entity.item.pickup:0.3:1.0
+  finishedTrade: item.trident.thunder:0.2:1.0
 #  
 # World groups to separate trades if you have multiverse or similar plugin
 WorldGroups:
   Group1:
-  - spawn
-  - general
-  - nether
-  - end
-  - wild
+  - World
+  - World_nether
+  - World_the_end
   Group2:
-  - oneblock
+  - ''
   Group3:
-  - skyblock
+  - ''
   Group4:
-  - cave
+  - ''
   Group5:
-  - acid
+  - ''
 # Max distance players can trade to each other, BetweenWorlds should be set to false for this to work
 # Set 0 if you don't want to have distance restriction
 Distance: 0
@@ -193,14 +192,8 @@ Regions:
       - testResidence3
       - testResidence4
 BlockedWorlds:
-- builders
-- legacy
-- run
-- parkour
-- owo
-- uwu
-- vubbo
-- lumifae
+- testWorld
+- testWorld_nether
 # List of item id's to be blocked from trade
 BlockedItems:
 - '137'
@@ -208,13 +201,15 @@ BlockedItems:
 # List of item lore to be blocked from trade
 # this can be only part of line without color codes
 BlockedLore:
-- Right Click to open /menu
+- One line of lore
+- second line
+- color code not necessary
 # List of item NBT to be blocked from trade
 # Provide actual path to specific NBT, for example 'display.Name' capitalization is essential and this will only check for existing NBT section and will not compare its actual value
 BlockedNBT: []
 # Max lvl allowed for player to have, if McMMO config files are not modified its is 1000
 McMMO:
-  MaxLvl: 500
+  MaxLvl: 1000
 Numbers:
   ShortNames:
     # With this enabled big numbers will be shortened from 1234567 to 1m or 1.23m
@@ -229,20 +224,8 @@ Amounts:
   Exp:
     '1': 1.0
     '2': 100.0
-    '3': 1000.0
-    '4': 10000.0
-  McMMO:
-    '1': 1.0
-    '2': 100.0
     '3': 10000.0
     '4': 1000000.0
-  # All amounts used for buttons to increase/decrease
-  # Inform players about posibility to use Shift button to rise increment by 10 times
-  Money:
-    '1': 1.0
-    '2': 100.0
-    '3': 1000.0
-    '4': 10000.0
   Jobs:
     '1': 1.0
     '2': 100.0
@@ -262,28 +245,6 @@ Taxes:
       Amount: 100
     Percentage:
       # Percentage amount of Exp will be taken during transfer
-      # 10.0 means user will receive 10% less money
-      Use: false
-      Amount: 10
-  # Taxes for transfers
-  McMMO:
-    Fixed:
-      # Fixed amount of McMMO will be taken during transfer
-      Use: false
-      Amount: 100
-    Percentage:
-      # Percentage amount of McMMO will be taken during transfer
-      # 10.0 means user will receive 10% less money
-      Use: false
-      Amount: 10
-  # Taxes for transfers
-  Money:
-    Fixed:
-      # Fixed amount of Money will be taken during transfer
-      Use: false
-      Amount: 100
-    Percentage:
-      # Percentage amount of Money will be taken during transfer
       # 10.0 means user will receive 10% less money
       Use: false
       Amount: 10
@@ -332,62 +293,8 @@ Buttons:
         NA:
           OfferOff: GLASS_BOTTLE
           OfferOn: EXPERIENCE_BOTTLE
-    McMMO:
-      1Amount: WHITE_WOOL
-      2Amount: LIGHT_GRAY_WOOL
-      3Amount: GRAY_WOOL
-      4Amount: BLACK_WOOL
-      Offered: FERMENTED_SPIDER_EYE
-      Sub:
-        Taming:
-          OfferOff: BONE
-          OfferOn: LEAD
-        Alchemy:
-          OfferOff: POTION
-          OfferOn: POTION
-        Excavation:
-          OfferOff: WOODEN_SHOVEL
-          OfferOn: DIAMOND_SHOVEL
-        Herbalism:
-          OfferOff: WOODEN_HOE
-          OfferOn: DIAMOND_HOE
-        Fishing:
-          OfferOff: COOKED_COD
-          OfferOn: FISHING_ROD
-        Mining:
-          OfferOff: WOODEN_PICKAXE
-          OfferOn: DIAMOND_PICKAXE
-        Unarmed:
-          OfferOff: GOLDEN_APPLE
-          OfferOn: ENCHANTED_GOLDEN_APPLE
-        Swords:
-          OfferOff: WOODEN_SWORD
-          OfferOn: DIAMOND_SWORD
-        Archery:
-          OfferOff: STICK
-          OfferOn: BOW
-        Woodcutting:
-          OfferOff: OAK_LOG
-          OfferOn: DARK_OAK_LOG
-        Axes:
-          OfferOff: WOODEN_AXE
-          OfferOn: DIAMOND_AXE
-        Repair:
-          OfferOff: IRON_INGOT
-          OfferOn: IRON_BLOCK
-        Acrobatics:
-          OfferOff: LEATHER_BOOTS;160,101,64
-          OfferOn: DIAMOND_BOOTS
-    Money:
-      1Amount: GOLD_NUGGET
-      2Amount: GOLD_INGOT
-      3Amount: GOLD_BLOCK
-      4Amount: DIAMOND
-      Offered: GOLD_INGOT
-      Sub:
-        NA:
-          OfferOff: ENDER_PEARL
-          OfferOn: ENDER_EYE
+    Residence:
+      Offered: LIME_STAINED_GLASS
     Jobs:
       1Amount: BONE_MEAL
       2Amount: LIGHT_GRAY_DYE
@@ -408,7 +315,7 @@ Buttons:
           OfferOff: WOODEN_SWORD
           OfferOn: DIAMOND_SWORD
         Woodcutter:
-          OfferOff: LEATHER_BOOTS
+          OfferOff: LEATHER_BOOTS;c{160,101,64}
           OfferOn: DIAMOND_BOOTS
         Builder:
           OfferOff: STICK

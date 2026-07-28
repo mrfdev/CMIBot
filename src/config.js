@@ -7,6 +7,10 @@ function parseCsv(value) {
     .filter(Boolean);
 }
 
+function parseCsvWithRequired(value, fallback, required = []) {
+  return [...new Set([...parseCsv(value ?? fallback), ...required])];
+}
+
 function parseInteger(value, fallback) {
   const parsed = Number.parseInt(value ?? "", 10);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -55,6 +59,7 @@ function toDisplayRelativePath(relativePath) {
     ["MFMPlugin/", "MobFarmManager/"],
     ["TryMePlugin/", "TryMe/"],
     ["TradeMePlugin/", "TradeMe/"],
+    ["BottledExpPlugin/", "BottledExp/"],
   ];
 
   for (const [from, to] of replacements) {
@@ -107,6 +112,39 @@ function buildSimplePluginProfiles({
   };
 }
 
+function buildGeneratedJarProfiles({ envPrefix, targetDirectory, referenceUrl }) {
+  return {
+    command: createProfile("command", {
+      sourceType: "log",
+      entryLabel: "command entries",
+      statsFileLabel: "generated command data files",
+      referenceLabel: "commands",
+      referenceUrl,
+      parserType: "delimited",
+      include: parseCsvWithRequired(
+        process.env[`${envPrefix}_COMMAND_INCLUDE_GLOBS`],
+        "",
+        [`${targetDirectory}/data/generated-commands.log`],
+      ),
+      exclude: parseCsv(process.env[`${envPrefix}_COMMAND_EXCLUDE_GLOBS`]),
+    }),
+    permission: createProfile("permission", {
+      sourceType: "log",
+      entryLabel: "permission entries",
+      statsFileLabel: "generated permission data files",
+      referenceLabel: "permissions",
+      referenceUrl,
+      parserType: "permissionList",
+      include: parseCsvWithRequired(
+        process.env[`${envPrefix}_PERMISSION_INCLUDE_GLOBS`],
+        "",
+        [`${targetDirectory}/data/generated-permissions.log`],
+      ),
+      exclude: parseCsv(process.env[`${envPrefix}_PERMISSION_EXCLUDE_GLOBS`]),
+    }),
+  };
+}
+
 function buildCmiProfiles() {
   return {
     config: createProfile("config", {
@@ -140,7 +178,11 @@ function buildCmiProfiles() {
       referenceUrl: "https://www.zrips.net/cmi/placeholders/",
       parserType: "commentBlocks",
       codeLanguage: "yml",
-      include: parseCsv(process.env.PLACEHOLDER_INCLUDE_GLOBS ?? "CMIPlugin/data/placeholders.log"),
+      include: parseCsvWithRequired(
+        process.env.PLACEHOLDER_INCLUDE_GLOBS,
+        "CMIPlugin/data/placeholders.log",
+        ["CMIPlugin/data/generated-placeholders.log", "CMILibPlugin/data/generated-placeholders.log"],
+      ),
       exclude: parseCsv(process.env.PLACEHOLDER_EXCLUDE_GLOBS),
     }),
     material: createProfile("material", {
@@ -160,7 +202,11 @@ function buildCmiProfiles() {
       referenceLabel: "commands",
       referenceUrl: "https://www.zrips.net/cmi/commands/",
       parserType: "delimited",
-      include: parseCsv(process.env.COMMAND_INCLUDE_GLOBS ?? "CMIPlugin/data/commands.log"),
+      include: parseCsvWithRequired(
+        process.env.COMMAND_INCLUDE_GLOBS,
+        "CMIPlugin/data/commands.log",
+        ["CMIPlugin/data/generated-commands.log"],
+      ),
       exclude: parseCsv(process.env.COMMAND_EXCLUDE_GLOBS),
     }),
     permission: createProfile("permission", {
@@ -170,8 +216,10 @@ function buildCmiProfiles() {
       referenceLabel: "permissions",
       referenceUrl: "https://www.zrips.net/cmi/permissions/",
       parserType: "permissionMixed",
-      include: parseCsv(
-        process.env.PERMISSION_INCLUDE_GLOBS ?? "CMIPlugin/data/permissions.log,CMIPlugin/data/cmdperms.log",
+      include: parseCsvWithRequired(
+        process.env.PERMISSION_INCLUDE_GLOBS,
+        "CMIPlugin/data/permissions.log,CMIPlugin/data/cmdperms.log",
+        ["CMIPlugin/data/generated-permissions.log"],
       ),
       exclude: parseCsv(process.env.PERMISSION_EXCLUDE_GLOBS),
     }),
@@ -203,9 +251,13 @@ function buildJobsProfiles() {
       entryLabel: "YAML entries",
       statsFileLabel: "YAML configuration files",
       include: parseCsv(
-        process.env.JOBS_LOOKUP_INCLUDE_GLOBS ?? "JobsPlugin/generalConfig.yml,CMILibPlugin/CMILib/config.yml",
+        process.env.JOBS_LOOKUP_INCLUDE_GLOBS ??
+          "JobsPlugin/*.yml,JobsPlugin/jobs/**/*.yml,CMILibPlugin/CMILib/config.yml",
       ),
-      exclude: parseCsv(process.env.JOBS_LOOKUP_EXCLUDE_GLOBS),
+      exclude: parseCsv(
+        process.env.JOBS_LOOKUP_EXCLUDE_GLOBS ??
+          "JobsPlugin/locale/**,JobsPlugin/TranslatableWords/**,JobsPlugin/data/**,JobsPlugin/Signs.yml,JobsPlugin/activeBoosts.yml,JobsPlugin/blockOwnerShips.yml",
+      ),
     }),
     language: createProfile("language", {
       sourceType: "yaml",
@@ -225,7 +277,11 @@ function buildJobsProfiles() {
       referenceUrl: "https://www.zrips.net/jobs/placeholders/",
       parserType: "commentBlocks",
       codeLanguage: "yml",
-      include: parseCsv(process.env.JOBS_PLACEHOLDER_INCLUDE_GLOBS ?? "JobsPlugin/data/placeholders.log"),
+      include: parseCsvWithRequired(
+        process.env.JOBS_PLACEHOLDER_INCLUDE_GLOBS,
+        "JobsPlugin/data/placeholders.log",
+        ["JobsPlugin/data/generated-placeholders.log", "CMILibPlugin/data/generated-placeholders.log"],
+      ),
       exclude: parseCsv(process.env.JOBS_PLACEHOLDER_EXCLUDE_GLOBS),
     }),
     command: createProfile("command", {
@@ -235,7 +291,11 @@ function buildJobsProfiles() {
       referenceLabel: "commands",
       referenceUrl: "https://www.zrips.net/jobs/jobs-commands/",
       parserType: "delimited",
-      include: parseCsv(process.env.JOBS_COMMAND_INCLUDE_GLOBS ?? "JobsPlugin/data/commands.log"),
+      include: parseCsvWithRequired(
+        process.env.JOBS_COMMAND_INCLUDE_GLOBS,
+        "JobsPlugin/data/commands.log",
+        ["JobsPlugin/data/generated-commands.log"],
+      ),
       exclude: parseCsv(process.env.JOBS_COMMAND_EXCLUDE_GLOBS),
     }),
     permission: createProfile("permission", {
@@ -245,7 +305,11 @@ function buildJobsProfiles() {
       referenceLabel: "permissions",
       referenceUrl: "https://www.zrips.net/jobs/permissions/",
       parserType: "permissionMixed",
-      include: parseCsv(process.env.JOBS_PERMISSION_INCLUDE_GLOBS ?? "JobsPlugin/data/permissions.log"),
+      include: parseCsvWithRequired(
+        process.env.JOBS_PERMISSION_INCLUDE_GLOBS,
+        "JobsPlugin/data/permissions.log",
+        ["JobsPlugin/data/generated-permissions.log"],
+      ),
       exclude: parseCsv(process.env.JOBS_PERMISSION_EXCLUDE_GLOBS),
     }),
     faq: createProfile("faq", {
@@ -279,7 +343,11 @@ function buildSvisProfiles() {
       referenceLabel: "commands",
       referenceUrl: "https://www.zrips.net/svis/",
       parserType: "delimited",
-      include: parseCsv(process.env.SVIS_COMMAND_INCLUDE_GLOBS ?? "SVISPlugin/data/commands.log"),
+      include: parseCsvWithRequired(
+        process.env.SVIS_COMMAND_INCLUDE_GLOBS,
+        "SVISPlugin/data/commands.log",
+        ["SVISPlugin/data/generated-commands.log"],
+      ),
       exclude: parseCsv(process.env.SVIS_COMMAND_EXCLUDE_GLOBS),
     }),
     permission: createProfile("permission", {
@@ -289,46 +357,120 @@ function buildSvisProfiles() {
       referenceLabel: "permissions",
       referenceUrl: "https://www.zrips.net/svis/",
       parserType: "permissionList",
-      include: parseCsv(process.env.SVIS_PERMISSION_INCLUDE_GLOBS ?? "SVISPlugin/data/permissions.log"),
+      include: parseCsvWithRequired(
+        process.env.SVIS_PERMISSION_INCLUDE_GLOBS,
+        "SVISPlugin/data/permissions.log",
+        ["SVISPlugin/data/generated-permissions.log"],
+      ),
       exclude: parseCsv(process.env.SVIS_PERMISSION_EXCLUDE_GLOBS),
     }),
   };
 }
 
 function buildMfmProfiles() {
-  return buildSimplePluginProfiles({
-    configInclude:
-      process.env.MFM_LOOKUP_INCLUDE_GLOBS ?? "MFMPlugin/config.yml,CMILibPlugin/CMILib/config.yml",
-    configExcludeEnv: process.env.MFM_LOOKUP_EXCLUDE_GLOBS,
-    languageInclude:
-      process.env.MFM_LANGUAGE_INCLUDE_GLOBS ??
-      "MFMPlugin/Locale/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
-    languageExcludeEnv: process.env.MFM_LANGUAGE_EXCLUDE_GLOBS,
-  });
+  return {
+    ...buildSimplePluginProfiles({
+      configInclude:
+        process.env.MFM_LOOKUP_INCLUDE_GLOBS ?? "MFMPlugin/config.yml,CMILibPlugin/CMILib/config.yml",
+      configExcludeEnv: process.env.MFM_LOOKUP_EXCLUDE_GLOBS,
+      languageInclude:
+        process.env.MFM_LANGUAGE_INCLUDE_GLOBS ??
+        "MFMPlugin/Locale/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+      languageExcludeEnv: process.env.MFM_LANGUAGE_EXCLUDE_GLOBS,
+    }),
+    ...buildGeneratedJarProfiles({
+      envPrefix: "MFM",
+      targetDirectory: "MFMPlugin",
+      referenceUrl: "https://www.spigotmc.org/resources/15127/",
+    }),
+  };
 }
 
 function buildTrymeProfiles() {
-  return buildSimplePluginProfiles({
-    configInclude:
-      process.env.TRYME_LOOKUP_INCLUDE_GLOBS ?? "TryMePlugin/config.yml,CMILibPlugin/CMILib/config.yml",
-    configExcludeEnv: process.env.TRYME_LOOKUP_EXCLUDE_GLOBS,
-    languageInclude:
-      process.env.TRYME_LANGUAGE_INCLUDE_GLOBS ??
-      "TryMePlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
-    languageExcludeEnv: process.env.TRYME_LANGUAGE_EXCLUDE_GLOBS,
-  });
+  return {
+    ...buildSimplePluginProfiles({
+      configInclude:
+        process.env.TRYME_LOOKUP_INCLUDE_GLOBS ?? "TryMePlugin/*.yml,CMILibPlugin/CMILib/config.yml",
+      configExcludeEnv: process.env.TRYME_LOOKUP_EXCLUDE_GLOBS,
+      configExcludeDefault: "TryMePlugin/Locale_EN.yml,TryMePlugin/Signs.yml",
+      languageInclude:
+        process.env.TRYME_LANGUAGE_INCLUDE_GLOBS ??
+        "TryMePlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+      languageExcludeEnv: process.env.TRYME_LANGUAGE_EXCLUDE_GLOBS,
+    }),
+    ...buildGeneratedJarProfiles({
+      envPrefix: "TRYME",
+      targetDirectory: "TryMePlugin",
+      referenceUrl: "https://www.spigotmc.org/resources/3330/",
+    }),
+    placeholder: createProfile("placeholder", {
+      sourceType: "log",
+      entryLabel: "placeholder entries",
+      statsFileLabel: "generated placeholder data files",
+      referenceLabel: "placeholders",
+      referenceUrl: "https://www.spigotmc.org/resources/3330/",
+      parserType: "commentBlocks",
+      codeLanguage: "yml",
+      include: parseCsvWithRequired(process.env.TRYME_PLACEHOLDER_INCLUDE_GLOBS, "", [
+        "TryMePlugin/data/generated-placeholders.log",
+        "CMILibPlugin/data/generated-placeholders.log",
+      ]),
+      exclude: parseCsv(process.env.TRYME_PLACEHOLDER_EXCLUDE_GLOBS),
+    }),
+  };
+}
+
+function buildBottledExpProfiles() {
+  return {
+    ...buildSimplePluginProfiles({
+      configInclude:
+        process.env.BOTTLEDEXP_LOOKUP_INCLUDE_GLOBS ??
+        "BottledExpPlugin/config.yml,BottledExpPlugin/recipes.yml,CMILibPlugin/CMILib/config.yml",
+      configExcludeEnv: process.env.BOTTLEDEXP_LOOKUP_EXCLUDE_GLOBS,
+      languageInclude:
+        process.env.BOTTLEDEXP_LANGUAGE_INCLUDE_GLOBS ??
+        "BottledExpPlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+      languageExcludeEnv: process.env.BOTTLEDEXP_LANGUAGE_EXCLUDE_GLOBS,
+    }),
+    ...buildGeneratedJarProfiles({
+      envPrefix: "BOTTLEDEXP",
+      targetDirectory: "BottledExpPlugin",
+      referenceUrl: "https://www.spigotmc.org/resources/2815/",
+    }),
+  };
 }
 
 function buildTrademeProfiles() {
-  return buildSimplePluginProfiles({
-    configInclude:
-      process.env.TRADEME_LOOKUP_INCLUDE_GLOBS ?? "TradeMePlugin/config.yml,CMILibPlugin/CMILib/config.yml",
-    configExcludeEnv: process.env.TRADEME_LOOKUP_EXCLUDE_GLOBS,
-    languageInclude:
-      process.env.TRADEME_LANGUAGE_INCLUDE_GLOBS ??
-      "TradeMePlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
-    languageExcludeEnv: process.env.TRADEME_LANGUAGE_EXCLUDE_GLOBS,
-  });
+  return {
+    ...buildSimplePluginProfiles({
+      configInclude:
+        process.env.TRADEME_LOOKUP_INCLUDE_GLOBS ?? "TradeMePlugin/config.yml,CMILibPlugin/CMILib/config.yml",
+      configExcludeEnv: process.env.TRADEME_LOOKUP_EXCLUDE_GLOBS,
+      languageInclude:
+        process.env.TRADEME_LANGUAGE_INCLUDE_GLOBS ??
+        "TradeMePlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+      languageExcludeEnv: process.env.TRADEME_LANGUAGE_EXCLUDE_GLOBS,
+    }),
+    ...buildGeneratedJarProfiles({
+      envPrefix: "TRADEME",
+      targetDirectory: "TradeMePlugin",
+      referenceUrl: "https://www.spigotmc.org/resources/7544/",
+    }),
+    placeholder: createProfile("placeholder", {
+      sourceType: "log",
+      entryLabel: "placeholder entries",
+      statsFileLabel: "generated placeholder data files",
+      referenceLabel: "placeholders",
+      referenceUrl: "https://www.spigotmc.org/resources/7544/",
+      parserType: "commentBlocks",
+      codeLanguage: "yml",
+      include: parseCsvWithRequired(process.env.TRADEME_PLACEHOLDER_INCLUDE_GLOBS, "", [
+        "TradeMePlugin/data/generated-placeholders.log",
+        "CMILibPlugin/data/generated-placeholders.log",
+      ]),
+      exclude: parseCsv(process.env.TRADEME_PLACEHOLDER_EXCLUDE_GLOBS),
+    }),
+  };
 }
 
 function buildResidenceProfiles() {
@@ -339,7 +481,7 @@ function buildResidenceProfiles() {
       statsFileLabel: "YAML configuration files",
       include: parseCsv(
         process.env.RESIDENCE_LOOKUP_INCLUDE_GLOBS ??
-          "ResidencePlugin/config.yml,ResidencePlugin/groups.yml,ResidencePlugin/flags.yml,CMILibPlugin/CMILib/config.yml",
+          "ResidencePlugin/config.yml,ResidencePlugin/groups.yml,ResidencePlugin/flags.yml,ResidencePlugin/ShopVotes.yml,CMILibPlugin/CMILib/config.yml",
       ),
       exclude: parseCsv(process.env.RESIDENCE_LOOKUP_EXCLUDE_GLOBS),
     }),
@@ -361,7 +503,11 @@ function buildResidenceProfiles() {
       referenceUrl: "https://www.zrips.net/residence/placeholders/",
       parserType: "delimited",
       codeLanguage: "yml",
-      include: parseCsv(process.env.RESIDENCE_PLACEHOLDER_INCLUDE_GLOBS ?? "ResidencePlugin/data/placeholders.log"),
+      include: parseCsvWithRequired(
+        process.env.RESIDENCE_PLACEHOLDER_INCLUDE_GLOBS,
+        "ResidencePlugin/data/placeholders.log",
+        ["ResidencePlugin/data/generated-placeholders.log", "CMILibPlugin/data/generated-placeholders.log"],
+      ),
       exclude: parseCsv(process.env.RESIDENCE_PLACEHOLDER_EXCLUDE_GLOBS),
     }),
     command: createProfile("command", {
@@ -372,7 +518,11 @@ function buildResidenceProfiles() {
       referenceUrl: "https://www.zrips.net/residence/commands/",
       parserType: "commentBlocks",
       codeLanguage: "yml",
-      include: parseCsv(process.env.RESIDENCE_COMMAND_INCLUDE_GLOBS ?? "ResidencePlugin/data/commands.log"),
+      include: parseCsvWithRequired(
+        process.env.RESIDENCE_COMMAND_INCLUDE_GLOBS,
+        "ResidencePlugin/data/commands.log",
+        ["ResidencePlugin/data/generated-commands.log"],
+      ),
       exclude: parseCsv(process.env.RESIDENCE_COMMAND_EXCLUDE_GLOBS),
     }),
     permission: createProfile("permission", {
@@ -382,7 +532,11 @@ function buildResidenceProfiles() {
       referenceLabel: "permissions",
       referenceUrl: "https://www.zrips.net/residence/permissions/",
       parserType: "permissionList",
-      include: parseCsv(process.env.RESIDENCE_PERMISSION_INCLUDE_GLOBS ?? "ResidencePlugin/data/permissions.log"),
+      include: parseCsvWithRequired(
+        process.env.RESIDENCE_PERMISSION_INCLUDE_GLOBS,
+        "ResidencePlugin/data/permissions.log",
+        ["ResidencePlugin/data/generated-permissions.log"],
+      ),
       exclude: parseCsv(process.env.RESIDENCE_PERMISSION_EXCLUDE_GLOBS),
     }),
   };
@@ -401,6 +555,7 @@ function buildPluginCommandAvailability(overrides = {}) {
     tabcomplete: "ready",
     langstats: "ready",
     stats: "ready",
+    latest: "ready",
     debug: "ready",
     reload: "ready",
     ...overrides,
@@ -416,6 +571,7 @@ export function loadConfig() {
   const mfmProfiles = buildMfmProfiles();
   const trymeProfiles = buildTrymeProfiles();
   const trademeProfiles = buildTrademeProfiles();
+  const bottledExpProfiles = buildBottledExpProfiles();
   const residenceProfiles = buildResidenceProfiles();
   const configuredTestChannelIds = parseCsv(process.env.DISCORD_TEST_CHANNEL_IDS);
   const fallbackLegacyTestChannelIds = parseCsv(process.env.DISCORD_CMI_TEST_CHANNEL_IDS);
@@ -429,6 +585,7 @@ export function loadConfig() {
     tryme: parseCsv(process.env.DISCORD_TRYME_CHANNEL_IDS),
     trademe: parseCsv(process.env.DISCORD_TRADEME_CHANNEL_IDS),
     residence: parseCsv(process.env.DISCORD_RESIDENCE_CHANNEL_IDS),
+    bottledexp: parseCsv(process.env.DISCORD_BOTTLEDEXP_CHANNEL_IDS),
   };
 
   return {
@@ -454,6 +611,14 @@ export function loadConfig() {
     search: {
       defaultResultLimit: Math.max(1, Math.min(15, parseInteger(process.env.DEFAULT_RESULT_LIMIT, 3))),
       maxResultLimit: 15,
+    },
+    versions: {
+      catalogPath: process.env.VERSION_CATALOG_PATH?.trim() || "data/versions.json",
+      checkEnabled: parseBoolean(process.env.VERSION_CHECK_ENABLED, true),
+      checkIntervalMs: Math.max(1, parseInteger(process.env.VERSION_CHECK_INTERVAL_HOURS, 12)) * 60 * 60 * 1000,
+      requestTimeoutMs: Math.max(1, parseInteger(process.env.VERSION_CHECK_TIMEOUT_SECONDS, 8)) * 1000,
+      paperVersion: process.env.PAPER_VERSION?.trim() || "26.2",
+      paperChannels: parseCsv(process.env.PAPER_VERSION_CHANNELS ?? "STABLE").map((item) => item.toUpperCase()),
     },
     sharedDebugRoots: [
       {
@@ -507,8 +672,8 @@ export function loadConfig() {
         commandAvailability: buildPluginCommandAvailability({
           placeholder: "unsupported",
           material: "unsupported",
-          command: "unsupported",
-          permission: "unsupported",
+          command: "ready",
+          permission: "ready",
           faq: "unsupported",
           tabcomplete: "unsupported",
         }),
@@ -519,10 +684,10 @@ export function loadConfig() {
         debugRoots: ["TryMePlugin"],
         profiles: trymeProfiles,
         commandAvailability: buildPluginCommandAvailability({
-          placeholder: "unsupported",
+          placeholder: "ready",
           material: "unsupported",
-          command: "unsupported",
-          permission: "unsupported",
+          command: "ready",
+          permission: "ready",
           faq: "unsupported",
           tabcomplete: "unsupported",
         }),
@@ -533,10 +698,10 @@ export function loadConfig() {
         debugRoots: ["TradeMePlugin"],
         profiles: trademeProfiles,
         commandAvailability: buildPluginCommandAvailability({
-          placeholder: "unsupported",
+          placeholder: "ready",
           material: "unsupported",
-          command: "unsupported",
-          permission: "unsupported",
+          command: "ready",
+          permission: "ready",
           faq: "unsupported",
           tabcomplete: "unsupported",
         }),
@@ -550,6 +715,20 @@ export function loadConfig() {
           config: "ready",
           language: "ready",
           placeholder: "ready",
+          material: "unsupported",
+          command: "ready",
+          permission: "ready",
+          faq: "unsupported",
+          tabcomplete: "unsupported",
+        }),
+      },
+      bottledexp: {
+        id: "bottledexp",
+        label: "BottledExp",
+        debugRoots: ["BottledExpPlugin"],
+        profiles: bottledExpProfiles,
+        commandAvailability: buildPluginCommandAvailability({
+          placeholder: "unsupported",
           material: "unsupported",
           command: "ready",
           permission: "ready",

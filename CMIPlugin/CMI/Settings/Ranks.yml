@@ -112,7 +112,7 @@
 #         DropCount - defines amount of interactions with drop count.
 
 Newbie:
-  Enabled: false
+  Enabled: true
   DisplayName: '&2Newbie'
   DefaultRank: true
   AutoRankup: true
@@ -120,10 +120,29 @@ Newbie:
   - Branch1
   - Branch2
 Branch1:
-  Enabled: false
+  Enabled: true
   DisplayName: '&2Branch1'
   AutoRankup: true
   RankupConfirmation: true
+  Votes: 5
+  PermissionRequirement:
+  - cmi.command.fly:Fly
+  McMMORequirement:
+  - woodcutting:10
+  - power:20
+  JobsRequirement:
+  - miner:10
+  - totallevel:20
+  AuraSkillsRequirement:
+  - miner:10
+  - power:20
+  AureliumRequirement:
+  - fishing:10
+  - power:30
+  ItemRequirement:
+  - stone:10
+  - stone:1:20
+  - book:20
   NextRanks:
   - Branch1Rank1
   MoneyCost: 100
@@ -135,12 +154,15 @@ Branch1:
   - MonsterKills:zombie:10
   - MonsterKills:slime:5
   - MonsterKills:wolf:5
+  - AccountAge:1209600
 Branch1Rank1:
-  Enabled: false
+  Enabled: true
   DisplayName: '&2Branch1Rank1'
   DefaultRank: false
   AutoRankup: true
   RankupConfirmation: false
+  PermissionRequirement:
+  - cmi.command.heal:Heal
   NextRanks:
   - Last
   MoneyCost: 300
@@ -152,8 +174,12 @@ Branch1Rank1:
   - blocksmined:3000
   - blocksmined:diamond_ore:30
   - MonsterKills:1000
+  - AccountAge:1209600
+  McMMORequirement:
+  - taming:10
+  - unarmed:30
 Branch2:
-  Enabled: false
+  Enabled: true
   DisplayName: '&2Branch2'
   AutoRankup: true
   RankupConfirmation: true
@@ -162,6 +188,8 @@ Branch2:
   - Branch2Rank1
   Commands:
   - broadcast! &6[playerDisplayName] &eleveled up to Branch2 rank!
+  PermissionRequirement:
+  - cmi.command.tp:Teleport
   StatsRequirements:
   - PlayTime:3600
   - travel:2000
@@ -184,7 +212,7 @@ Branch2Rank1:
   - SneakTime:180
   - MonsterKills:100
 Branch2Rank2:
-  Enabled: false
+  Enabled: true
   DisplayName: '&2Branch2Rank2'
   AutoRankup: true
   RankupConfirmation: false
@@ -200,7 +228,7 @@ Branch2Rank2:
   - ItemsUsed:10000
   - PlayerKills:10
 Last:
-  Enabled: false
+  Enabled: true
   DisplayName: '&2Last'
   AutoRankup: true
   StatsRequirements:

@@ -1,0 +1,4 @@
+/cmil - basic command
+/cmil clearcache - Clear cache
+/cmil compatibility - Test compatibility
+/cmil reload - Reloads plugins config and locale files

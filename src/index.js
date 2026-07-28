@@ -3,6 +3,7 @@ import { Client, GatewayIntentBits } from "discord.js";
 import { createSearchCache, formatCacheSummary } from "./cache.js";
 import { loadConfig, validateBotConfig } from "./config.js";
 import { createInteractionHandler, registerCommands } from "./discordBot.js";
+import { createVersionService, formatVersionServiceSummary } from "./versionCatalog.js";
 
 async function main() {
   const config = loadConfig();
@@ -10,6 +11,9 @@ async function main() {
   const searchCache = createSearchCache(config);
   const warmSummary = await searchCache.warm();
   console.log(formatCacheSummary(warmSummary, { verb: "Loaded", suffix: " into the search cache." }));
+  const versionService = createVersionService(config);
+  const versionSnapshot = await versionService.start();
+  console.log(formatVersionServiceSummary(versionSnapshot));
   await registerCommands(config);
 
   const client = new Client({
@@ -17,16 +21,16 @@ async function main() {
   });
 
   client.once("clientReady", () => {
-    console.log(`CMIBot connected as ${client.user?.tag ?? "unknown-user"}.`);
+    console.log(`LookupBot connected as ${client.user?.tag ?? "unknown-user"}.`);
   });
 
-  client.on("interactionCreate", createInteractionHandler(config, searchCache));
+  client.on("interactionCreate", createInteractionHandler(config, searchCache, versionService));
 
   await client.login(config.discord.token);
 }
 
 main().catch((error) => {
-  console.error("Failed to start CMIBot.");
+  console.error("Failed to start LookupBot.");
   console.error(error);
   process.exitCode = 1;
 });

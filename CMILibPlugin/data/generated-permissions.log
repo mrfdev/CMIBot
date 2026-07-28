@@ -1,0 +1,5 @@
+cmil.command - Gives access to base usage of commands
+cmil.command.$1
+cmil.command.$1.others - Allows to perform command on another player
+cmil.command.$1.others.$2 - Allows to perform command on another player
+cmil.permisiononerror - Allows to see missing permission on error message

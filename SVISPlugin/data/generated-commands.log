@@ -1,0 +1,26 @@
+/selectionvisualizer - basic command
+/svis - basic command
+/svis beacon - Shows beacon active range
+/svis biome (fixy) - Shows biome edges
+/svis cb - Shows command block target area
+/svis chunk - Shows current chunk
+/svis cmi - Shows CMI selection
+/svis fc (fixy) - Shows Factions claims
+/svis gd (fixy) - Shows GriefDefender claims
+/svis gp (fixy) - Shows GriefPrevention claims
+/svis grid (fixy) - Shows chunk grid
+/svis gui [type] - Opens GUI to edit personal settings
+/svis jobs - Shows jobs restricted areas
+/svis k (fixy) - Shows Kingdoms claims
+/svis lands (-s) (-a) - Shows Lands regions
+/svis plot (fixy) - Shows PlotSquared plots
+/svis point (fixy) - Point to a target
+/svis reload - Reloads configuration file
+/svis res (residenceName) (-s) (-a) - Shows Residence regions
+/svis spawner - Shows spawner active and spawn range
+/svis stop - Stops currently showing particles
+/svis toggle - Toggles visualizer
+/svis towny (fixy) - Shows Towny claims
+/svis watch [stop/info/playername] - See other player selections
+/svis we (paste) (lock/tp) - Shows WorldEdit selection or copied area
+/svis wg (regionName) - Shows WorldGuard regions

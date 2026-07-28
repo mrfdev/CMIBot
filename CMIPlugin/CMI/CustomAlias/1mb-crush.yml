@@ -1,5 +1,0 @@
-CustomAlias:
-  crush:
-    Cmds:
-    - msg! [playerName] CATCH ME OUTSIDE
-    Perm: true

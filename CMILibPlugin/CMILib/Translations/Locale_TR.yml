@@ -319,14 +319,20 @@ info:
   DamageCause:
     block_explosion: Explosion
     contact: Block Damage
+    cramming: cramming
     custom: Unknown
+    dragon_breath: Dragon breath
     drowning: Drowning
+    dryout: dryout
     entity_attack: Entity attack
     entity_explosion: Explosion
+    entity_sweep_attack: entity sweep attack
     fall: Fall
     falling_block: Falling block
     fire: Fire
     fire_tick: Fire
+    fly_into_wall: Fly into wall
+    hot_floor: Magma block
     lava: Lava
     lightning: Lightning
     magic: Magic
@@ -340,99 +346,133 @@ info:
     void: Void
     wither: Wither
   Biomes:
+    BADLANDS: Badlands
+    BADLANDS_PLATEAU: Badlands plateau
+    BAMBOO_JUNGLE: Bamboo jungle
+    BAMBOO_JUNGLE_HILLS: Bamboo jungle hills
+    BASALT_DELTAS: Basalt deltas
     BEACH: Beach
     BIRCH_FOREST: Birch forest
     BIRCH_FOREST_HILLS: Birch forest hills
-    BIRCH_FOREST_HILLS_MOUNTAINS: Birch forest hills mountains
-    BIRCH_FOREST_MOUNTAINS: Birch forest mountains
-    COLD_BEACH: Cold beach
-    COLD_TAIGA: Cold taiga
-    COLD_TAIGA_HILLS: Cold taiga hills
-    COLD_TAIGA_MOUNTAINS: Cold taiga mountains
+    COLD_OCEAN: Cold ocean
+    CRIMSON_FOREST: Crimson forest
+    DARK_FOREST: Dark forest
+    DARK_FOREST_HILLS: Dark forest hills
+    DEEP_COLD_OCEAN: Deep cold ocean
+    DEEP_FROZEN_OCEAN: Deep frozen ocean
+    DEEP_LUKEWARM_OCEAN: Deep lukewarm ocean
     DEEP_OCEAN: Deep ocean
+    DEEP_WARM_OCEAN: Deep warm ocean
     DESERT: Desert
     DESERT_HILLS: Desert hills
-    DESERT_MOUNTAINS: Desert mountains
-    EXTREME_HILLS: Extreme hills
-    EXTREME_HILLS_MOUNTAINS: Extreme hills mountains
-    EXTREME_HILLS_PLUS: Extreme hills plus
-    EXTREME_HILLS_PLUS_MOUNTAINS: Extreme hills plus mountains
+    DESERT_LAKES: Desert lakes
+    END_BARRENS: End barrens
+    END_HIGHLANDS: End highlands
+    END_MIDLANDS: End midlands
+    ERODED_BADLANDS: Eroded badlands
     FLOWER_FOREST: Flower forest
     FOREST: Forest
-    FOREST_HILLS: Forest hills
     FROZEN_OCEAN: Frozen ocean
     FROZEN_RIVER: Frozen river
-    HELL: Hell
-    ICE_MOUNTAINS: Ice mountains
-    ICE_PLAINS: Ice plains
-    ICE_PLAINS_SPIKES: Ice plains spikes
+    GIANT_SPRUCE_TAIGA: Giant spruce taiga
+    GIANT_SPRUCE_TAIGA_HILLS: Giant spruce taiga hills
+    GIANT_TREE_TAIGA: Giant tree taiga
+    GIANT_TREE_TAIGA_HILLS: Giant tree taiga hills
+    GRAVELLY_MOUNTAINS: Gravelly mountains
+    ICE_SPIKES: Ice spikes
     JUNGLE: Jungle
     JUNGLE_EDGE: Jungle edge
-    JUNGLE_EDGE_MOUNTAINS: Jungle edge mountains
     JUNGLE_HILLS: Jungle hills
-    JUNGLE_MOUNTAINS: Jungle mountains
-    MEGA_SPRUCE_TAIGA: Mega spruce taiga
-    MEGA_SPRUCE_TAIGA_HILLS: Mega spruce taiga hills
-    MEGA_TAIGA: Mega taiga
-    MEGA_TAIGA_HILLS: Mega taiga hills
-    MESA: Mesa
-    MESA_BRYCE: Mesa bryce
-    MESA_PLATEAU: Mesa plateau
-    MESA_PLATEAU_FOREST: Mesa plateau forest
-    MESA_PLATEAU_FOREST_MOUNTAINS: Mesa plateau forest mountains
-    MESA_PLATEAU_MOUNTAINS: Mesa plateau mountains
-    MUSHROOM_ISLAND: Mushroom island
-    MUSHROOM_SHORE: Mushroom shore
+    LUKEWARM_OCEAN: Lukewarm ocean
+    MODIFIED_BADLANDS_PLATEAU: Modified badlands plateau
+    MODIFIED_GRAVELLY_MOUNTAINS: Modified gravelly mountains
+    MODIFIED_JUNGLE: Modified jungle
+    MODIFIED_JUNGLE_EDGE: Modified jungle edge
+    MODIFIED_WOODED_BADLANDS_PLATEAU: Modified wooded badlands plateau
+    MOUNTAINS: Mountains
+    MOUNTAIN_EDGE: Mountain edge
+    MUSHROOM_FIELDS: Mushroom fields
+    MUSHROOM_FIELD_SHORE: Mushroom field shore
+    NETHER_WASTES: Nether wastes
     OCEAN: Ocean
     PLAINS: Plains
     RIVER: River
-    ROOFED_FOREST: Roofed forest
-    ROOFED_FOREST_MOUNTAINS: Roofed forest mountains
     SAVANNA: Savanna
-    SAVANNA_MOUNTAINS: Savanna mountains
     SAVANNA_PLATEAU: Savanna plateau
-    SAVANNA_PLATEAU_MOUNTAINS: Savanna plateau mountains
-    SKY: Sky
-    SMALL_MOUNTAINS: Small mountains
-    STONE_BEACH: Stone beach
+    SHATTERED_SAVANNA: Shattered savanna
+    SHATTERED_SAVANNA_PLATEAU: Shattered savanna plateau
+    SMALL_END_ISLANDS: Small end islands
+    SNOWY_BEACH: Snowy beach
+    SNOWY_MOUNTAINS: Snowy mountains
+    SNOWY_TAIGA: Snowy taiga
+    SNOWY_TAIGA_HILLS: Snowy taiga hills
+    SNOWY_TAIGA_MOUNTAINS: Snowy taiga mountains
+    SNOWY_TUNDRA: Snowy tundra
+    SOUL_SAND_VALLEY: Soul sand valley
+    STONE_SHORE: Stone shore
     SUNFLOWER_PLAINS: Sunflower plains
-    SWAMPLAND: Swampland
-    SWAMPLAND_MOUNTAINS: Swampland mountains
+    SWAMP: Swamp
+    SWAMP_HILLS: Swamp hills
     TAIGA: Taiga
     TAIGA_HILLS: Taiga hills
     TAIGA_MOUNTAINS: Taiga mountains
+    TALL_BIRCH_FOREST: Tall birch forest
+    TALL_BIRCH_HILLS: Tall birch hills
+    THE_END: The end
+    THE_VOID: The void
+    WARM_OCEAN: Warm ocean
+    WARPED_FOREST: Warped forest
+    WOODED_BADLANDS_PLATEAU: Wooded badlands plateau
+    WOODED_HILLS: Wooded hills
+    WOODED_MOUNTAINS: Wooded mountains
   EntityType:
+    area_effect_cloud: Area effect cloud
     armor_stand: Armor stand
     arrow: Arrow
     bat: Bat
+    bee: Bee
     blaze: Blaze
     boat: Boat
+    cat: Cat
     cave_spider: Cave spider
     chicken: Chicken
-    complex_part: Complex part
+    cod: Cod
     cow: Cow
     creeper: Creeper
+    dolphin: Dolphin
+    donkey: Donkey
+    dragon_fireball: Dragon fireball
     dropped_item: Dropped item
+    drowned: Drowned
     egg: Egg
+    elder_guardian: Elder guardian
     enderman: Enderman
     endermite: Endermite
     ender_crystal: Ender crystal
     ender_dragon: Ender dragon
     ender_pearl: Ender pearl
     ender_signal: Ender signal
+    evoker: Evoker
+    evoker_fangs: Evoker fangs
     experience_orb: Experience orb
     falling_block: Falling block
     fireball: Fireball
     firework: Firework
     fishing_hook: Fishing hook
+    fox: Fox
     ghast: Ghast
     giant: Giant
     guardian: Guardian
+    hoglin: Hoglin
     horse: Horse
+    husk: Husk
+    illusioner: Illusioner
     iron_golem: Iron golem
     item_frame: Item frame
     leash_hitch: Leash hitch
     lightning: Lightning
+    llama: Llama
+    llama_spit: Llama spit
     magma_cube: Magma cube
     minecart: Minecart
     minecart_chest: Minecart chest
@@ -441,85 +481,134 @@ info:
     minecart_hopper: Minecart hopper
     minecart_mob_spawner: Minecart mob spawner
     minecart_tnt: Minecart tnt
+    mule: Mule
     mushroom_cow: Mushroom cow
     ocelot: Ocelot
     painting: Painting
+    panda: Panda
+    parrot: Parrot
+    phantom: Phantom
     pig: Pig
-    pig_zombie: Pig zombie
+    piglin: Piglin
+    piglin_brute: Piglin brute
+    pillager: Pillager
     player: Player
+    polar_bear: Polar bear
     primed_tnt: Primed tnt
+    pufferfish: Pufferfish
     rabbit: Rabbit
+    ravager: Ravager
+    salmon: Salmon
     sheep: Sheep
+    shulker: Shulker
+    shulker_bullet: Shulker bullet
     silverfish: Silverfish
     skeleton: Skeleton
+    skeleton_horse: Skeleton horse
     slime: Slime
     small_fireball: Small fireball
     snowball: Snowball
     snowman: Snowman
+    spectral_arrow: Spectral arrow
     spider: Spider
     splash_potion: Splash potion
     squid: Squid
+    stray: Stray
+    strider: Strider
     thrown_exp_bottle: Thrown exp bottle
+    trader_llama: Trader llama
+    trident: Trident
+    tropical_fish: Tropical fish
+    turtle: Turtle
     unknown: Unknown
+    vex: Vex
     villager: Villager
-    weather: Weather
+    vindicator: Vindicator
+    wandering_trader: Wandering trader
     witch: Witch
     wither: Wither
+    wither_skeleton: Wither skeleton
     wither_skull: Wither skull
     wolf: Wolf
+    zoglin: Zoglin
     zombie: Zombie
+    zombie_horse: Zombie horse
+    zombie_villager: Zombie villager
+    zombified_piglin: Zombified piglin
   EnchantAliases:
-    protection_environmental:
-    - Protection
     protection_fire:
     - FireProtection
+    damage_all:
+    - Sharpness
+    arrow_fire:
+    - Flame
+    soul_speed:
+    - SOULSPEED
+    water_worker:
+    - AquaAffinity
+    arrow_knockback:
+    - Punch
+    loyalty:
+    - Loyalty
+    depth_strider:
+    - DepthStrider
+    vanishing_curse:
+    - VanishingCurse
+    durability:
+    - Unbreaking
+    knockback:
+    - Knockback
+    luck:
+    - Luck
+    binding_curse:
+    - BindingCurse
+    loot_bonus_blocks:
+    - Fortune
+    protection_environmental:
+    - Protection
+    dig_speed:
+    - Efficiency
+    mending:
+    - Mending
+    lure:
+    - Lure
+    loot_bonus_mobs:
+    - Looting
+    piercing:
+    - Piercing
+    damage_undead:
+    - Smite
+    multishot:
+    - Multishot
+    fire_aspect:
+    - FireAspect
+    channeling:
+    - Channeling
+    sweeping_edge:
+    - SweepingEdge
+    thorns:
+    - Thorns
+    damage_arthropods:
+    - BaneOfArthropods
+    oxygen:
+    - Respiration
+    riptide:
+    - Riptide
+    silk_touch:
+    - SilkTouch
+    quick_charge:
+    - QUICKCHARGE
+    protection_projectile:
+    - ProjectileProtection
+    impaling:
+    - Impaling
     protection_fall:
     - FallProtection
     - FeatherFalling
-    protection_explosions:
-    - BlastProtection
-    protection_projectile:
-    - ProjectileProtection
-    oxygen:
-    - Respiration
-    water_worker:
-    - AquaAffinity
-    thorns:
-    - Thorns
-    depth_strider:
-    - DepthStrider
-    damage_all:
-    - Sharpness
-    damage_undead:
-    - Smite
-    damage_arthropods:
-    - BaneOfArthropods
-    knockback:
-    - Knockback
-    fire_aspect:
-    - FireAspect
-    loot_bonus_mobs:
-    - Looting
-    dig_speed:
-    - Efficiency
-    silk_touch:
-    - SilkTouch
-    durability:
-    - Unbreaking
-    loot_bonus_blocks:
-    - Fortune
     arrow_damage:
     - Power
-    arrow_knockback:
-    - Punch
-    arrow_fire:
-    - Flame
     arrow_infinite:
     - Infinity
-    luck:
-    - Luck
-    lure:
-    - Lure
   PotionEffectAliases:
     speed:
     - Speed
@@ -567,6 +656,24 @@ info:
     - Absorption
     saturation:
     - Saturation
+    glowing:
+    - Glowing
+    levitation:
+    - Levitation
+    luck:
+    - Luck
+    unluck:
+    - Unluck
+    slow_falling:
+    - Slow falling
+    conduit_power:
+    - Conduit power
+    dolphins_grace:
+    - Dolphins grace
+    bad_omen:
+    - Bad omen
+    hero_of_the_village:
+    - Hero of the village
 direction:
   n: North
   ne: North East

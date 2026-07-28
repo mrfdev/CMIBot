@@ -1,7 +1,0 @@
-# 1MB /newplayer CMD version 1.0.0 build 002.
-
-CustomAlias:
-  newplayer:
-    Cmds:
-    - asConsole! cmi ctext newplayer [playerName]
-    Tab: false

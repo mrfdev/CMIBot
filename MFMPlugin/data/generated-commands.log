@@ -1,0 +1,7 @@
+/mfm - basic command
+/mfm clean - Cleans chunks around players
+/mfm hoppers - List chunks with most active hoppers in them
+/mfm limits - Show limits by your location
+/mfm list (range) (-all) - List chunks with most entities in them
+/mfm redstone - List active redstone chunks
+/mfm reload - Reload config and locale file

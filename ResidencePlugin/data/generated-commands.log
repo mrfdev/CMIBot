@@ -1,0 +1,76 @@
+/rc - Chat in current residence channel.
+/res - Manage Residences
+/res area - Manage physical areas for a residence.
+/res attack - Start raid on residence
+/res auto
+/res bank
+/res check
+/res clearflags
+/res command
+/res compass
+/res confirm - Confirms removal of a residence.
+/res contract
+/res create
+/res current
+/res defend
+/res expand
+/res flags
+/res give
+/res gset
+/res info
+/res kick
+/res lease
+/res leaveraid
+/res limits
+/res list
+/res listall
+/res listallhidden
+/res listhidden
+/res lists
+/res lset
+/res market
+/res material
+/res message
+/res mirror
+/res padd
+/res pdel
+/res placeholders
+/res pset
+/res raid
+/res raidstatus
+/res rc
+/res reload
+/res remove
+/res removeall
+/res removeworld
+/res rename
+/res renamearea
+/res resadmin
+/res reset
+/res restore
+/res rt
+/res save
+/res select
+/res server
+/res set
+/res setall
+/res setallfor
+/res setallowner
+/res setmain
+/res setowner
+/res shop
+/res show
+/res signconvert
+/res signupdate
+/res sublist
+/res subzone
+/res tool
+/res tp
+/res tpconfirm
+/res tpset
+/res unstuck
+/res version
+/resadmin - Residence admin functions.
+/residence - Manage Residences
+/resload - Load the save file again after you have made modifications.
+/resreload - Reload the entire residence plugin.

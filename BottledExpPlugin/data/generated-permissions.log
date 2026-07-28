@@ -1,0 +1,13 @@
+bottledexp.* - Grants access to all bottledexp commands
+bottledexp.admin - Grants permissions as an admin; Default: false
+bottledexp.command.* - Grants player access to all commands; Default: false
+bottledexp.command.consume - Default: false
+bottledexp.command.get - Default: true
+bottledexp.command.get.max - Default: true
+bottledexp.command.give - Default: op
+bottledexp.command.stats - Default: true
+bottledexp.command.stats.others - Default: op
+bottledexp.command.store - Default: true
+bottledexp.command.store.max - Default: true
+bottledexp.command.until - Default: true
+bottledexp.expcontainer.craft - Default: op

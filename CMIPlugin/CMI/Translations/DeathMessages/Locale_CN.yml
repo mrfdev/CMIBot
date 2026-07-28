@@ -1,3 +1,5 @@
+# Defines prefix for all death messages
+Prefix: 💀
 # Defines hover over infomation about player who died. Use basic placeholders like %cmi_user_name% to include any information you would want
 # Set this like to '' if you want to avoid including hover over message
 PlayerHover:
@@ -25,12 +27,17 @@ Player:
   - '&2[playerDisplayName] &7被 &2[sourceDisplayName] &7用火球烧死了'
   Firework:
   - '&2[playerDisplayName] &7在与 &2[sourceDisplayName] &7战斗时随着一声巨响消失了'
+  Tnt:
+  - '&2[playerDisplayName] &7被 &2[sourceDisplayName] 炸死'
 FallingBlocks:
   Anvil:
     General:
     - '&2[playerDisplayName] &7被坠落的铁砧压扁了'
     - '&2[playerDisplayName] &7被铁砧碾碎'
     - '&2[playerDisplayName] &7用头撞击铁砧'
+  Pointed_dripstone:
+    General:
+    - '&2[playerDisplayName] &7被坠落的滴水石锥刺穿'
 Block:
   Cactus:
     General:
@@ -47,6 +54,12 @@ Block:
   Sweet_berry_bush:
     General:
     - '&2[playerDisplayName] &7被甜浆果丛刺死了'
+  Campfire:
+    General:
+    - '&2[playerDisplayName] &7被营火灼烧'
+  Soul_campfire:
+    General:
+    - '&2[playerDisplayName] &7被灵魂营火汲取灵魂'
   Lava:
     General:
     - '&2[playerDisplayName] &7试图在熔岩里游泳'
@@ -57,6 +70,12 @@ Custom:
   Block_explosion:
     General:
     - '&2[playerDisplayName] &7被[刻意的游戏设计]杀死了'
+  World_border:
+    General:
+    - '&2[playerDisplayName] &7超出了世界边界'
+  Starvation:
+    General:
+    - '&2[playerDisplayName] &7饥饿致死'
   Fall:
     Low:
       General:
@@ -116,147 +135,28 @@ Mob:
   Primed_tnt:
     General:
     - '&2[playerDisplayName] &7爆炸了'
-  Elder_guardian:
+  Tnt_minecart:
+    General:
+    - '&2[playerDisplayName] &7被矿车TNT炸死'
+  Area_effect_cloud:
+    General:
+    - '&2[playerDisplayName] &7被效果云击杀'
+  Allay:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Wither_skeleton:
+  Armadillo:
     General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    - '&2[playerDisplayName] &7killed by &2[mobName]'
     Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Stray:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Husk:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Zombie_villager:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Skeleton_horse:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Zombie_horse:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+    - '&2[playerDisplayName] &7killed by &2[mobName] &7with &2[item]'
   Armor_stand:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Donkey:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Mule:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Evoker:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Vex:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Vindicator:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Illusioner:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Creeper:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Skeleton:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Spider:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Giant:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Zombie:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Slime:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Ghast:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Zombified_piglin:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Enderman:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Cave_spider:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Silverfish:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Blaze:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Magma_cube:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Ender_dragon:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Wither:
+  Axolotl:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
@@ -266,37 +166,42 @@ Mob:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Witch:
+  Bee:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Endermite:
+  Blaze:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Guardian:
+  Bogged:
+    General:
+    - '&2[playerDisplayName] &7killed by &2[mobName]'
+    Item:
+    - '&2[playerDisplayName] &7killed by &2[mobName] &7with &2[item]'
+  Breeze:
+    General:
+    - '&2[playerDisplayName] &7killed by &2[mobName]'
+    Item:
+    - '&2[playerDisplayName] &7killed by &2[mobName] &7with &2[item]'
+  Camel:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Shulker:
+  Camel_husk:
+    General:
+    - '&2[playerDisplayName] &7killed by &2[mobName]'
+    Item:
+    - '&2[playerDisplayName] &7killed by &2[mobName] &7with &2[item]'
+  Cat:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Pig:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Sheep:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Cow:
+  Cave_spider:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
@@ -306,97 +211,27 @@ Mob:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Squid:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Wolf:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Mushroom_cow:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Snowman:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Ocelot:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Iron_golem:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Horse:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Rabbit:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Polar_bear:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Llama:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Parrot:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Villager:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Turtle:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Phantom:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
   Cod:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Salmon:
+  Copper_golem:
+    General:
+    - '&2[playerDisplayName] &7killed by &2[mobName]'
+    Item:
+    - '&2[playerDisplayName] &7killed by &2[mobName] &7with &2[item]'
+  Cow:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Pufferfish:
+  Creaking:
     General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    - '&2[playerDisplayName] &7killed by &2[mobName]'
     Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Tropical_fish:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Drowned:
+    - '&2[playerDisplayName] &7killed by &2[mobName] &7with &2[item]'
+  Creeper:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
@@ -406,32 +241,37 @@ Mob:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Cat:
+  Donkey:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Panda:
+  Drowned:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Pillager:
+  Elder_guardian:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Ravager:
+  Ender_dragon:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Trader_llama:
+  Enderman:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Wandering_trader:
+  Endermite:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Evoker:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
@@ -441,37 +281,17 @@ Mob:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Bee:
+  Frog:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Hoglin:
+  Ghast:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Piglin:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Strider:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Zoglin:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Piglin_brute:
-    General:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
-    Item:
-    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Axolotl:
+  Giant:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
@@ -486,12 +306,197 @@ Mob:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Allay:
+  Guardian:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Frog:
+  Happy_ghast:
+    General:
+    - '&2[playerDisplayName] &7killed by &2[mobName]'
+    Item:
+    - '&2[playerDisplayName] &7killed by &2[mobName] &7with &2[item]'
+  Hoglin:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Horse:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Husk:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Illusioner:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Iron_golem:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Llama:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Magma_cube:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Mannequin:
+    General:
+    - '&2[playerDisplayName] &7killed by &2[mobName]'
+    Item:
+    - '&2[playerDisplayName] &7killed by &2[mobName] &7with &2[item]'
+  Mooshroom:
+    General:
+    - '&2[playerDisplayName] &7killed by &2[mobName]'
+    Item:
+    - '&2[playerDisplayName] &7killed by &2[mobName] &7with &2[item]'
+  Mule:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Nautilus:
+    General:
+    - '&2[playerDisplayName] &7killed by &2[mobName]'
+    Item:
+    - '&2[playerDisplayName] &7killed by &2[mobName] &7with &2[item]'
+  Ocelot:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Panda:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Parched:
+    General:
+    - '&2[playerDisplayName] &7killed by &2[mobName]'
+    Item:
+    - '&2[playerDisplayName] &7killed by &2[mobName] &7with &2[item]'
+  Parrot:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Phantom:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Pig:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Piglin:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Piglin_brute:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Pillager:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Polar_bear:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Pufferfish:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Rabbit:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Ravager:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Salmon:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Sheep:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Shulker:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Silverfish:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Skeleton:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Skeleton_horse:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Slime:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Sniffer:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Snow_golem:
+    General:
+    - '&2[playerDisplayName] &7killed by &2[mobName]'
+    Item:
+    - '&2[playerDisplayName] &7killed by &2[mobName] &7with &2[item]'
+  Spider:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Squid:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Stray:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Strider:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
@@ -501,17 +506,92 @@ Mob:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Trader_llama:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Tropical_fish:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Turtle:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Vex:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Villager:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Vindicator:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Wandering_trader:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
   Warden:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Camel:
+  Witch:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
-  Sniffer:
+  Wither:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Wither_skeleton:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Wolf:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Zoglin:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Zombie:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Zombie_horse:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Zombie_nautilus:
+    General:
+    - '&2[playerDisplayName] &7killed by &2[mobName]'
+    Item:
+    - '&2[playerDisplayName] &7killed by &2[mobName] &7with &2[item]'
+  Zombie_villager:
+    General:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
+    Item:
+    - '&2[playerDisplayName] &7被 &2[mobName]&7 用 &2[item]&7 杀死了'
+  Zombified_piglin:
     General:
     - '&2[playerDisplayName] &7被 &2[mobName]&7 杀死了'
     Item:

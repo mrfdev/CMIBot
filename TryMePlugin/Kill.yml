@@ -1,0 +1,248 @@
+# Task file
+# Just enter Task number, Task itself and target entities. You can have as many entities as you want.
+# Providing multiple entities in the list will require from player to kill defined amount of each entity type
+# Listing multiple entities in one row will define that player needs to kill specified amount of entities from provided list of types.
+#   For example: sheep,pig,cow-4
+#   This will require to kill 4 entities from the list, this can be 3 sheeps and 1 pig or 4 cows or any other variation
+# Optional TaskCommands section can be used to define specific commands for specific task
+
+#Prefix used to be added to every task description to avoid repeating entries
+Prefix: '&7Kill race -> &6'
+Data:
+  Default:
+    - Task: '4x &2Elder guardian'
+      Entities:
+      - 'ELDER_GUARDIAN-4'
+      TaskCommands:
+      - 'cmi give [playerName] apple'
+    - Task: '3x &2Wither skeleton'
+      Entities:
+      - 'WITHER_SKELETON-3'
+    - Task: '&2Stray'
+      Entities:
+      - 'STRAY'
+    - Task: '2x &2Husk'
+      Entities:
+      - 'HUSK-2'
+    - Task: '3x &2Zombie villager'
+      Entities:
+      - 'ZOMBIE_VILLAGER-3'
+    - Task: '&2Skeleton horse'
+      Entities:
+      - 'SKELETON_HORSE'
+    - Task: '4x &2Zombie horse'
+      Entities:
+      - 'ZOMBIE_HORSE-4'
+    - Task: '4x &2Armor stand'
+      Entities:
+      - 'ARMOR_STAND-4'
+    - Task: '4x &2Donkey'
+      Entities:
+      - 'DONKEY-4'
+    - Task: '2x &2Mule'
+      Entities:
+      - 'MULE-2'
+    - Task: '4x &2Evoker'
+      Entities:
+      - 'EVOKER-4'
+    - Task: '3x &2Vex'
+      Entities:
+      - 'VEX-3'
+    - Task: '3x &2Vindicator'
+      Entities:
+      - 'VINDICATOR-3'
+    - Task: '2x &2Illusioner'
+      Entities:
+      - 'ILLUSIONER-2'
+    - Task: '&2Creeper'
+      Entities:
+      - 'CREEPER'
+    - Task: '&2Skeleton'
+      Entities:
+      - 'SKELETON'
+    - Task: '4x &2Spider'
+      Entities:
+      - 'SPIDER-4'
+    - Task: '2x &2Giant'
+      Entities:
+      - 'GIANT-2'
+    - Task: '4x &2Zombie'
+      Entities:
+      - 'ZOMBIE-4'
+    - Task: '4x &2Slime'
+      Entities:
+      - 'SLIME-4'
+    - Task: '3x &2Ghast'
+      Entities:
+      - 'GHAST-3'
+    - Task: '4x &2Zombified piglin'
+      Entities:
+      - 'ZOMBIFIED_PIGLIN-4'
+    - Task: '2x &2Enderman'
+      Entities:
+      - 'ENDERMAN-2'
+    - Task: '3x &2Cave spider'
+      Entities:
+      - 'CAVE_SPIDER-3'
+    - Task: '2x &2Silverfish'
+      Entities:
+      - 'SILVERFISH-2'
+    - Task: '2x &2Blaze'
+      Entities:
+      - 'BLAZE-2'
+    - Task: '4x &2Magma cube'
+      Entities:
+      - 'MAGMA_CUBE-4'
+    - Task: '2x &2Ender dragon'
+      Entities:
+      - 'ENDER_DRAGON-2'
+    - Task: '&2Wither'
+      Entities:
+      - 'WITHER'
+    - Task: '3x &2Bat'
+      Entities:
+      - 'BAT-3'
+    - Task: '&2Witch'
+      Entities:
+      - 'WITCH'
+    - Task: '4x &2Endermite'
+      Entities:
+      - 'ENDERMITE-4'
+    - Task: '2x &2Guardian'
+      Entities:
+      - 'GUARDIAN-2'
+    - Task: '&2Shulker'
+      Entities:
+      - 'SHULKER'
+    - Task: '2x &2Pig'
+      Entities:
+      - 'PIG-2'
+    - Task: '2x &2Sheep'
+      Entities:
+      - 'SHEEP-2'
+    - Task: '2x &2Cow'
+      Entities:
+      - 'COW-2'
+    - Task: '&2Chicken'
+      Entities:
+      - 'CHICKEN'
+    - Task: '2x &2Squid'
+      Entities:
+      - 'SQUID-2'
+    - Task: '4x &2Wolf'
+      Entities:
+      - 'WOLF-4'
+    - Task: '3x &2Mushroom cow'
+      Entities:
+      - 'MUSHROOM_COW-3'
+    - Task: '4x &2Snowman'
+      Entities:
+      - 'SNOWMAN-4'
+    - Task: '&2Ocelot'
+      Entities:
+      - 'OCELOT'
+    - Task: '3x &2Iron golem'
+      Entities:
+      - 'IRON_GOLEM-3'
+    - Task: '2x &2Horse'
+      Entities:
+      - 'HORSE-2'
+    - Task: '2x &2Rabbit'
+      Entities:
+      - 'RABBIT-2'
+    - Task: '4x &2Polar bear'
+      Entities:
+      - 'POLAR_BEAR-4'
+    - Task: '2x &2Llama'
+      Entities:
+      - 'LLAMA-2'
+    - Task: '3x &2Parrot'
+      Entities:
+      - 'PARROT-3'
+    - Task: '&2Villager'
+      Entities:
+      - 'VILLAGER'
+    - Task: '&2Turtle'
+      Entities:
+      - 'TURTLE'
+    - Task: '3x &2Phantom'
+      Entities:
+      - 'PHANTOM-3'
+    - Task: '4x &2Cod'
+      Entities:
+      - 'COD-4'
+    - Task: '3x &2Salmon'
+      Entities:
+      - 'SALMON-3'
+    - Task: '4x &2Pufferfish'
+      Entities:
+      - 'PUFFERFISH-4'
+    - Task: '3x &2Tropical fish'
+      Entities:
+      - 'TROPICAL_FISH-3'
+    - Task: '3x &2Drowned'
+      Entities:
+      - 'DROWNED-3'
+    - Task: '2x &2Dolphin'
+      Entities:
+      - 'DOLPHIN-2'
+    - Task: '3x &2Cat'
+      Entities:
+      - 'CAT-3'
+    - Task: '2x &2Panda'
+      Entities:
+      - 'PANDA-2'
+    - Task: '3x &2Pillager'
+      Entities:
+      - 'PILLAGER-3'
+    - Task: '3x &2Ravager'
+      Entities:
+      - 'RAVAGER-3'
+    - Task: '3x &2Trader llama'
+      Entities:
+      - 'TRADER_LLAMA-3'
+    - Task: '3x &2Wandering trader'
+      Entities:
+      - 'WANDERING_TRADER-3'
+    - Task: '4x &2Fox'
+      Entities:
+      - 'FOX-4'
+    - Task: '2x &2Bee'
+      Entities:
+      - 'BEE-2'
+    - Task: '2x &2Hoglin'
+      Entities:
+      - 'HOGLIN-2'
+    - Task: '2x &2Piglin'
+      Entities:
+      - 'PIGLIN-2'
+    - Task: '2x &2Strider'
+      Entities:
+      - 'STRIDER-2'
+    - Task: '&2Zoglin'
+      Entities:
+      - 'ZOGLIN'
+    - Task: '3x &2Piglin brute'
+      Entities:
+      - 'PIGLIN_BRUTE-3'
+    - Task: '3x &2Axolotl'
+      Entities:
+      - 'AXOLOTL-3'
+    - Task: '3x &2Glow squid'
+      Entities:
+      - 'GLOW_SQUID-3'
+    - Task: '4x &2Goat'
+      Entities:
+      - 'GOAT-4'
+    - Task: '3x &2Allay'
+      Entities:
+      - 'ALLAY-3'
+    - Task: '&2Frog'
+      Entities:
+      - 'FROG'
+    - Task: '&2Tadpole'
+      Entities:
+      - 'TADPOLE'
+    - Task: '4x &2Warden'
+      Entities:
+      - 'WARDEN-4'

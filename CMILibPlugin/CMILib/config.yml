@@ -37,19 +37,11 @@ GlobalGui:
 Spawners:
   # List of spawners to pick from while using spawner:random variable
   mysterySpawners:
-  - cow
-  - pig
-  - sheep
+  - skeleton
+  - zombie
+  - silverfish
   - panda
   - fox
-  - armadillo
-  - camel
-  - happy_ghast
-  - allay
-  - strider
-  - frog
-  - turtle
-  - spider
 RMCCommands:
   # When enabled we will (where possible) include which command was performed when using rmc commands
   ConsoleLog: true
@@ -64,10 +56,10 @@ Images:
 Colors:
   # When enabled plugin will try to detect simplified hex color codes like #f6f6f6 or #ff6 in adition to {#f6f6f6} and {#red}
   # Keep in mind that this adds extra checks and simplified format will not support gradients or named colors so you will still need to use more complex format for those
-  OfficialHex: false
+  OfficialHex: true
   # When enabled plugin will try to detect quirky hex color codes like &#f6f6f6 or &#ff6 in adition to {#f6f6f6} and {#red}
   # Keep in mind that this adds extra checks and quirky format will not support gradients or named colors so you will still need to use more complex format for those
-  QuirkyHex: false
+  QuirkyHex: true
   # Defining global chat colors used in locale file
   # This will allow you to modify multiple colors at once
   Global:

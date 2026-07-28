@@ -1,0 +1,133 @@
+residence.admin - Defines as residence admin; Default: op
+residence.admin.move - Allows movement in residence where its not allowed; Default: op
+residence.admin.tp - Allows teleportation into residence where its not allowed; Default: op
+residence.backup - Allows to use backup flag to save residence into schematics
+residence.buy - Allows to buy residence
+residence.bypass.build - Allows to bypass build flag
+residence.bypass.button - Allows to bypass button flag
+residence.bypass.command - Allows to bypass command flag; Default: op
+residence.bypass.container - Allows to bypass container flag
+residence.bypass.destroy - Allows to bypass destroy flag
+residence.bypass.door - Allows to bypass door flag
+residence.bypass.fly - Allows to bypass fly flag
+residence.bypass.ignorey - Allows to ignore Y corrdiante restrictions
+residence.bypass.ignoreyinsubzone - Allows to ignore subzone limitations
+residence.bypass.itemdrop - Allows to bypass itemdrop flag
+residence.bypass.itempickup - Allows to bypass itempickup flag
+residence.bypass.nofly - Allows to bypass nofly flag; Default: op
+residence.bypass.tp - Allows to bypass command flag
+residence.bypass.use - Allows to bypass use flag
+residence.chatcolor - Allows to change residence chat color; Default: true
+residence.chatkick - Allows to kick player from residence chat; Default: true
+residence.chatprefix - Allows to change residence chat prefix; Default: op
+residence.cleanbypass - Prevents residence from ebing removed on automatic cleanup
+residence.command.$1 - Gives access to particular command
+residence.command.$1.others - Allows to perform command on another player
+residence.command.area - Allows to access particular command; Default: true
+residence.command.auto - Allows to create max residence; Default: true
+residence.command.bank - Allows to access particular command; Default: true
+residence.command.check - Allows to access particular command; Default: true
+residence.command.clearflags - Allows to access particular command; Default: op
+residence.command.command - Allows to access particular command; Default: true
+residence.command.compass - Allows to access particular command; Default: true
+residence.command.confirm - Allows to access particular command; Default: true
+residence.command.contract - Allows to access particular command; Default: true
+residence.command.contract.subzone - Allows to contract subzones
+residence.command.create - Allows to access particular command; Default: true
+residence.command.current - Allows to access particular command; Default: true
+residence.command.expand - Allows to access particular command; Default: true
+residence.command.expand.subzone - Allows to expand subzones
+residence.command.flags - Allows to access particular command; Default: true
+residence.command.give - Allows to access particular command; Default: true
+residence.command.gset - Allows to access particular command; Default: true
+residence.command.gui - Allows to access particular command; Default: true
+residence.command.info - Allows to access particular command; Default: true
+residence.command.kick - Allows to access particular command; Default: true
+residence.command.kick.bypass - Allows to bypass kick from residence
+residence.command.lease - Allows to access particular command; Default: true
+residence.command.limits - Allows to access particular command; Default: true
+residence.command.list - Allows to access particular command; Default: true
+residence.command.list.others - Allows to access particular command; Default: true
+residence.command.listall - Allows to access particular command; Default: true
+residence.command.listallhidden - Allows to access particular command; Default: op
+residence.command.listhidden - Allows to access particular command; Default: op
+residence.command.lists - Allows to access particular command; Default: true
+residence.command.lset - Allows to access particular command; Default: true
+residence.command.market - Allows to access particular command; Default: true
+residence.command.material - Allows to access particular command; Default: true
+residence.command.message - Allows to access particular command; Default: true
+residence.command.message.enter - Allows to change residence enter message; Default: true
+residence.command.message.enter.remove - Allows to remove residence enter message; Default: true
+residence.command.message.leave - Allows to change residence leave message; Default: true
+residence.command.message.leave.remove - Allows to remove residence leave message; Default: true
+residence.command.mirror - Allows to access particular command; Default: true
+residence.command.padd - Allows to access particular command; Default: true
+residence.command.pdel - Allows to access particular command; Default: true
+residence.command.pset - Allows to access particular command; Default: true
+residence.command.rc - Allows to access particular command; Default: true
+residence.command.reload - Allows to access particular command; Default: op
+residence.command.remove - Allows to access particular command; Default: true
+residence.command.removeall - Allows to access particular command; Default: op
+residence.command.removeworld - Allows to access particular command; Default: op
+residence.command.rename - Allows to access particular command; Default: true
+residence.command.renamearea - Allows to access particular command; Default: true
+residence.command.resadmin - Allows to access particular command; Default: op
+residence.command.resbank - Allows to access particular command; Default: true
+residence.command.reset - Allows to access particular command; Default: true
+residence.command.rt - Allows to access particular command; Default: true
+residence.command.select - Allows to access particular command; Default: true
+residence.command.server - Allows to access particular command; Default: op
+residence.command.set - Allows to access particular command; Default: true
+residence.command.setdefaultflags - Allows to access particular command; Default: true
+residence.command.setmain - Allows to access particular command; Default: true
+residence.command.setowner - Allows to access particular command; Default: op
+residence.command.shop - Allows to access particular command; Default: true
+residence.command.show - Allows to access particular command; Default: true
+residence.command.siege - Allows to access particular command; Default: true
+residence.command.signconvert - Allows to access particular command; Default: op
+residence.command.signupdate - Allows to access particular command; Default: op
+residence.command.sublist - Allows to access particular command; Default: true
+residence.command.subzone - Allows to access particular command; Default: true
+residence.command.tool - Allows to access particular command; Default: true
+residence.command.tp - Allows to access particular command; Default: true
+residence.command.tpconfirm - Allows to access particular command; Default: true
+residence.command.tpset - Allows to access particular command; Default: true
+residence.command.unstuck - Allows to access particular command; Default: true
+residence.command.version - Allows to access particular command; Default: true
+residence.compass - Allows to set compass pointer to residence; Default: true
+residence.contract - Allows you to contract residence; Default: true
+residence.contract.subzone - Allows you to contract residences subzone; Default: true
+residence.create - Allows to create residence; Default: true
+residence.create.subzone - Allows to create residence subzones; Default: true
+residence.delete - Allows to delete residence; Default: true
+residence.delete.subzone - Allows to delete subzone; Default: true
+residence.expand - Allows you to expand residence; Default: true
+residence.expand.subzone - Allows you to expand residences subzone; Default: true
+residence.flag.$1 - Gives access to defined flag
+residence.group.$1 - Defines players residence group
+residence.market.evict - Allows to evict players from rented residences
+residence.max.rents.$1 - Defines residence rent limit
+residence.max.rents.unlimited - Defines residence rent limit as unlimited
+residence.max.res.$1 - Defines residence limit
+residence.max.res.unlimited - Defines residence limit as unlimited
+residence.max.res.x.$1 - Defines residence size limit on X axis
+residence.max.res.z.$1 - Defines residence size limit on Z axis
+residence.max.subzonedepth.$1 - Defines subzone depth limit
+residence.max.subzonedepth.unlimited - Defines subzone depth limit as unlimited
+residence.max.subzones.$1 - Defines subzone limit
+residence.max.subzones.unlimited - Defines subzone limit as unlimited
+residence.newguyresidence - Creates residence on first chest place; Default: true
+residence.permisiononerror - Allows to see missing permission on error message
+residence.randomtp - Allows to use rt command; Default: true
+residence.randomtp.admin - Allows to use rt command on another player
+residence.randomtp.cooldownbypass - Allows to bypass random teleport command cooldown
+residence.randomtp.delaybypass - Allows to bypass random teleport command delay
+residence.rename - Allows to rename residence; Default: true
+residence.resize - Allows to resize residence; Default: true
+residence.select - Allows to select residence area; Default: true
+residence.select.auto.others - Allows to toggle auto selection for others; Default: op
+residence.sell - Allows to sell residence
+residence.topadmin - Defines as residence top admin; Default: op
+residence.tpdelaybypass - Allows to bypass teleport delay
+residence.versioncheck - Shows when we have new version of plugin; Default: op
+residence.worldguard.$1 - Allows to create residence inside region

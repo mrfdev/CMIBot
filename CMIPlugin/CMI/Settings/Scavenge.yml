@@ -72,6 +72,8 @@ Scavenge:
   - ironingot
   - goldingot
   - coal
+  - IRON_NUGGET
+  - GOLD_NUGGET
   # When set to true, balck list becomes whitelist and will allow scavanging of items defined in a blacklist only
   BlackToWhiteList: false
   # When set to false while player have open scavange UI they will not be able to pickup item from ground

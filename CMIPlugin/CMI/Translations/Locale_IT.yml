@@ -614,7 +614,7 @@ modify:
   commandAddInfo: '&eInserisci un nuovo comando. Digira &6cancel &eper cancellare'
   commandAddInformationHover: "&e[playerName] serve per prendere il nome di un giocatore \n&eda\
     \ include delay nel comando: \n&edelay! 5 \n&eComando specificato supportato.\
-    \ Più info su \n&ewww.spigotmc.org/wiki/cmi-specialized-commands/"
+    \ Più info su \n&ehttps://www.zrips.net/cmi/commands/specialized/"
   commandEditInfo: '&eClicca per incollare il vecchio testo. Digita &6cancel &ePer cancellare l''azione. Digita &6remove &eper rimuovere la linea'
   commandEditInfoHover: '&eClicca per incollare il vecchio testo'
 warp:
@@ -928,7 +928,7 @@ command:
         by bar name
       - /cmi bossbarmsg all -sec:5 - will count for 5 seconds from 0 to 5
       - /cmi bossbarmsg all -sec:-5 - will count for 5 seconds from 5 to 0
-      - https://www.spigotmc.org/wiki/cmi-bossbar-usage/
+      - "https://www.zrips.net/cmi/commands/bossbarmsg-handling/"
   broadcast:
     help:
       info: '&eInvia un messaggio speciale a tutti i giocatori'
@@ -2426,6 +2426,7 @@ command:
       paid: '&eHai inviato &6[amount] &ea &6[playerDisplayName]'
       gotMoney: '&eHai ottenuto &6[amount] &eda &6[senderDisplayName]&e. Bilancio: &6[money]'
       gotMoneyGive: '&eHai ricevuto &6[amount]&e. Bilancio: &6[money]'
+      lostMoney: '&6[amount] &esono stati rimossi dal tuo bilancio. Rimangono: &6[money]'
       noMoney: '&cNon hai abbastanza soldi'
       worldGroups: '&cNon puoi inviare soldi se state in due mondi differenti'
       self: '&cNon puoi inviare soldi a te stesso!'
@@ -3162,7 +3163,7 @@ command:
       info: '&eImposta il punto di teletrasporto del comando spawn'
       args: (playerName) (true/false) (-g:[groupName]) (-rng:[range]) (-w:world,world_nether)
       explanation:
-      - More info on command usage at https://www.spigotmc.org/wiki/cmi-basic-utilities/
+      - More info on command usage at https://www.zrips.net/cmi/commands/spawn/
     info:
       feedback: '&6Spawn point impostato ([world],[x],[y],[z])!'
       group: ' &e([group])'

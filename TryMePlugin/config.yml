@@ -1,14 +1,14 @@
 Language: EN
 # Shows if there is available new version on login with tryme.versioncheck permission node
-ShowNewVersion: false
+ShowNewVersion: true
 Cheats:
   # Defines how long (in seconds) it should pass after question was given for correct answer to count
   # This can help to minimize cheater amount by creating auto answering bots
   minAnswerTime: 1.5
   # Do you want to count answer as correct and proceed with rewards if he answered too fast
-  CountAsCorrect: true
+  CountAsCorrect: false
   CommandsToPerform:
-  - cmi msg [playerName] You answered too quickly, using cheats?!
+  - msg [playerName] You answered too quickly, using cheats?!
 # Do you want Quiz to start with server
 EnableOnStartup: false
 # Delay in seconds after server start to start Quiz
@@ -17,50 +17,50 @@ EnableDelay: 60
 # This works only when EnableOnStartup is enabled
 CommandToPerform: tryme amode
 # Players needed to start scheduled quiz game
-MinPlayersToRun: 5
+MinPlayersToRun: 1
 # Do you want to stop manualy started quiz if there is not enough players
-StopManualMode: true
+StopManualMode: false
 # Where do you want to print out question: chatbox, actionbar
 QuestionPlace: actionbar
 # How long in seconds should we show question inside actionbar. Set this to 0 if you want to show question until someone answers or answer time ends
-ActionBarTimer: 0
+ActionBarTimer: 30
 Modes:
   # Question/answer mode
   QMODE:
     # Do you want to ignore spaces in answers
     IgnoreSpaces: true
     # Interval between questions/tasks in seconds
-    Interval: 700
+    Interval: 300
     # Time limit for answer/task
     # This should be be higher than interval between questions/tasks
-    TimeForAnswer: 400
+    TimeForAnswer: 300
   # Flash mode. First to type in showen word
   FMODE:
     IgnoreSpaces: true
-    Interval: 700
-    TimeForAnswer: 400
+    Interval: 300
+    TimeForAnswer: 300
     # Do you want to ignore capitalization when answering into flash mode question
     IgnoreCaps: false
   # Math mode. Solve equation
   MMODE:
     IgnoreSpaces: true
-    Interval: 700
-    TimeForAnswer: 400
+    Interval: 300
+    TimeForAnswer: 300
   # Decode mode. Figure out meaning of encoded word
   DMODE:
     IgnoreSpaces: true
-    Interval: 700
-    TimeForAnswer: 400
+    Interval: 300
+    TimeForAnswer: 300
   # Custom mode. Custom questions and commands
   CMODE:
     IgnoreSpaces: true
-    Interval: 700
-    TimeForAnswer: 400
+    Interval: 300
+    TimeForAnswer: 300
   # HangMan mode. Guess word by one letter at the time
   HMODE:
     IgnoreSpaces: true
-    Interval: 700
-    TimeForAnswer: 400
+    Interval: 300
+    TimeForAnswer: 300
     # Amount in percentage we want to hide of each word
     # This is only a percentage change in hiding each letter, which means that in some situations you could get all letters hidden and in some rare only one
     # At least two letters will be hidden
@@ -77,13 +77,13 @@ Modes:
   # Kill mode. Kill defined entity
   KMODE:
     IgnoreSpaces: true
-    Interval: 700
-    TimeForAnswer: 400
+    Interval: 300
+    TimeForAnswer: 300
   # All mode. Includes multiple game modes
   AMODE:
     IgnoreSpaces: true
-    Interval: 700
-    TimeForAnswer: 400
+    Interval: 300
+    TimeForAnswer: 300
     # Which game modes you want to include into amode
     IncludedModes:
       Qmode: true
@@ -98,16 +98,16 @@ Modes:
       Kmode: true
   # Eat mode. Consume specific item
   EMODE:
-    Interval: 700
-    TimeForAnswer: 400
+    Interval: 300
+    TimeForAnswer: 300
   # Brake mode. Brake specific blocks
   BMODE:
-    Interval: 700
-    TimeForAnswer: 400
+    Interval: 300
+    TimeForAnswer: 300
   # Place mode. Place specific blocks
   PMODE:
-    Interval: 700
-    TimeForAnswer: 400
+    Interval: 300
+    TimeForAnswer: 300
 # Do you want to show questions in console
 ShowInConsole: true
 # Broadcasts answer after answer time ends
@@ -125,7 +125,7 @@ UseCommandAnswer: false
 # Do you want to use random fireworks after correct answer
 UseFireworks: true
 # When this set to true, left time will be shown in action bar for each player
-ShowLeftTime: true
+ShowLeftTime: false
 # List of seconds when to show left time for players
 ShowLeftTimeList:
 - 10
@@ -173,7 +173,7 @@ Compatibility:
   # Do you want to ignore answers from McMMO party and admin chat
   mcMMO: true
   # Do you want to ignore answers from faction chat except public chat
-  Faction: false
+  Faction: true
   HeroChat:
     # Do you want to enable support for HeroChat chanels
     Use: false

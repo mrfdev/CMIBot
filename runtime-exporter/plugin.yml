@@ -1,0 +1,22 @@
+name: LookupRuntimeExporter
+version: 1.0.1
+main: dev.mrf.lookup.LookupRuntimeExporter
+api-version: '26.2'
+load: POSTWORLD
+softdepend:
+  - BottledExp
+  - CMI
+  - CMILib
+  - Jobs
+  - MobFarmManager
+  - Residence
+  - SelectionVisualizer
+  - TradeMe
+  - TryMe
+commands:
+  lookupexport:
+    description: Export initialized lookup metadata for the clean reference server.
+    permission: lookupexporter.run
+permissions:
+  lookupexporter.run:
+    default: op

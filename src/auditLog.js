@@ -8,6 +8,6 @@ export async function writeAuditLog(workspaceRoot, relativePath, payload) {
     await fs.appendFile(absolutePath, `${JSON.stringify(payload)}\n`, "utf8");
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.warn(`[CMIBot] Failed to write audit log: ${message}`);
+    console.warn(`[LookupBot] Failed to write audit log: ${message}`);
   }
 }

@@ -666,7 +666,7 @@ modify:
   commandAddInfo: '&7Įveskite naują komandą. Rašykite &bcancel &7, kad baigtumėte'
   commandAddInformationHover: "&b[playerName] can be used to get player name \n&eTo\
     \ include delay in commands: \n&edelay! 5 \n&eSpecialized commands are supported.\
-    \ More info at \n&ewww.spigotmc.org/wiki/cmi-specialized-commands/"
+    \ More info at \n&ehttps://www.zrips.net/cmi/commands/specialized/"
   commandEditInfo: '&7Spauskite, kad įklijuotumėte seną tekstą. Rašykite &bcancel
     &7, kad baigtumėte veiksmą. Rašykite &bremove &7, kad ištrintumėte eilutę'
   commandEditInfoHover: '&7Spauskite, kad įklijuotumėte seną tekstą'
@@ -990,7 +990,7 @@ command:
         pagal juostos pavadinimą
       - /cmi bossbarmsg all -sec:5 - skaičiuos 5 sekundes nuo 0 iki 5
       - /cmi bossbarmsg all -sec:-5 - skaičiuos 5 sekundes nuo 5 iki 0
-      - http://www.zrips.net/cmi/commands/bossbarmsg-handling/
+      - "https://www.zrips.net/cmi/commands/bossbarmsg-handling/"
   broadcast:
     help:
       info: '&7Išsiųsti svarbią žinutę žaidėjams'
@@ -3395,7 +3395,7 @@ command:
       info: '&7Nustatyti atsiradimo vietos tašką'
       args: (playerName) (true/false) (-g:[groupName]) (-rng:[range]) (-w:world,world_nether)
       explanation:
-      - More info on command usage at http://www.zrips.net/cmi/commands/spawn/
+      - More info on command usage at https://www.zrips.net/cmi/commands/spawn/
     info:
       feedback: '&bAtsiradimo vietos taškas nustatytas &7([world],[x],[y],[z])!'
       group: ' &7([group])'

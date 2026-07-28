@@ -701,7 +701,7 @@ modify:
   commandAddInfo: '&eInserisci un nuovo comando. Digira &6cancel &eper cancellare'
   commandAddInformationHover: "&e[playerName] serve per prendere il nome di un giocatore\
     \ \n&eda include delay nel comando: \n&edelay! 5 \n&eComando specificato supportato.\
-    \ Più info su \n&ewww.spigotmc.org/wiki/cmi-specialized-commands/"
+    \ Più info su \n&ehttps://www.zrips.net/cmi/commands/specialized/"
   commandEditInfo: '&eClicca per incollare il vecchio testo. Digita &6cancel &ePer
     cancellare l''azione. Digita &6remove &eper rimuovere la linea'
   listLimit: '&eList can''t be bigger than &6[amount] &eentries'

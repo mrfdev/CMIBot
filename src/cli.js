@@ -4,6 +4,7 @@ import { loadConfig } from "./config.js";
 import { formatLanguageCategoryStats } from "./langStats.js";
 import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
 import { resolveFileFilter } from "./security.js";
+import { createVersionService, formatLatestVersions } from "./versionCatalog.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 
 async function main() {
@@ -15,6 +16,15 @@ async function main() {
   const subcommand = rawSubcommand === "lang" ? "language" : rawSubcommand === "cmd" ? "command" : rawSubcommand === "perm" ? "permission" : rawSubcommand;
   const searchCache = createSearchCache(config);
   await searchCache.warm();
+
+  if (subcommand === "latest") {
+    const versionService = createVersionService(config);
+    const snapshot = await versionService.start();
+    const scope = args[0] === "all" || args[0] === "--all" ? "all" : "context";
+    console.log(formatLatestVersions(snapshot, plugin, scope));
+    versionService.stop();
+    return;
+  }
 
   if (subcommand === "stats") {
     const summary = searchCache.getPluginSummary(plugin.id) ?? {
@@ -79,7 +89,7 @@ async function main() {
   if (!subcommand || !plugin.profiles[subcommand]) {
     const pluginList = Object.keys(config.plugins).join("|");
     console.error(
-      `Usage: npm run lookup -- [${pluginList}] <config|language|lang|placeholder|material|command|cmd|permission|perm|faq|tabcomplete|langstats|stats> [--mode exact|whole|broad] [--file Chat.yml] [--related] [--summary] <keyword>`,
+      `Usage: npm run lookup -- [${pluginList}] <config|language|lang|placeholder|material|command|cmd|permission|perm|faq|tabcomplete|langstats|stats|latest> [--mode exact|whole|broad] [--file Chat.yml] [--related] [--summary] <keyword>`,
     );
     process.exitCode = 1;
     return;

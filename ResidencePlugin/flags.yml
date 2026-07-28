@@ -73,6 +73,9 @@ Global:
     # Allows or denys custom animal spawns
     canimals: true
     # Applies to: Both
+    # Allows or denys players to use cartography tables
+    cartography: true
+    # Applies to: Both
     # Allows to join residence chat room
     chat: true
     # Applies to: Both
@@ -97,11 +100,11 @@ Global:
     # Allows to modify copper blocks
     copper: true
     # Applies to: Residence
+    # Allow or deny all copper blocks oxidation
+    copperoxidation: true
+    # Applies to: Residence
     # Allow or deny all corals from drying up
     coraldryup: true
-    # Applies to: Residence
-    # Gives table, enchant, brew flags
-    craft: true
     # Applies to: Residence
     # Allow or deny creeper explosions
     creeper: true
@@ -162,6 +165,9 @@ Global:
     # Applies to: Residence
     # Allows or denys fire spread
     firespread: true
+    # Applies to: Both
+    # Allows or denys players to use fletching tables
+    fletching: true
     # Applies to: Residence
     # Allows or denys liquid flow
     flow: true
@@ -186,6 +192,9 @@ Global:
     # Applies to: Residence
     # Allow or deny golem open chest
     golemopenchest: true
+    # Applies to: Both
+    # Allows or denys players to use grindstones
+    grindstone: true
     # Applies to: Residence
     # Allows or denys plant growing
     grow: true
@@ -246,6 +255,9 @@ Global:
     # Applies to: Both
     # Allows or denys players to use levers
     lever: true
+    # Applies to: Both
+    # Allows or denys players to use looms
+    loom: true
     # Applies to: Residence
     # Prevents mob droping exp on death
     mobexpdrop: true
@@ -304,6 +316,9 @@ Global:
     # Allow or deny pvp in the residence
     pvp: false
     # Applies to: Residence
+    # Allow or deny vanilla raid trigger in the residence
+    raid: true
+    # Applies to: Residence
     # Sets weather to rainny in residence
     rain: true
     # Applies to: Residence
@@ -330,6 +345,9 @@ Global:
     # Applies to: Residence
     # Prevents skulk catalyst spreading
     skulk: true
+    # Applies to: Both
+    # Allows or denys players to use smithing tables
+    smithing: true
     # Applies to: Residence
     # Allows or denys spawner or spawn egg monster spawns
     smonsters: true
@@ -342,6 +360,9 @@ Global:
     # Applies to: Residence
     # Prevents block spreading
     spread: true
+    # Applies to: Both
+    # Allows or denys players to use stonecutters
+    stonecutter: true
     # Applies to: Both
     # Allow a player to make subzones in the residence
     subzone: true
@@ -417,6 +438,7 @@ Global:
     button: OAK_BUTTON
     cake: CAKE
     canimals: SHEEP_SPAWN_EGG
+    cartography: CARTOGRAPHY_TABLE
     chat: WRITABLE_BOOK
     chorustp: CHORUS_FRUIT
     cmonsters: CREEPER_SPAWN_EGG
@@ -425,8 +447,8 @@ Global:
     container: CHEST_MINECART
     coords: COMPASS
     copper: COPPER_BLOCK
+    copperoxidation: OXIDIZED_COPPER
     coraldryup: FIRE_CORAL
-    craft: STONE
     creeper: CREEPER_SPAWN_EGG
     damage: GOLDEN_SWORD
     day: DANDELION
@@ -447,6 +469,7 @@ Global:
     feed: COOKED_BEEF
     fireball: FIRE_CHARGE
     firespread: BLAZE_POWDER
+    fletching: FLETCHING_TABLE
     flow: LILY_PAD
     flowerpot: FLOWER_POT
     flowinprotection: OAK_BOAT
@@ -455,6 +478,7 @@ Global:
     glow: SEA_LANTERN
     goathorn: GOAT_HORN
     golemopenchest: COPPER_GOLEM_STATUE
+    grindstone: GRINDSTONE
     grow: WHEAT_SEEDS
     harvest: SWEET_BERRIES
     healing: POTION
@@ -475,6 +499,7 @@ Global:
     lavaflow: LAVA_BUCKET
     leash: LEAD
     lever: LEVER
+    loom: LOOM
     mobexpdrop: MELON_SEEDS
     mobitemdrop: COCOA_BEANS
     mobkilling: ROTTEN_FLESH
@@ -495,6 +520,7 @@ Global:
     place: SEA_LANTERN
     pressure: LIGHT_WEIGHTED_PRESSURE_PLATE
     pvp: WOODEN_SWORD
+    raid: CROSSBOW
     rain: BLUE_ORCHID
     respawn: SUNFLOWER
     riding: SADDLE
@@ -502,10 +528,12 @@ Global:
     shear: SHEARS
     shoot: ARROW
     shop: ITEM_FRAME
+    smithing: SMITHING_TABLE
     smonsters: ZOMBIE_SPAWN_EGG
     snowball: SNOWBALL
     snowtrail: SNOW
     spread: SNOWBALL
+    stonecutter: STONECUTTER
     subzone: GRAY_STAINED_GLASS_PANE
     sun: SUNFLOWER
     table: CRAFTING_TABLE
@@ -599,7 +627,13 @@ Global:
     - pressure
     crafting:
     - brew
+    - cartography
     - enchant
+    - fletching
+    - grindstone
+    - loom
+    - smithing
+    - stonecutter
     - table
     # This group of flags will be used for padd sub command
     trusted:

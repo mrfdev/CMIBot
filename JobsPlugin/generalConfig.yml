@@ -24,7 +24,7 @@ mysql:
   characterEncoding: utf8
   encoding: UTF-8
 # How often in minutes you want it to save. This must be a non-zero number
-save-period: 8
+save-period: 10
 # Should player data be saved on disconnect?
 # Player data is always periodically auto-saved and autosaved during a clean shutdown.
 # Only enable this if you have a multi-server setup, or have a really good reason for enabling this.
@@ -44,7 +44,7 @@ MultiServerCompatability: false
 Optimizations:
   # When set to true staff will be informed about new Jobs plugin version
   # You need to have jobs.versioncheck permission node
-  NewVersion: false
+  NewVersion: true
   # Can be used to check if your database contains any duplicated user entries.
   InformDuplicates: false
   DecimalPlaces:
@@ -65,7 +65,7 @@ Optimizations:
       # When set to true, data base will be cleaned on each startup from user data to avoid having old player data
       Use: false
       # Any one who not played for defined amount of days, will be removed from data base
-      Days: 900
+      Days: 60
   AutoJobJoin:
     # Use or not auto join jobs feature
     # If you are not using auto join feature, keep it disabled
@@ -84,21 +84,13 @@ Optimizations:
   DisabledWorlds:
     # By setting this to true, Jobs plugin will be disabled in given worlds
     # Only commands can be performed from disabled worlds with jobs.disabledworld.commands permission node
-    Use: true
+    Use: false
     # If true, will changes the list behavior, so if a world is added to list
     # the payments will only works in the given worlds.
-    UseAsWhiteList: true
+    UseAsWhiteList: false
     List:
-    - general
-    - end
-    - nether
-    - wild
-    - oneblock
-    - skyblock
-    - cave
-    - acid
-    - skygrid
-    - spawn
+    - Example
+    - Worlds
   Explore:
     # Do you want to use new exploration tracking method. Only for 1.16+ servers
     NewMethod: true
@@ -149,7 +141,7 @@ JobExpirationTime: 0
 # Maximum number of jobs a player can join.
 # Use -1 to disable limitations
 # Keep in mind that jobs.max.[amount] will bypass this setting
-max-jobs: 4
+max-jobs: 3
 # Disabling the payment if the user reached the maximum level of a job.
 disable-payment-if-max-level-reached: false
 # Hide jobs from player if they lack the permission to join the job
@@ -162,17 +154,17 @@ prevent-shop-item-enchanting: true
 jobs-shop-enabled: true
 # Option to allow payment to be made when killing mobs from a spawner.
 # Use jobs.nearspawner.[amount] to define multiplayer. Example jobs.nearspawner.-0.5 will pay half of payment, jobs.nearspawner.-1 will not pay at all
-enable-pay-near-spawner: false
+enable-pay-near-spawner: true
 # Option to allow payment to be made in creative mode. This ignoring when a group has 'jobs.paycreative' permission.
-enable-pay-creative: false
+enable-pay-creative: true
 # Option to allow payment to be made for exploring when player flies
-enable-pay-for-exploring-when-flying: false
+enable-pay-for-exploring-when-flying: true
 # Option to allow payment to be made for exploring when player gliding.
-enable-pay-for-exploring-when-gliding: false
+enable-pay-for-exploring-when-gliding: true
 # Option to allow reset exploring data.
 enable-reset-exploring-data: false
 # Disables the payment when the player riding on an entity.
-disablePaymentIfRiding: true
+disablePaymentIfRiding: false
 # Adds the Jobs xp received to the player's Minecraft XP bar
 add-xp-player: false
 # Do the jobs boost ignore the boosted items usage in off hand?
@@ -186,7 +178,7 @@ enable-boosted-armor-items: true
 # Tool and weapon items will be ignored if those are equiped in players armor slots
 # None tool or weapon items will be allowed in players head slot
 boosted-items-slot-specific: true
-# Extra boost values for nearSpawner and petPay will be multiplied by sum of other boost values
+# Extra boost values for nearSpawner, petPay, and mcMMO will be multiplied by sum of other boost values
 # When set to true and for example nearSpawner set to -0.98 aka 2% of original payment with other bonuses which should double payment will result in you getting 4% instead of corrent 102% payment
 # If set to false all bonus are sumed to one
 multiply-boosted-extra-values: false
@@ -199,7 +191,7 @@ highest-permission-boost: false
 add-permission-boost: false
 # When enabled we will try to pay player for blocks above broken ones. This only applies to sugarcane, bamboo, kelp and weeping_vines
 pay-for-above: false
-# Allows to pay for stacked entities for each one. Requires StackMob or WildStacker.
+# Allows to pay for stacked entities for each one. Requires StackMob, WildStacker or RoseStacker.
 pay-for-stacked-entities: false
 # Allows, when losing maximum durability of item then it does not pay the player until it is repaired.
 # E.g. the player wants to enchant a item with enchanting table and the item has durability loss then not paying.
@@ -224,7 +216,7 @@ modify-chat:
 UseCustomNames: true
 # Changes how often, in seconds, players are paid out. Default is 5 seconds.
 # Setting this too low may cause tick lag. Increase this to improve economy performance (at the cost of delays in payment)
-economy-batch-delay: 18
+economy-batch-delay: 5
 # Enable async economy calls.
 # Disable this if you have issues with payments or your plugin is not thread safe.
 economy-async: true
@@ -409,24 +401,24 @@ ExploitProtections:
   Furnaces:
     # When enabled, players interacted furnaces will be saved into a file and will be reassigned after restart to keep giving out money
     # Players will no longer need to click on furnace to get paid from it after server restart
-    Reassign: false
+    Reassign: true
     # Defines max available furnaces each player can have to get paid from
     # This can be overridden with jobs.maxfurnaces.[amount] permission node
-    MaxDefaultAvailable: 1
+    MaxDefaultAvailable: 20
   BlastFurnaces:
-    Reassign: false
-    MaxDefaultAvailable: 1
+    Reassign: true
+    MaxDefaultAvailable: 15
   Smokers:
-    Reassign: false
-    MaxDefaultAvailable: 1
+    Reassign: true
+    MaxDefaultAvailable: 15
   BrewingStands:
     # When enabled, players interacted brewing stands will be saved into file and will be reassigned after restart to keep giving out money
     # Players will no longer need to click on brewing stand to get paid from it after server restart
-    Reassign: false
+    Reassign: true
     # Defines max available brewing stands each player can have to get paid from
     # Set to 0 if you want to disable this limitation
     # This can be overridden with jobs.maxbrewingstands.[amount] permission node
-    MaxDefaultAvailable: 1
+    MaxDefaultAvailable: 20
   General:
     PlaceAndBreak:
       # Enable blocks protection, like ore, from exploiting by placing and destroying same block again and again.
@@ -454,7 +446,7 @@ ExploitProtections:
           Use: true
           # Time in seconds. This can only be positive number and no higher than 900
           # If higher timers are needed then it can be defined in restrictedBlocks.yml file for each specific block
-          Timer: 18
+          Timer: 3
         Break:
           Use: true
           # Time in seconds. This can only be positive number and no higher than 60
@@ -487,7 +479,7 @@ ExploitProtections:
   # MythicMobs plugin support
   # Disable if you having issues with it or using old version
   MythicMobs:
-    enabled: false
+    enabled: true
   # CustomFishing plugin support (Optional)
   # If setting is enabled, Fish and PyroFishingPro actions are disabled and only CustomFishing action is enabled.
   # Leave it disabled if you're not experiencing issues because of CustomFishing Plugin.
@@ -496,11 +488,11 @@ ExploitProtections:
   Smelt:
     # Prevent payments when hoppers moving items into furnace
     # Player will not get paid, but items will be smelted
-    PreventHopperFillUps: true
+    PreventHopperFillUps: false
   Brew:
     PreventBrewingStandFillUps: false
   # Do you want to show informational message when payments from blocks gets disabled due to hopper transfers
-  informOnPaymentDisable: false
+  informOnPaymentDisable: true
 # Breeder finder.
 # If you are not using breeding payment, you can disable this to save little resources. Really little.
 use-breeder-finder: true
@@ -508,28 +500,28 @@ use-breeder-finder: true
 # Players can leave job and return later with some level loss during that
 # You can fix players level if his job level is at max level
 old-job:
-  level-loss-percentage: 20
+  level-loss-percentage: 30
   fix-at-max-level: true
   # Percentage to loose when leaving job at max level
   # Only works when fix-at-max-level is set to false
-  level-loss-from-max-level: 20
+  level-loss-from-max-level: 30
 ChatText:
   Messages:
     # States of chat text messages when payment is issued
     # Valid options: Off, Batched
     # This will be used if player disables action bar payment messages
-    DefaultState: Batched
+    DefaultState: 'Off'
 ActionBars:
   # Enables ActionBar messages
   Enabled: true
   Messages:
     # States of action bar messages
     # Valid options: Off, Rapid, Batched
-    DefaultState: Batched
+    DefaultState: Rapid
     # Time in seconds action bar will remain visible if rapid state is enabled
     # This time is used to define for how long we will accumulate payments to be shown in action bar
     # If no payments are being issued in defined time then it will reset to 0 and remain hidden
-    KeepFor: 2
+    KeepFor: 5
 BossBar:
   # Enables BossBar feature
   # Works only from 1.9 mc version
@@ -541,31 +533,31 @@ BossBar:
   # Valid options: 1, 6, 10, 12, 20
   SegmentCount: 1
   # How long in sec to show BossBar for player
-  Timer: 12
+  Timer: 5
 # You can enable/disable message shown for players in action bar
 ShowActionBars:
   OnTitleChange: true
   OnLevelChange: true
-  OnEmptyServerAccount: false
+  OnEmptyServerAccount: true
 # Chat messages
 # You can enable/disable message shown for players in chat
 ShowChatMessage:
   OnTitleChange: true
   OnLevelChange: true
-  OnEmptyServerAccount: false
+  OnEmptyServerAccount: true
 # Extra sounds on some events
 # All sounds can be found in https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html
 Sounds:
   LevelUp:
     use: true
-    sound: ENTITY_PLAYER_LEVELUP
-    volume: 1
-    pitch: 3
+    sound: ENTITY.PLAYER.LEVELUP
+    volume: 1.0
+    pitch: 3.0
   TitleChange:
     use: true
-    sound: ENTITY_PLAYER_LEVELUP
-    volume: 1
-    pitch: 3
+    sound: ENTITY.PLAYER.LEVELUP
+    volume: 1.0
+    pitch: 3.0
 # Extra firework shooting in some events
 Fireworks:
   LevelUp:
@@ -588,14 +580,14 @@ Fireworks:
     ShootTime: 20
 # You can disable this to save SMALL amount of server resources
 Signs:
-  Enable: false
+  Enable: true
   Colors:
     ColorizeJobName: true
   # This is update for same job signs, to avoid huge lag if you have bunch of same type signs. Keep it from 1 to as many sec you want
   InfoUpdateInterval: 5
 Scoreboard:
   # This will enable to show top list in scoreboard instead of chat
-  ShowToplist: false
+  ShowToplist: true
   # For how long to show scoreboard
   interval: 10
 JobsBrowse:
@@ -625,6 +617,8 @@ JobsGUI:
     - DIAMOND_SWORD
     MMKILL:
     - WOODEN_SWORD
+    FORCEKILL:
+    - IRON_SWORD
     FISH:
     - FISHING_ROD
     PYROFISHINGPRO:
@@ -671,6 +665,8 @@ JobsGUI:
     - HONEYCOMB
     SCRAPE:
     - WOODEN_AXE
+    EVENMOREFISH:
+    - TROPICAL_FISH
   # Do you want to show chat information when performing /jobs browse command?
   ShowChatBrowse: true
   # With true left mouse button will join job and right will show more info.
@@ -706,7 +702,7 @@ Commands:
   # Default - behaves like before and will open jobs help page with list of commands player can access
   # Browse - will open jobs browse GUI where player can check existing jobs and their actions
   # Last option is to define command you want to perform, use [playerName] variable to replace it with players name who performed it. Multiple commands can be provided too. Commands will be performed from console.
-  Jobs: Browse
+  Jobs: Default
   PageRow:
     JobsTop:
       # Defines amount of players to be shown in one page for /jobs top & /jobs gtop
@@ -714,6 +710,8 @@ Commands:
       # List of player names who should be excluded from /jobs top & /jobs gtop
       HiddenPlayers:
       - Zrips
+      # Whether to include archived level/experience in /jobs top & /jobs gtop
+      IncludeArchivedStats: false
     Placeholders:
       # Defines amount of placeholders to be shown in one page for /jobs placeholders
       AmountToShow: 10

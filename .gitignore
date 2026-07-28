@@ -5,9 +5,15 @@ node_modules/
 !.env.example
 npm-debug.log*
 logs/
+servers/
 .DS_Store
 CMI/cmi.sqlite.db
 CMIPlugin/CMI/cmi.sqlite.db
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
 *.sqlite-shm
 *.sqlite-wal
 security.key

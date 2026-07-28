@@ -1,0 +1,20 @@
+# Shows current question
+%tryme_current%
+
+# Shows remaining time
+%tryme_remainingtime%
+
+# Shows toggle state
+%tryme_toggle%
+
+# Shows answers by mode
+%tryme_user_[mode]_answers%
+
+# Shows average time by mode
+%tryme_user_[mode]_average%
+
+# Shows best time by mode
+%tryme_user_[mode]_best%
+
+# Shows total answers
+%tryme_user_answers%

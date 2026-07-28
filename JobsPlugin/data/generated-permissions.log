@@ -1,0 +1,133 @@
+jobs.* - Grants access to all Jobs commands
+jobs.admin - Grants permissions as an admin; Default: false
+jobs.area.add - Grants access to the area add command; Default: op
+jobs.area.remove - Grants access to the area remove command; Default: op
+jobs.autojoin.* - Default: false
+jobs.boost.all.all.[amount]
+jobs.boost.all.exp.[amount]
+jobs.boost.all.money.[amount]
+jobs.boost.all.points.[amount]
+jobs.boost.brewer.all.[amount]
+jobs.boost.brewer.exp.[amount]
+jobs.boost.brewer.money.[amount]
+jobs.boost.brewer.points.[amount]
+jobs.boost.builder.all.[amount]
+jobs.boost.builder.exp.[amount]
+jobs.boost.builder.money.[amount]
+jobs.boost.builder.points.[amount]
+jobs.boost.crafter.all.[amount]
+jobs.boost.crafter.exp.[amount]
+jobs.boost.crafter.money.[amount]
+jobs.boost.crafter.points.[amount]
+jobs.boost.digger.all.[amount]
+jobs.boost.digger.exp.[amount]
+jobs.boost.digger.money.[amount]
+jobs.boost.digger.points.[amount]
+jobs.boost.enchanter.all.[amount]
+jobs.boost.enchanter.exp.[amount]
+jobs.boost.enchanter.money.[amount]
+jobs.boost.enchanter.points.[amount]
+jobs.boost.explorer.all.[amount]
+jobs.boost.explorer.exp.[amount]
+jobs.boost.explorer.money.[amount]
+jobs.boost.explorer.points.[amount]
+jobs.boost.farmer.all.[amount]
+jobs.boost.farmer.exp.[amount]
+jobs.boost.farmer.money.[amount]
+jobs.boost.farmer.points.[amount]
+jobs.boost.fisherman.all.[amount]
+jobs.boost.fisherman.exp.[amount]
+jobs.boost.fisherman.money.[amount]
+jobs.boost.fisherman.points.[amount]
+jobs.boost.hunter.all.[amount]
+jobs.boost.hunter.exp.[amount]
+jobs.boost.hunter.money.[amount]
+jobs.boost.hunter.points.[amount]
+jobs.boost.miner.all.[amount]
+jobs.boost.miner.exp.[amount]
+jobs.boost.miner.money.[amount]
+jobs.boost.miner.points.[amount]
+jobs.boost.weaponsmith.all.[amount]
+jobs.boost.weaponsmith.exp.[amount]
+jobs.boost.weaponsmith.money.[amount]
+jobs.boost.weaponsmith.points.[amount]
+jobs.boost.woodcutter.all.[amount]
+jobs.boost.woodcutter.exp.[amount]
+jobs.boost.woodcutter.money.[amount]
+jobs.boost.woodcutter.points.[amount]
+jobs.command.* - Grants player access to all commands; Default: false
+jobs.command.admin.* - Grants player access to all commands; Default: false
+jobs.command.admin.archive - Grants access to the archive command on other players; Default: true
+jobs.command.admin.clearownership - Grants access to the ownedblocks command; Default: op
+jobs.command.admin.ownedblocks - Grants access to the ownedblocks command; Default: op
+jobs.command.admin.stats - Grants access to the stats command on other players; Default: true
+jobs.command.archive - Grants access to the archive command; Default: true
+jobs.command.blockinfo - Grants access to the blockinfo command; Default: true
+jobs.command.bonus - Grants access to the bonus command; Default: true
+jobs.command.browse - Grants access to the browse command; Default: true
+jobs.command.clearownership - Grants access to the clearownership command; Default: true
+jobs.command.deluser - Grants access to the deluser command; Default: op
+jobs.command.demote - Grants access to the demote command; Default: op
+jobs.command.edititembonus - Grants access to the edititembonus command; Default: op
+jobs.command.employ - Grants access to the employ command; Default: op
+jobs.command.exp - Grants access to the exp command; Default: op
+jobs.command.expboost - Grants access to the expboost command; Default: op
+jobs.command.fire - Grants access to the fire command; Default: op
+jobs.command.fireall - Grants access to the fireall command; Default: op
+jobs.command.fixnames - Grants access to the fixnames command; Default: true
+jobs.command.give - Grants access to the give command; Default: op
+jobs.command.glog - Grants access to the glog command; Default: op
+jobs.command.grantxp - Grants access to the grantxp command; Default: op
+jobs.command.gtop - Grants access to the gtop command; Default: true
+jobs.command.info - Grants access to the info command; Default: true
+jobs.command.itembonus - Grants access to the itembonus command; Default: true
+jobs.command.iteminfo - Grants access to the iteminfo command; Default: true
+jobs.command.join - Grants access to the join command; Default: true
+jobs.command.leave - Grants access to the leave command; Default: true
+jobs.command.leaveall - Grants access to the leaveall command; Default: true
+jobs.command.level - Grants access to the level command; Default: op
+jobs.command.limit - Grants access to the limit command; Default: true
+jobs.command.log - Grants access to the log command; Default: true
+jobs.command.log.others - Grants access to the log command; Default: op
+jobs.command.moneyboost - Grants access to the moneyboost command; Default: op
+jobs.command.ownedblocks - Grants access to the ownedblocks command; Default: true
+jobs.command.playerinfo - Grants access to the playerinfo command; Default: op
+jobs.command.points - Grants access to the points command; Default: true
+jobs.command.promote - Grants access to the promote command; Default: op
+jobs.command.quests - Grants access to the quests command; Default: true
+jobs.command.reload - Grants access to the reload command; Default: op
+jobs.command.removexp - Grants access to the removexp command; Default: op
+jobs.command.schedule - Grants access to the schedule command; Default: op
+jobs.command.shop - Grants access to the shop command; Default: true
+jobs.command.signupdate - Grants access to the reload command; Default: op
+jobs.command.skipquest - Grants access to the skipquest command; Default: true
+jobs.command.stats - Grants access to the stats command; Default: true
+jobs.command.toggle - Grants access to the toggle command; Default: true
+jobs.command.top - Grants access to the top command; Default: true
+jobs.command.transfer - Grants access to the transfer command; Default: op
+jobs.maxblastfurnaces.[amount]
+jobs.maxbrewingstands.[amount]
+jobs.maxfurnaces.[amount]
+jobs.maxquest.all.[amount]
+jobs.maxquest.brewer.[amount]
+jobs.maxquest.builder.[amount]
+jobs.maxquest.crafter.[amount]
+jobs.maxquest.digger.[amount]
+jobs.maxquest.enchanter.[amount]
+jobs.maxquest.explorer.[amount]
+jobs.maxquest.farmer.[amount]
+jobs.maxquest.fisherman.[amount]
+jobs.maxquest.hunter.[amount]
+jobs.maxquest.miner.[amount]
+jobs.maxquest.weaponsmith.[amount]
+jobs.maxquest.woodcutter.[amount]
+jobs.maxsmokers.[amount]
+jobs.nearspawner.[amount]
+jobs.noownershiptakeover - Will not take over existing block ownership; Default: op
+jobs.paycreative
+jobs.petpay.[amount]
+jobs.use - Grants ability to use this plugin; Default: true
+jobs.world.%WORLDNAME%
+jobs.world.world
+jobs.world.world_nether
+jobs.world.world_the_end

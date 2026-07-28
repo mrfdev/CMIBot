@@ -548,6 +548,58 @@ function extractEntriesByParser(parserType, fileText, relativePath) {
   }
 }
 
+function isGeneratedIndexPath(relativePath) {
+  return /^generated-(commands|permissions|placeholders)\.log$/i.test(
+    path.posix.basename(toPosixPath(relativePath)),
+  );
+}
+
+function getGeneratedParserType(relativePath) {
+  const baseName = path.posix.basename(toPosixPath(relativePath)).toLowerCase();
+  if (baseName === "generated-commands.log") {
+    return "delimited";
+  }
+  if (baseName === "generated-permissions.log") {
+    return "permissionList";
+  }
+  if (baseName === "generated-placeholders.log") {
+    return "commentBlocks";
+  }
+  return null;
+}
+
+function normalizeVariableSegments(value) {
+  return value
+    .toLowerCase()
+    .replace(/\[[^\]]+\]/g, "{arg}")
+    .replace(/\$\d+/g, "{arg}")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function canonicalEntryKey(profileName, entry) {
+  const rawKey = entry.yamlPath || entry.key || "";
+  if (!rawKey) {
+    return "";
+  }
+
+  if (profileName === "command") {
+    const tokens = normalizeVariableSegments(rawKey).split(" ").filter(Boolean);
+    const commandTokens = tokens.filter((token, index) => index === 0 || !token.startsWith("[") && !token.startsWith("("));
+    return commandTokens.slice(0, 2).join(" ");
+  }
+
+  if (profileName === "placeholder") {
+    return normalizeVariableSegments(rawKey.replace(/^%|%$/g, ""));
+  }
+
+  if (profileName === "permission") {
+    return normalizeVariableSegments(rawKey);
+  }
+
+  return normalizeVariableSegments(rawKey);
+}
+
 export async function loadEntriesFromLogProfile(profile, workspaceRoot) {
   const relativePaths = await fg(profile.include, {
     cwd: workspaceRoot,
@@ -558,11 +610,36 @@ export async function loadEntriesFromLogProfile(profile, workspaceRoot) {
   });
 
   const entries = [];
+  const curatedKeys = new Set();
+  const generatedKeys = new Set();
+  const sortedPaths = relativePaths.sort((left, right) => {
+    const generatedDifference = Number(isGeneratedIndexPath(left)) - Number(isGeneratedIndexPath(right));
+    return generatedDifference || left.localeCompare(right);
+  });
 
-  for (const relativePath of relativePaths.sort()) {
+  for (const relativePath of sortedPaths) {
     const absolutePath = path.join(workspaceRoot, relativePath);
     const fileText = await fs.readFile(absolutePath, "utf8");
-    const parsedEntries = extractEntriesByParser(profile.parserType ?? "commentBlocks", fileText, relativePath);
+    const isGenerated = isGeneratedIndexPath(relativePath);
+    const parserType = getGeneratedParserType(relativePath) ?? profile.parserType ?? "commentBlocks";
+    let parsedEntries = extractEntriesByParser(parserType, fileText, relativePath);
+    if (isGenerated) {
+      parsedEntries = parsedEntries.filter((entry) => {
+        const key = canonicalEntryKey(profile.name, entry);
+        if (!key || curatedKeys.has(key) || generatedKeys.has(key)) {
+          return false;
+        }
+        generatedKeys.add(key);
+        return true;
+      });
+    } else {
+      for (const entry of parsedEntries) {
+        const key = canonicalEntryKey(profile.name, entry);
+        if (key) {
+          curatedKeys.add(key);
+        }
+      }
+    }
     if (profile.codeLanguage) {
       entries.push(...parsedEntries.map((entry) => ({ ...entry, codeLanguage: profile.codeLanguage })));
     } else {

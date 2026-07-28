@@ -1,0 +1,647 @@
+# Number of afk players
+%cmi_afk_count%
+
+# Clean name of player from a provided place in a list
+%cmi_baltop_cname_[1-10]%
+
+# Balance of player from a provided place in a list
+%cmi_baltop_money_[1-10]%
+
+# Name of player from a provided place in a list
+%cmi_baltop_name_[1-10]%
+
+# Balance of player from a provided place in a list
+%cmi_baltop_shortmoney_[1-10]%
+
+# Current amount of players in defined server
+%cmi_bungee_current_[serverName]%
+
+# Motd of defined server
+%cmi_bungee_motd_[serverName]%
+
+# True/false of servers online status
+%cmi_bungee_onlinestatus_[serverName]%
+
+# Total allowed amount of players in defined server
+%cmi_bungee_total_[serverName]%
+
+# Range for chat messages
+%cmi_chat_range%
+
+# Provides reason for global chat mute
+%cmi_chatmute_reason%
+
+# Provides left time for global chat mute
+%cmi_chatmute_time%
+
+# Colorizes text, replace spaces with _, underscore can be added by doubling it like __
+%cmi_color_[text]%
+
+# Result of provided mathematical equation with fraction
+%cmi_equation_[equation]%
+
+# Result of provided mathematical equation without fraction
+%cmi_equationint_[equation]%
+
+# Amount of items in main hand
+%cmi_iteminhand_amount%
+
+# Items in main hand custom model data
+%cmi_iteminhand_custommodeldata%
+
+# Items in main hand display name or formatted material name
+%cmi_iteminhand_displayname%
+
+# Items in main hand left durability
+%cmi_iteminhand_durability%
+
+# Items in main hand data value. As of 1.13+ returns 0
+%cmi_iteminhand_itemdata%
+
+# Items in main hand max durability
+%cmi_iteminhand_maxdurability%
+
+# Items in main hand formatted material name
+%cmi_iteminhand_realname%
+
+# Items in main hand material name
+%cmi_iteminhand_type%
+
+# Returns worth value of one item from main hand
+%cmi_iteminhand_worth_one%
+
+# Returns total worth value of items in main hand
+%cmi_iteminhand_worth%
+
+# Returns worth value of one item from main hand without formatting
+%cmi_iteminhand_worthc_one%
+
+# Returns total worth value of items in main hand without formatting
+%cmi_iteminhand_worthc%
+
+# Reason of particular jail cell
+%cmi_jail_reason_[jailName]_[cellId]%
+
+# Time of a jail cell
+%cmi_jail_time_[jailName]_[cellId]%
+
+# Name of user who is jailed in particular cell
+%cmi_jail_username_[jailName]_[cellId]%
+
+# Last random number assigned to player from random placeholder
+%cmi_lastrandom_[playerName]%
+
+# Returns last random online player name
+%cmi_lastrandom_player_name%
+
+# Maintenance message
+%cmi_maintenance_message%
+
+# Maintenance state
+%cmi_maintenance_state%
+
+# Items in main hand formatted material name
+%cmi_material_realname_$1%
+
+# Formatted list of online players by using their display names if possible
+%cmi_onlineplayers_displaynames%
+
+# Formatted list of online players
+%cmi_onlineplayers_names%
+
+# Indication if player is banned
+%cmi_p_[playerName]_banned%
+
+# Identification if player is cuffed
+%cmi_p_[playerName]_cuffed%
+
+# Formatted players display name
+%cmi_p_[playerName]_display_name%
+
+# Identification if player has god mode enabled
+%cmi_p_[playerName]_god%
+
+# Jail cell id user currently is in. Example: 1
+%cmi_p_[playerName]_jailcell%
+
+# True or false if player is jailed
+%cmi_p_[playerName]_jailed%
+
+# Jailer name
+%cmi_p_[playerName]_jailedby%
+
+# Jail name user currently is in. Example: Prison
+%cmi_p_[playerName]_jailname%
+
+# Jailed reason
+%cmi_p_[playerName]_jailreason%
+
+# Left jail time. Example: 1hour 5minutes
+%cmi_p_[playerName]_jailtime%
+
+# Identification if player is muted
+%cmi_p_[playerName]_muted%
+
+# Original players name
+%cmi_p_[playerName]_name%
+
+# Returns player online status
+%cmi_p_[playerName]_online%
+
+# Current players biome name
+%cmi_player_biome%
+
+# Current players world name
+%cmi_player_world%
+
+# Current players x position
+%cmi_player_x%
+
+# Current players y position
+%cmi_player_y%
+
+# Current players z position
+%cmi_player_z%
+
+# Clean name of player from a provided place in a list
+%cmi_playtimetop_cname_[1-10]%
+
+# Name of player from a provided place in a list
+%cmi_playtimetop_name_[1-10]%
+
+# Playtime of player from a provided place in a list
+%cmi_playtimetop_time_[1-10]%
+
+# Random number from defined range
+%cmi_random_[from]_[to]%
+
+# Returns random online player name
+%cmi_random_player_name%
+
+# Left time until scheduler triggers last command
+%cmi_schedule_endat_[schedName]%
+
+# Left time until next schedule trigger
+%cmi_schedule_nextin_[schedName]%
+
+# Max allowed players
+%cmi_server_max_players%
+
+# Online amount in particular world. Don't use _ in world name
+%cmi_server_online_[worldName]%
+
+# Online player count
+%cmi_server_online%
+
+# Time of server by defined format and timezone
+%cmi_server_time_[timeFormat]_[timeZone]%
+
+# Local server time
+%cmi_server_time_[timeFormat]%
+
+# Unique player joins to the server
+%cmi_server_unique_joins%
+
+# How long server is running in seconds
+%cmi_server_uptime_seconds%
+
+# How long server is running
+%cmi_server_uptime%
+
+# Recorder user count
+%cmi_server_users%
+
+# Online vanished player count
+%cmi_server_vanished%
+
+# List of all existing worlds on server in a list format
+%cmi_server_worlds%
+
+# Removes color codes from text
+%cmi_stripcolor_[text]%
+
+# Tps from defined range
+%cmi_tps_[range]_colored%
+
+# Tps from defined range
+%cmi_tps_[range]%
+
+# Ttps from last 1 second
+%cmi_tps_1%
+
+# Tps from last 5 minutes
+%cmi_tps_300%
+
+# Tps from last 60 seconds
+%cmi_tps_60%
+
+# Time for how long player is in afk mode
+%cmi_user_afk_for%
+
+# Time when player enters auto afk mode
+%cmi_user_afk_in%
+
+# Afk message if present
+%cmi_user_afk_msg%
+
+# Afk symbol
+%cmi_user_afk_symbol%
+
+# Afk state
+%cmi_user_afk%
+
+# Players back location
+%cmi_user_backloc%
+
+# Formatted users balance
+%cmi_user_balance_formatted%
+
+# Clean users balance
+%cmi_user_balance%
+
+# Player position in baltop
+%cmi_user_baltop%
+
+# Indication if player is banned
+%cmi_user_banned%
+
+# Player name who is riding user
+%cmi_user_beingriddenby%
+
+# Bungee server name
+%cmi_user_bungeeserver%
+
+# Players ability to fly
+%cmi_user_canfly%
+
+# Returns true if player can rank up
+%cmi_user_canrankup%
+
+# Spawner charge cooldown
+%cmi_user_charges_cooldown%
+
+# Remaining count of spawner charges
+%cmi_user_charges_left%
+
+# Maximum allowed amount of spawner charges
+%cmi_user_charges_max%
+
+# Time until next spawner charge
+%cmi_user_charges_time%
+
+# Player chatcolor
+%cmi_user_chatcolor%
+
+# Users city name from geoip feature
+%cmi_user_city%
+
+# Players nick name if set or players name otherwise. No color codes
+%cmi_user_cleannickname%
+
+# Command spy state
+%cmi_user_cmdspy%
+
+# Users country code from geoip feature. Example: UK
+%cmi_user_country_code%
+
+# Users country from geoip feature. Example: Germany
+%cmi_user_country%
+
+# Identification if player is cuffed
+%cmi_user_cuffed%
+
+# Daily vote count
+%cmi_user_dailyvotecount%
+
+# Players last death location
+%cmi_user_deathloc%
+
+# Formatted players display name
+%cmi_user_display_name%
+
+# Current exp amount for current level
+%cmi_user_exp%
+
+# Current exp in percentage for current level
+%cmi_user_expp%
+
+# Flight charge amount
+%cmi_user_flightcharge%
+
+# Is player currently flying
+%cmi_user_flying%
+
+# Game mode
+%cmi_user_gamemode%
+
+# Bukkit color code from glow command.
+%cmi_user_glow_code%
+
+# Color name from glow command. Example: Red
+%cmi_user_glow_name%
+
+# Identification if player has god mode enabled
+%cmi_user_god%
+
+# Players main permission group name
+%cmi_user_group%
+
+# Outputs page number of hologram player is in at the moment
+%cmi_user_holo_page_[hologramName]%
+
+# Amount of homes player has
+%cmi_user_homeamount%
+
+# List of players homes
+%cmi_user_homelist%
+
+# Identification if player is in pve mode
+%cmi_user_inpve%
+
+# Identification if player is in pvp mode
+%cmi_user_inpvp%
+
+# Number of items in players inventory by provided material
+%cmi_user_itemcount_[itemIdName(:data)]%
+
+# Jail cell id user currently is in. Example: 1
+%cmi_user_jailcell%
+
+# True or false if player is jailed
+%cmi_user_jailed%
+
+# Jailer name
+%cmi_user_jailedby%
+
+# Jail name user currently is in. Example: Prison
+%cmi_user_jailname%
+
+# Jailed reason
+%cmi_user_jailreason%
+
+# Left jail time. Example: 1hour 5minutes
+%cmi_user_jailtime%
+
+# Indication if player is joined counter
+%cmi_user_joinedcounter%
+
+# True/false if kit is available
+%cmi_user_kit_available_[kitName]%
+
+# Amount of kits you can claim
+%cmi_user_kit_available%
+
+# True/false if user can use this kit
+%cmi_user_kit_hasaccess_[kitName]%
+
+# Cooldown of defined kit
+%cmi_user_kitcd_[kitName]%
+
+# Players level
+%cmi_user_level%
+
+# Amount of mails player have
+%cmi_user_mail_count%
+
+# Max amount of homes player can have
+%cmi_user_maxhomes%
+
+# Maximum value by provided permission node, and if it doesn't exist, returns default value
+%cmi_user_maxperm_[corePerm]_[defaultValue]%
+
+# Players metadate by defined key
+%cmi_user_meta_[key]%
+
+# Players metadate by defined key as number
+%cmi_user_metaint_[key]%
+
+# Missing exp amount until next level
+%cmi_user_missingexp%
+
+# Missing exp in percentage until next level
+%cmi_user_missingexpp%
+
+# Identification if player is muted
+%cmi_user_muted%
+
+# Bukkit color code from nameplate command and -c: variable
+%cmi_user_name_colorcode%
+
+# Original players name
+%cmi_user_name%
+
+# Players nameplate prefix
+%cmi_user_nameplate_prefix%
+
+# Players nameplate suffix
+%cmi_user_nameplate_suffix%
+
+# Percentage done for next rank
+%cmi_user_nextrankpercent%
+
+# List of next ranks
+%cmi_user_nextranks%
+
+# Rank list to which player can rank up to
+%cmi_user_nextvalidranks%
+
+# Players nick name if set or players name otherwise
+%cmi_user_nickname%
+
+# Returns player online status
+%cmi_user_online%
+
+# OP state
+%cmi_user_op%
+
+# Ping
+%cmi_user_ping%
+
+# Playtime in days
+%cmi_user_playtime_days%
+
+# Playtime in days with fraction
+%cmi_user_playtime_dayst%
+
+# Formatted playtime
+%cmi_user_playtime_formatted%
+
+# Playtime in hours
+%cmi_user_playtime_hours%
+
+# Total playtime in hours
+%cmi_user_playtime_hoursf%
+
+# Total playtime in hours with fraction
+%cmi_user_playtime_hourst%
+
+# Playtime in minutes
+%cmi_user_playtime_minutes%
+
+# Total playtime in minutes
+%cmi_user_playtime_minutest%
+
+# Playtime in minutes
+%cmi_user_playtime_seconds%
+
+# Total playtime in minutes
+%cmi_user_playtime_secondst%
+
+# Player position in playtimetop
+%cmi_user_playtimetop%
+
+# Players prefix set by permission plugin
+%cmi_user_prefix%
+
+# Number of claimable prewards
+%cmi_user_prewards_count%
+
+# Player weather
+%cmi_user_pweather%
+
+# Current rank display name
+%cmi_user_rank_displayname%
+
+# Current rank name
+%cmi_user_rank_name%
+
+# Percentage of defined rank rankup progress
+%cmi_user_rank_percent_[rankName]%
+
+# Entity name player is riding
+%cmi_user_riding%
+
+# Remaining cooldown on random teleportation by world
+%cmi_user_rt_cooldown_[worldName]%
+
+# Remaining cooldown on random teleportation
+%cmi_user_rt_cooldown%
+
+# Sign spy state
+%cmi_user_signspy%
+
+# Identification if player is sneaking
+%cmi_user_sneaking%
+
+# Spy state
+%cmi_user_spy%
+
+# Player statistics
+%cmi_user_stats_[mainStat(:optionalSubStat)]%
+
+# Players suffix set by permission plugin
+%cmi_user_suffix%
+
+# Formatted temp fly amount
+%cmi_user_tfly_formatted%
+
+# Left temp fly amount in seconds
+%cmi_user_tfly%
+
+# Formatted time for temp god mode
+%cmi_user_tgod_formatted%
+
+# Time in seconds for temp god mode
+%cmi_user_tgod%
+
+# Outputs 1 or 0 if defined feature is toggled on or off
+%cmi_user_toggle_[holograms|shiftedit|totembar|compass|tagsound|chatspy|cmdspy|signspy|msg|tp|pay|chatbubble|pmsound|rideme|pvenumbers|pvpnumbers|durability|receivepets|deathmessages|notarget|schest|staffchat|autoflightrecharge]%
+
+# Outputs formatted True or False if defined feature is toggled on or off
+%cmi_user_togglename_[holograms|shiftedit|totembar|compass|tagsound|chatspy|cmdspy|signspy|msg|tp|pay|chatbubble|pmsound|rideme|pvenumbers|pvpnumbers|durability|receivepets|deathmessages|notarget|schest|staffchat|autoflightrecharge]%
+
+# Total amount of exp player have
+%cmi_user_totalexp%
+
+# Player uuid
+%cmi_user_uuid_[playerName]%
+
+# Player uuid
+%cmi_user_uuid%
+
+# Vanish symbol
+%cmi_user_vanished_symbol%
+
+# Amount of votes
+%cmi_user_votecount%
+
+# Amount of warnings player have
+%cmi_user_warning_count%
+
+# Amount of warning points player have
+%cmi_user_warning_points%
+
+# Weather at players world
+%cmi_user_weather%
+
+# Weather duration at players world
+%cmi_user_weatherduration%
+
+# Current players world name by using custom identification
+%cmi_user_world_formatted%
+
+# Current players world name
+%cmi_user_world%
+
+# Name of player from a provided place in a list
+%cmi_votetop_[1-10]%
+
+# Vote count of player from a provided place in a list
+%cmi_votetopcount_[1-10]%
+
+# World weather
+%cmi_weather_[worldName]%
+
+# World weather duration
+%cmi_weatherduration_[worldName]%
+
+# World time in 12 hour format
+%cmi_world_time12_[worldName]%
+
+# World time in 24 hour format
+%cmi_world_time24_[worldName]%
+
+# Value of the item
+%cmi_worth_buy_[itemIdName(:data)]%
+
+# Sell value of the item
+%cmi_worth_sell_[itemIdName(:data)]%
+
+# Value of the item without formatting
+%cmi_worthc_buy_[itemIdName(:data)]%
+
+# Sell value of the item without formatting
+%cmi_worthc_sell_[itemIdName(:data)]%
+
+# Formatted list of online players by using their display names if possible
+%onlineplayers_displaynames%
+
+# Formatted list of online players
+%onlineplayers_names%
+
+# Current players biome name
+%player_biome%
+
+# Current players world name
+%player_world%
+
+# Current players x position
+%player_x%
+
+# Current players y position
+%player_y%
+
+# Current players z position
+%player_z%
+
+# Max allowed players
+%server_max_players%
+
+# Online player amount
+%server_online%
+
+# Unique player joins to the server
+%server_unique_joins%
+
+# Formatted players balance. Deprecated
+%vault_eco_balance_formatted%

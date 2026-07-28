@@ -808,6 +808,11 @@ CommandHelp:
               Description: Allows or denys custom animal spawns
               Info:
               - '&eUsage: &6/res set <residence> canimals true/false/remove'
+            cartography:
+              Translated: cartography
+              Description: Allows or denys players to use cartography tables
+              Info:
+              - '&eUsage: &6/res set/pset <residence> cartography true/false/remove'
             chorustp:
               Translated: chorustp
               Description: Allow or disallow teleporting to the residence with chorus
@@ -849,16 +854,16 @@ CommandHelp:
               Description: Allows to modify copper blocks
               Info:
               - '&eUsage: &6/res set/pset <residence> copper true/false/remove'
+            copperoxidation:
+              Translated: copperoxidation
+              Description: Allow or deny all copper blocks oxidation
+              Info:
+              - '&eUsage: &6/res set <residence> copperoxidation true/false/remove'
             coraldryup:
               Translated: coraldryup
               Description: Allow or deny all corals from drying up
               Info:
               - '&eUsage: &6/res set <residence> coraldryup true/false/remove'
-            craft:
-              Translated: craft
-              Description: Gives table, enchant, brew flags
-              Info:
-              - '&eUsage: &6/res set <residence> craft true/false/remove'
             creeper:
               Translated: creeper
               Description: Allow or deny creeper explosions
@@ -965,6 +970,11 @@ CommandHelp:
               Description: Allows or denys fire spread
               Info:
               - '&eUsage: &6/res set <residence> firespread true/false/remove'
+            fletching:
+              Translated: fletching
+              Description: Allows or denys players to use fletching tables
+              Info:
+              - '&eUsage: &6/res set/pset <residence> fletching true/false/remove'
             flowinprotection:
               Translated: flowinprotection
               Description: Allows or denys liquid flow into residence
@@ -1000,6 +1010,11 @@ CommandHelp:
               Description: Allow or deny golem open chest
               Info:
               - '&eUsage: &6/res set <residence> golemopenchest true/false/remove'
+            grindstone:
+              Translated: grindstone
+              Description: Allows or denys players to use grindstones
+              Info:
+              - '&eUsage: &6/res set/pset <residence> grindstone true/false/remove'
             harvest:
               Translated: harvest
               Description: Allows harvesting
@@ -1085,6 +1100,11 @@ CommandHelp:
               Description: Allows or denys players to use levers
               Info:
               - '&eUsage: &6/res set/pset <residence> lever true/false/remove'
+            loom:
+              Translated: loom
+              Description: Allows or denys players to use looms
+              Info:
+              - '&eUsage: &6/res set/pset <residence> loom true/false/remove'
             mobexpdrop:
               Translated: mobexpdrop
               Description: Prevents mob droping exp on death
@@ -1183,6 +1203,11 @@ CommandHelp:
               Description: Allow or deny pvp in the residence
               Info:
               - '&eUsage: &6/res set <residence> pvp true/false/remove'
+            raid:
+              Translated: raid
+              Description: Allow or deny vanilla raid trigger in the residence
+              Info:
+              - '&eUsage: &6/res set <residence> raid true/false/remove'
             rain:
               Translated: rain
               Description: Sets weather to rainny in residence
@@ -1228,6 +1253,11 @@ CommandHelp:
               Description: Prevents skulk catalyst spreading
               Info:
               - '&eUsage: &6/res set <residence> skulk true/false/remove'
+            smithing:
+              Translated: smithing
+              Description: Allows or denys players to use smithing tables
+              Info:
+              - '&eUsage: &6/res set/pset <residence> smithing true/false/remove'
             snowball:
               Translated: snowball
               Description: Prevents snowball knockback
@@ -1248,6 +1278,11 @@ CommandHelp:
               Description: Allows or denys spawner or spawn egg monster spawns
               Info:
               - '&eUsage: &6/res set <residence> smonsters true/false/remove'
+            stonecutter:
+              Translated: stonecutter
+              Description: Allows or denys players to use stonecutters
+              Info:
+              - '&eUsage: &6/res set/pset <residence> stonecutter true/false/remove'
             subzone:
               Translated: subzone
               Description: Allow a player to make subzones in the residence

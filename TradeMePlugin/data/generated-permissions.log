@@ -1,0 +1,44 @@
+trademe.* - Grants access to all TradeMe commands; Default: op
+trademe.$1 - Trade type
+trademe.$1.$2 - Trade type group
+trademe.admin - Grants permissions as an admin; Default: false
+trademe.betweenworldbypass - Allows to trade between blocked worlds
+trademe.blockbypass - Allows to trade with players who blocked you
+trademe.command.* - Grants player access to all commands; Default: false
+trademe.command.$1 - Gives access to particular command
+trademe.command.$1.others - Allows to perform command on another player
+trademe.command.accept - Grants access to the accept command; Default: true
+trademe.command.block - Grants access to the block command; Default: true
+trademe.command.deny - Grants access to the deny command; Default: true
+trademe.command.force - Grants access to the force command; Default: op
+trademe.command.log - Grants access to the log command; Default: true
+trademe.command.offer - Grants access to the offer command; Default: true
+trademe.command.purge - Grants access to the purge command; Default: op
+trademe.command.reload - Grants access to the browse command; Default: op
+trademe.command.toggle - Grants access to the toggle command; Default: true
+trademe.commandoffer - Grants access to offer trade with command; Default: true
+trademe.distancebypass - Allows to trade over limited distances
+trademe.exploitwarning - Warns about possible exploiting players
+trademe.exptrade - Grants access to the exp trade feature; Default: true
+trademe.gamemodebypass - Allows to trade from blocked game mode
+trademe.globalbypass - Allows to trade with players who turned off trading
+trademe.griefpreventiontrade - Grants access to the griefprevention block trade feature; Default: true
+trademe.groupbypass - Allows to trade between different trade groups
+trademe.itembypass - Bypass item restrictions; Default: false
+trademe.itemlorebypass - Bypass item restrictions; Default: false
+trademe.itemnbtbypass - Bypass item restrictions; Default: false
+trademe.itemtrade - Grants access to trade with items; Default: true
+trademe.jobstrade - Grants access to the jobs exp trade feature; Default: true
+trademe.logothers - Grants access to the log others command; Default: op
+trademe.mcmmotrade - Grants access to the mcmmo exp trade feature; Default: true
+trademe.moneytrade - Grants access to the money trade feature; Default: true
+trademe.nocommand.bypass - Allows to sends commands while trading
+trademe.permisiononerror - Allows to see missing permission on error message
+trademe.quickbarbypass - Allows to trade from locked quickbar
+trademe.residencetrade - Grants access to the residence trade feature; Default: true
+trademe.sameipbypass - Allows to trade between players with same ip
+trademe.shiftoffer - Grants access to offer trade with shift click; Default: true
+trademe.trade - Grants access to trade in general; Default: true
+trademe.vanishtrade - Grants access to trade while one of players is in vanish mode; Default: op
+trademe.versioncheck - Shows when we have new version of plugin
+trademe.worldbypass - Allows to trade betweenb blocked worlds

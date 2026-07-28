@@ -4,7 +4,7 @@ command:
       CommandColor: '&2'
       VariableColor: '&6'
       usage: '&eUsage: &6%usage%'
-      title: '&e-------&e ======= &61MB Fun &e======= &e-------'
+      title: '&e-------&e ======= &6Tryme &e======= &e-------'
   nocmd:
     help:
       info: '&eShows all available commands'
@@ -31,14 +31,14 @@ command:
     help:
       info: '&eDelete existing question'
       args: '[category] [questionName]'
-  amode:
-    help:
-      info: '&eFlash game mode'
-      args: (-c QCat) (-r RCat)
   pmode:
     help:
       info: '&eBlock place task game mode'
       args: (-c PCat) (-r RCat)
+  amode:
+    help:
+      info: '&eAll game modes'
+      args: (-c QCat) (-r RCat)
   signupdate:
     help:
       info: '&eUpdate signs manually by game mode'
@@ -76,6 +76,12 @@ command:
         &2[average]&esec'
       kmode: '&eKill: &2[answers] &etasks, &6Best: &2[besttime]&6sec, &eAverage: &2[average]&esec'
       emode: '&eEat: &2[answers] &etasks, &6Best: &2[besttime]&6sec, &eAverage: &2[average]&esec'
+  startsc:
+    help:
+      info: '&eStart scheduler'
+      args: ''
+    info:
+      started: '&4Scheduler has been stoped.'
   fmode:
     help:
       info: '&eFlash game mode'
@@ -84,15 +90,9 @@ command:
     help:
       info: '&eEntity kill task game mode'
       args: (-c KCat) (-r RCat)
-  startsc:
-    help:
-      info: '&eStart scheduler'
-      args: ''
-    info:
-      started: '&4Scheduler has been stoped.'
   bmode:
     help:
-      info: '&eBlock break game mode'
+      info: '&eBlock brake game mode'
       args: (-c BCat) (-r RCat)
   info:
     help:
@@ -142,7 +142,7 @@ command:
       info: '&eQuestion game mode'
       args: (-c QCat) (-r RCat)
 info:
-  prefix: '&e[&aQuick Fun!&e] '
+  prefix: '&e[&aTryMe&e] '
   NotEnough: '&cNot enough online player''s'
   RewardBroadcast: '&6[player] wins!'
   CantFindCategory: '&2Cant find any category you defined. Posible: &3[categories]&c.'

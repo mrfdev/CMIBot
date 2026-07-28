@@ -1,0 +1,24 @@
+tryme.* - Grants access to all Tryme Commands commands
+tryme.admin - Grants permissions as an admin; Default: false
+tryme.answers - Grants access to see answers with info command; Default: op
+tryme.command.* - Grants player access to all commands; Default: false
+tryme.command.add - Grants access to the add command; Default: op
+tryme.command.amode - Grants access to the amode command; Default: op
+tryme.command.cmode - Grants access to the amode command; Default: op
+tryme.command.delete - Grants access to the delete command; Default: op
+tryme.command.dmode - Grants access to the dmode command; Default: op
+tryme.command.edit - Grants access to the edit command; Default: op
+tryme.command.fmode - Grants access to the fmode command; Default: op
+tryme.command.hmode - Grants access to the amode command; Default: op
+tryme.command.info - Grants access to the info command; Default: true
+tryme.command.mmode - Grants access to the mmode command; Default: op
+tryme.command.next - Grants access to the next command; Default: op
+tryme.command.qmode - Grants access to the qmode command; Default: op
+tryme.command.signupdate - Grants access to the signupdate command; Default: op
+tryme.command.startsc - Grants access to the startsc command; Default: op
+tryme.command.stats - Grants access to the stats command; Default: true
+tryme.command.stop - Grants access to the stop command; Default: op
+tryme.command.stopsc - Grants access to the stopsc command; Default: op
+tryme.command.toggle - Grants access to the toggle command; Default: true
+tryme.commandanswer - Grants access to answer with commands; Default: true
+tryme.signs - Grants access to create signs; Default: op

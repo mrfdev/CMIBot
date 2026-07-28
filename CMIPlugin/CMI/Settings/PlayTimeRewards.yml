@@ -31,7 +31,7 @@ daily1:
   AutoClaim: false
   Description:
   - "&2Get reward for 6 hour's you have been online"
-  - "&22,000 bucks into your pocket!"
+  - "&22 000 bucks into your pocket!"
   PayFor: 21600
   Commands:
   - asConsole! cmi money give [playerName] 2000
@@ -40,7 +40,7 @@ daily1:
   AutoClaim: false
   Description:
   - "&2Get reward for 12 hour's you have been online"
-  - "&25,000 bucks into your pocket!"
+  - "&25 000 bucks into your pocket!"
   PayFor: 43200
   Commands:
   - asConsole! cmi money give [playerName] 5000
@@ -49,7 +49,7 @@ daily1:
   AutoClaim: false
   Description:
   - "&2Get reward for 24 hour's you have been online"
-  - "&215,000 bucks into your pocket!"
+  - "&215 000 bucks into your pocket!"
   PayFor: 86400
   Commands:
   - asConsole! cmi money give [playerName] 15000
@@ -58,7 +58,7 @@ daily1:
   AutoClaim: false
   Description:
   - "&2Get reward for 7 days you have been online"
-  - "&2 50,000 bucks into your pocket!"
+  - "&250 000 bucks into your pocket!"
   PayFor: 604800
   Commands:
   - asConsole! cmi money give [playerName] 50000
@@ -67,7 +67,7 @@ daily1:
   AutoClaim: false
   Description:
   - "&2Get reward for 30 days you have been online"
-  - "&2 500,000 bucks into your pocket!"
+  - "&2500 000 bucks into your pocket!"
   PayFor: 2592000
   Commands:
   - asConsole! cmi money give [playerName] 500000

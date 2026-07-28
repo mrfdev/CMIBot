@@ -127,6 +127,7 @@ modeNames:
   ResCuboid:
   - Frame
   - Sides
+  - Error
   LandsCuboid:
   - Frame
   - Own Sides
@@ -236,7 +237,7 @@ command:
       ColorLines:
       - '&eUse left/right mouse buttons to adjust'
       - '&eUse shift to increese 10x faster'
-      - '&eMiddle mouse click to randomize'
+      - '&eQ click to randomize'
   jobs:
     help:
       info: '&eShows jobs restricted areas'

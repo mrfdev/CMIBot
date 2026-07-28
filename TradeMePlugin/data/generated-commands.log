@@ -1,0 +1,13 @@
+/trade - Basic command
+/trade accept (playerName) (-s) - Accept offer
+/trade block [playerName] - Block player
+/trade checkperm (key word) - Check possible permission nodes
+/trade deny [playername] - Deny trade offer
+/trade force [playername] [playername] (-s) - Force a trade between 2 players
+/trade log [username] - Check your own or players trade logs
+/trade logitems (username) - Check your own or players traded items
+/trade offer [playername] (-s) - Send trade offer
+/trade purge [TimeInMinutes] - Clears database to specific point
+/trade reload - Reload config and locale file
+/trade set [path] [variable] - Change config setings
+/trade toggle - Toggle trades

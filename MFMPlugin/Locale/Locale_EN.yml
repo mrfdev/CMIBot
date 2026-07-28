@@ -1,7 +1,7 @@
 info:
   prefix: '&e[&aMFM&e] '
-  ArmorStandlLimit: '&6You cant place armor stand in this chunk. Max allowed is &e[amount]&6!'
-  ItemFrameLimit: '&6You cant place item frame in this chunk. Max allowed is &e[amount]&6!'
+  ArmorStandlLimit: '&6You cant place armor stand in this chunk. Max alowed is &e[amount]&6!'
+  ItemFrameLimit: '&6You cant place item frame in this chunk. Max alowed is &e[amount]&6!'
   GeneralLimit: '&6Limit reached. Max alowed is &e[amount]&6!'
   WolfCount: '&cTo many wolfs following you, &7[amount] &cgot seated down'
   BlockLimit: '&cTo many [type] blocks in one chunk, &7You can only place &e[amount]
@@ -29,7 +29,7 @@ command:
   clean:
     help:
       info: '&2Cleans chunks around players'
-      args: '&3(range)'
+      args: ''
     info:
       ClearedList: '&f[type]&6(&7[amount]&6)'
       Cleared: '&6Cleared &f[entities] &6entities from &7[chunks]&6 chunks: [list]'
@@ -38,12 +38,12 @@ command:
   list:
     help:
       info: '&2List chunks with most entities in them'
-      args: '&3(range)'
+      args: (range) (-all)
     info:
       ListP: '&e[place]. &6[x]&e:&6[z] &6Inside: &e[amount]'
       around: ' &6Around: &7[near]'
       Command: /tppos [x] [y] [z] [world]
-      Hover: "&6Teleport \n&e[world]"
+      Hover: '&6Teleport: &e[world]:[x]:[y]:[z]'
   limits:
     help:
       info: '&2Show limits by your location'

@@ -100,6 +100,24 @@ function normalizeFileFilter(rawFileFilter) {
   return normalizeWhitespace(rawFileFilter).replace(/\\/g, "/").replace(/^\.\/+/, "");
 }
 
+function formatIndexedFileExamples(entries) {
+  const preferredNames = new Map([
+    ["config.yml", 0],
+    ["generalconfig.yml", 1],
+    ["titleconfig.yml", 2],
+  ]);
+  const fileNames = [...new Set(entries.map((entry) => entry.relativePath.replace(/\\/g, "/").split("/").at(-1)))]
+    .filter(Boolean)
+    .sort((left, right) => {
+      const leftRank = preferredNames.get(left.toLowerCase()) ?? (left.startsWith("_") ? 100 : 10);
+      const rightRank = preferredNames.get(right.toLowerCase()) ?? (right.startsWith("_") ? 100 : 10);
+      return leftRank - rightRank || left.localeCompare(right, undefined, { sensitivity: "base" });
+    })
+    .slice(0, 3);
+
+  return fileNames.length ? ` Try ${fileNames.map((name) => `\`${name}\``).join(", ")}.` : "";
+}
+
 export function resolveFileFilter(rawFileFilter, entries, { profileLabel = "indexed" } = {}) {
   if (!rawFileFilter) {
     return {
@@ -141,7 +159,7 @@ export function resolveFileFilter(rawFileFilter, entries, { profileLabel = "inde
   ) {
     return {
       ok: false,
-      reason: "Please use only an indexed file name like Chat.yml, config.yml, or a plugin-relative config path.",
+      reason: "Please use only an indexed file name or plugin-relative config path.",
       normalizedFilter,
       matchedPaths: [],
       filteredEntries: [],
@@ -159,7 +177,7 @@ export function resolveFileFilter(rawFileFilter, entries, { profileLabel = "inde
   if (!matchedPaths.length) {
     return {
       ok: false,
-      reason: `That file filter does not match an indexed ${profileLabel} file. Try Chat.yml, config.yml, or a plugin-relative config path.`,
+      reason: `That file filter does not match an indexed ${profileLabel} file.${formatIndexedFileExamples(entries)}`,
       normalizedFilter,
       matchedPaths: [],
       filteredEntries: [],
