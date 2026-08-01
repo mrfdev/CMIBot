@@ -212,6 +212,8 @@ Generated files outside `data/` are replaced on each clean refresh so removed or
 
 `/lookup latest` shows the clean snapshot version for the active plugin, CMILib, and Paper. `/lookup latest scope:all` also lists every jar in the clean reference server, support dependencies such as LuckPerms and PlaceholderAPI, and the tracked CMI companion resources.
 
+The all-resources response is grouped for readability: the first private message lists the main Zrips plugins, and the second lists CMI companion resources followed by Paper and other third-party resources.
+
 The CMI companion section always tracks CMI-API, CMI-Bungee, CMI-Velocity, CMI-Vault, and CMI-E-Injector through their official GitHub or Zrips sources. CMI-Vault is detected from the Paper plugin directory. API and proxy artifacts can optionally be stored in the ignored `servers/Paper-26.2/companions/` directory so their local versions can be compared without loading them into Paper.
 
 Tracked Spigot resource versions are checked through the public Spiget API, Paper builds through Paper's official Fill API, CMI companion downloads through their Zrips listings, and CMI-API through its GitHub project version. A failed or disabled network check never prevents the bot from starting; the command continues to show the local inventory.

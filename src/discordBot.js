@@ -5,7 +5,7 @@ import { writeAuditLog } from "./auditLog.js";
 import { formatCacheSummary } from "./cache.js";
 import { createCooldownManager, resolveFileFilter, sanitizeForDisplay, validateQuery } from "./security.js";
 import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
-import { formatLatestVersions, formatVersionServiceSummary } from "./versionCatalog.js";
+import { formatLatestVersionMessages, formatVersionServiceSummary } from "./versionCatalog.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 
 const PRIMARY_COMMAND_NAME = "lookup";
@@ -1149,7 +1149,10 @@ export function splitDiscordMessages(message, maxLength = 1900) {
   const blocks = [];
   let blockLines = [];
   for (const line of message.split("\n")) {
-    const startsSection = blockLines.length && !line.startsWith("-") && line.endsWith(":");
+    const trimmed = line.trim();
+    const startsSection =
+      blockLines.length &&
+      (trimmed.startsWith("### ") || /^\*\*.+:\*\*$/.test(trimmed) || (!trimmed.startsWith("-") && trimmed.endsWith(":")));
     if (startsSection) {
       blocks.push(blockLines.join("\n"));
       blockLines = [];
@@ -1434,7 +1437,9 @@ export function createInteractionHandler(config, searchCache, versionService) {
           detectedContext: context.pluginId,
           versionCheckErrors: snapshot.errorCount,
         });
-        const versionMessages = splitDiscordMessages(formatLatestVersions(snapshot, context.plugin, scope));
+        const versionMessages = formatLatestVersionMessages(snapshot, context.plugin, scope).flatMap((message) =>
+          splitDiscordMessages(message),
+        );
         await interaction.editReply({
           content: versionMessages[0],
           allowedMentions: NO_MENTIONS,

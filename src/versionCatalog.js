@@ -153,30 +153,38 @@ export function formatLatestVersions(snapshot, plugin, scope = "context") {
   }
 
   const { catalog } = snapshot;
-  const plugins =
-    scope === "all"
-      ? orderPlugins(catalog.plugins)
-      : orderPlugins(
-          catalog.plugins.filter((entry) => entry.contextId === plugin.id || entry.shared || entry.id === "cmilib"),
-        );
   const lines = [
     "### Latest Versions",
     scope === "all" ? "Scope: `all tracked resources`" : `Current context: \`${plugin.label}\``,
   ];
 
   if (scope === "all") {
-    lines.push(formatPaperVersionLine(catalog.paper, snapshot.paper, snapshot.checkEnabled));
-  }
-  for (const entry of plugins) {
-    lines.push(formatPluginVersionLine(entry, snapshot.plugins.get(entry.id), snapshot.checkEnabled));
-  }
-  if (scope === "all" && catalog.companions.length) {
+    const allPlugins = orderPlugins(catalog.plugins);
+    const zripsPlugins = allPlugins.filter((entry) => entry.tracked);
+    const thirdPartyPlugins = allPlugins.filter((entry) => !entry.tracked);
+
+    lines.push("", "**Zrips plugin resources:**");
+    for (const entry of zripsPlugins) {
+      lines.push(formatPluginVersionLine(entry, snapshot.plugins.get(entry.id), snapshot.checkEnabled));
+    }
+
     lines.push("", "**CMI companion resources:**");
     for (const companion of catalog.companions) {
       lines.push(formatCompanionVersionLine(companion, snapshot.companions.get(companion.id), snapshot.checkEnabled));
     }
-  }
-  if (scope !== "all") {
+
+    lines.push("", "**Paper and third-party resources:**");
+    lines.push(formatPaperVersionLine(catalog.paper, snapshot.paper, snapshot.checkEnabled));
+    for (const entry of thirdPartyPlugins) {
+      lines.push(formatPluginVersionLine(entry, snapshot.plugins.get(entry.id), snapshot.checkEnabled));
+    }
+  } else {
+    const contextPlugins = orderPlugins(
+      catalog.plugins.filter((entry) => entry.contextId === plugin.id || entry.shared || entry.id === "cmilib"),
+    );
+    for (const entry of contextPlugins) {
+      lines.push(formatPluginVersionLine(entry, snapshot.plugins.get(entry.id), snapshot.checkEnabled));
+    }
     lines.push(formatPaperVersionLine(catalog.paper, snapshot.paper, snapshot.checkEnabled));
   }
 
@@ -191,6 +199,20 @@ export function formatLatestVersions(snapshot, plugin, scope = "context") {
     lines.push("Scheduled upstream checks are disabled in bot config.");
   }
   return lines.join("\n");
+}
+
+export function formatLatestVersionMessages(snapshot, plugin, scope = "context") {
+  const message = formatLatestVersions(snapshot, plugin, scope);
+  if (scope !== "all") {
+    return [message];
+  }
+
+  const companionHeading = "\n**CMI companion resources:**";
+  const boundary = message.indexOf(companionHeading);
+  if (boundary < 0) {
+    return [message];
+  }
+  return [message.slice(0, boundary), message.slice(boundary + 1)];
 }
 
 export function formatVersionServiceSummary(snapshot) {
