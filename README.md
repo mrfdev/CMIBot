@@ -222,7 +222,7 @@ The all-resources response is grouped for readability: the first private message
 
 The CMI companion section always tracks CMI-API, CMI-Bungee, CMI-Velocity, CMI-Vault, and CMI-E-Injector through their official GitHub or Zrips sources. Their local jars are stored in the ignored `servers/_template-Paper-26.2/companions/` directory and copied to `servers/Paper-26.2/companions/` during a refresh. They are inventoried for version comparisons but are never placed in Paper's `plugins/` directory or started by the clean server.
 
-Tracked Spigot resource versions are checked through the public Spiget API, Paper builds through Paper's official Fill API, CMI companion downloads through their Zrips listings, and CMI-API through its GitHub project version. A failed or disabled network check never prevents the bot from starting; the command continues to show the local inventory.
+Tracked Spigot resource versions are checked through the public Spiget API, Paper builds through Paper's official Fill API, LuckPerms through its official metadata service, and PlaceholderAPI through its latest successful Jenkins artifact. CMI companion downloads use their Zrips listings, while CMI-API uses its GitHub project version. PlaceholderAPI output includes both its plugin version and Jenkins build number. A failed or disabled network check never prevents the bot from starting; the command continues to show the local inventory.
 
 Version controls:
 

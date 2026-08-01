@@ -12,7 +12,30 @@ import { readRuntimeCompatibility } from "./runtime-compatibility.mjs";
 
 const execFileAsync = promisify(execFile);
 const SUPPORT_PLUGIN_METADATA = new Map([
-  ["placeholderapi", { label: "PlaceholderAPI", resourceUrl: "https://placeholderapi.com/" }],
+  [
+    "luckperms",
+    {
+      label: "LuckPerms",
+      resourceUrl: "https://luckperms.net/download",
+      versionSource: {
+        type: "luckperms-metadata",
+        url: "https://metadata.luckperms.net/data/all",
+      },
+    },
+  ],
+  [
+    "placeholderapi",
+    {
+      label: "PlaceholderAPI",
+      resourceUrl: "https://ci.extendedclip.com/job/PlaceholderAPI/",
+      localBuildPattern: /-build-(\d+)\.jar$/i,
+      versionSource: {
+        type: "jenkins-artifact",
+        url: "https://ci.extendedclip.com/job/PlaceholderAPI/lastSuccessfulBuild/api/json",
+        artifactPattern: "^PlaceholderAPI-([0-9]+(?:\\.[0-9]+)+)\\.jar$",
+      },
+    },
+  ],
 ]);
 
 function unquote(value) {
@@ -169,6 +192,9 @@ export async function buildVersionCatalog(workspaceRoot, serverDirectory) {
     const definition = knownByPluginName.get(metadata.name.toLowerCase());
     const supportMetadata = SUPPORT_PLUGIN_METADATA.get(metadata.name.toLowerCase());
     const resourceId = definition?.resourceId ?? null;
+    const localBuildMatch = supportMetadata?.localBuildPattern
+      ? jarName.match(supportMetadata.localBuildPattern)
+      : null;
     plugins.push({
       id: definition?.id ?? slugify(metadata.name || jarName.replace(/\.jar$/i, "")),
       label: definition?.label ?? supportMetadata?.label ?? (metadata.name || jarName.replace(/\.jar$/i, "")),
@@ -181,6 +207,8 @@ export async function buildVersionCatalog(workspaceRoot, serverDirectory) {
       resourceId,
       resourceUrl: getSpigotResourceUrl(resourceId) || supportMetadata?.resourceUrl || metadata.website,
       website: metadata.website,
+      ...(localBuildMatch ? { build: Number(localBuildMatch[1]) } : {}),
+      ...(supportMetadata?.versionSource ? { versionSource: supportMetadata.versionSource } : {}),
     });
   }
 

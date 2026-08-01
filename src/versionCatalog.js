@@ -80,11 +80,26 @@ function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function formatPluginRelease(version, build) {
+  return build == null ? String(version) : `${version} build ${build}`;
+}
+
+function comparePluginRelease(plugin, upstream) {
+  const versionComparison = compareVersions(plugin.version, upstream.version);
+  if (versionComparison !== 0) {
+    return versionComparison;
+  }
+  if (plugin.build == null || upstream.build == null) {
+    return 0;
+  }
+  return Number(plugin.build) - Number(upstream.build);
+}
+
 function formatPluginVersionLine(plugin, upstream, checkEnabled) {
   const label = linkedLabel(plugin.label, plugin.resourceUrl || plugin.website);
-  const prefix = `- **${label}:** clean snapshot \`${plugin.version}\``;
+  const prefix = `- **${label}:** clean snapshot \`${formatPluginRelease(plugin.version, plugin.build)}\``;
 
-  if (!plugin.resourceId) {
+  if (!plugin.resourceId && !plugin.versionSource) {
     return `${prefix} (snapshot only)`;
   }
   if (!checkEnabled) {
@@ -94,9 +109,9 @@ function formatPluginVersionLine(plugin, upstream, checkEnabled) {
     return `${prefix} (upstream unavailable)`;
   }
 
-  const comparison = compareVersions(plugin.version, upstream.version);
+  const comparison = comparePluginRelease(plugin, upstream);
   const status = comparison === 0 ? "current" : comparison < 0 ? "**update available**" : "snapshot newer than upstream listing";
-  return `${prefix} | upstream \`${upstream.version}\` (${status})`;
+  return `${prefix} | upstream \`${formatPluginRelease(upstream.version, upstream.build)}\` (${status})`;
 }
 
 function formatPaperVersionLine(paper, upstream, checkEnabled) {
@@ -197,7 +212,7 @@ export function formatLatestVersions(snapshot, plugin, scope = "context") {
   if (snapshot.checkEnabled) {
     lines.push(
       snapshot.checkedAt
-        ? `Upstream checked ${formatDiscordTimestamp(snapshot.checkedAt)} via Spiget, Paper, Zrips, and GitHub${snapshot.errorCount ? `; ${snapshot.errorCount} check(s) unavailable` : ""}.`
+        ? `Upstream checked ${formatDiscordTimestamp(snapshot.checkedAt)} via Spiget, Paper, project metadata/CI, Zrips, and GitHub${snapshot.errorCount ? `; ${snapshot.errorCount} check(s) unavailable` : ""}.`
         : "The first upstream version check has not completed yet.",
     );
   } else {
@@ -327,14 +342,41 @@ export function createVersionService(config) {
   }
 
   async function checkPlugin(plugin) {
-    const latest = await fetchJson(
-      `${SPIGET_API_ROOT}/resources/${plugin.resourceId}/versions/latest`,
-      config.versions.requestTimeoutMs,
-    );
-    if (!latest?.name) {
-      throw new Error(`${plugin.label} returned no latest version name.`);
+    if (plugin.resourceId) {
+      const latest = await fetchJson(
+        `${SPIGET_API_ROOT}/resources/${plugin.resourceId}/versions/latest`,
+        config.versions.requestTimeoutMs,
+      );
+      if (!latest?.name) {
+        throw new Error(`${plugin.label} returned no latest version name.`);
+      }
+      return { version: String(latest.name) };
     }
-    return { version: String(latest.name) };
+
+    const source = plugin.versionSource;
+    if (source?.type === "luckperms-metadata") {
+      const metadata = await fetchJson(source.url, config.versions.requestTimeoutMs);
+      if (!metadata?.version) {
+        throw new Error(`${plugin.label} returned no latest version.`);
+      }
+      return { version: String(metadata.version) };
+    }
+
+    if (source?.type === "jenkins-artifact") {
+      const build = await fetchJson(source.url, config.versions.requestTimeoutMs);
+      const artifactPattern = new RegExp(source.artifactPattern, "i");
+      const artifact = build?.artifacts?.find((entry) => artifactPattern.test(String(entry.fileName)));
+      const match = artifact?.fileName?.match(artifactPattern);
+      if (!Number.isFinite(Number(build?.number)) || !match?.[1]) {
+        throw new Error(`${plugin.label} returned no successful plugin artifact.`);
+      }
+      return {
+        version: match[1],
+        build: Number(build.number),
+      };
+    }
+
+    throw new Error(`${plugin.label} has no supported upstream version source.`);
   }
 
   async function checkCompanion(companion) {
@@ -381,7 +423,7 @@ export function createVersionService(config) {
 
     inFlight = (async () => {
       let failures = 0;
-      const trackedPlugins = catalog.plugins.filter((entry) => entry.resourceId);
+      const trackedPlugins = catalog.plugins.filter((entry) => entry.resourceId || entry.versionSource);
       const trackedCompanions = catalog.companions.filter((entry) => entry.versionSource);
       const results = await Promise.allSettled([
         checkPaper(),
