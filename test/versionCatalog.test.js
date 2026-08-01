@@ -15,6 +15,7 @@ function makeConfig(workspaceRoot) {
     workspaceRoot,
     versions: {
       catalogPath: "versions.json",
+      statePath: "logs/upstream-versions.json",
       checkEnabled: false,
       checkIntervalMs: 60_000,
       paperVersion: "26.2",
@@ -242,8 +243,56 @@ test("a reload transaction retains all matching last-known values during an outa
     const committed = transaction.commit();
     assert.equal(committed.catalog.generatedAt, "new");
     assert.equal(committed.retainedCount, 4);
+    await service.flushPersistence();
   } finally {
     service.stop();
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("last-known upstream values survive a cold restart", async (t) => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-version-persisted-"));
+  const catalogPath = path.join(workspaceRoot, "versions.json");
+  const statePath = path.join(workspaceRoot, "logs/upstream-versions.json");
+  const config = makeNetworkConfig(workspaceRoot);
+  const upstream = createFetchFixture(t);
+  const firstService = createVersionService(config);
+  let secondService = null;
+
+  try {
+    await fs.writeFile(catalogPath, JSON.stringify(makeTrackedCatalog()), "utf8");
+    const initial = await firstService.start();
+    assert.equal(initial.retainedCount, 0);
+    await firstService.flushPersistence();
+    firstService.stop();
+
+    const persisted = JSON.parse(await fs.readFile(statePath, "utf8"));
+    assert.equal(persisted.schemaVersion, 1);
+    assert.equal(persisted.paper.build, 87);
+    assert.equal(persisted.plugins.cmi.version, "1.0.0");
+    assert.equal(persisted.companions["cmi-bungee"].version, "1.0.0");
+    assert.equal("stale" in persisted.plugins.cmi, false);
+    assert.doesNotMatch(JSON.stringify(persisted), /resourceUrl|discord|token/i);
+
+    upstream.failures = new Set(["paper", "cmi", "cmilib", "companion"]);
+    secondService = createVersionService(config);
+    const restarted = await secondService.start();
+
+    assert.equal(restarted.paper.build, 87);
+    assert.equal(restarted.plugins.get("cmi").version, "1.0.0");
+    assert.equal(restarted.plugins.get("cmilib").version, "1.0.0");
+    assert.equal(restarted.companions.get("cmi-bungee").version, "1.0.0");
+    assert.equal(restarted.errorCount, 4);
+    assert.equal(restarted.retainedCount, 4);
+    assert.equal(restarted.plugins.get("cmi").stale, true);
+    await secondService.flushPersistence();
+  } finally {
+    firstService.stop();
+    secondService?.stop();
+    await firstService.flushPersistence();
+    if (secondService) {
+      await secondService.flushPersistence();
+    }
     await fs.rm(workspaceRoot, { recursive: true, force: true });
   }
 });

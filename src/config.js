@@ -653,6 +653,7 @@ export function loadConfig() {
     },
     versions: {
       catalogPath: process.env.VERSION_CATALOG_PATH?.trim() || "data/versions.json",
+      statePath: process.env.VERSION_STATE_PATH?.trim() || "logs/upstream-versions.json",
       checkEnabled: parseBoolean(process.env.VERSION_CHECK_ENABLED, true),
       checkIntervalMs: Math.max(1, parseInteger(process.env.VERSION_CHECK_INTERVAL_HOURS, 12)) * 60 * 60 * 1000,
       requestTimeoutMs: Math.max(1, parseInteger(process.env.VERSION_CHECK_TIMEOUT_SECONDS, 8)) * 1000,
@@ -800,6 +801,9 @@ export function loadConfig() {
       queryAllowlist: parseCsv(process.env.QUERY_ALLOWLIST).map((item) => item.toLowerCase()),
       queryDebugErrors: parseBoolean(process.env.QUERY_DEBUG_ERRORS, false),
       auditLogPath: process.env.AUDIT_LOG_PATH?.trim() || "logs/cmibot-usage.jsonl",
+      auditLogMaxBytes:
+        Math.max(0, parseInteger(process.env.AUDIT_LOG_MAX_SIZE_MB, 10)) * 1024 * 1024,
+      auditLogMaxFiles: Math.max(0, parseInteger(process.env.AUDIT_LOG_MAX_FILES, 5)),
     },
     formatDisplayPath(pluginId, relativePath) {
       const normalizedRelativePath = toDisplayRelativePath(relativePath);

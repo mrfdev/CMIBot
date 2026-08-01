@@ -1364,15 +1364,23 @@ export function createInteractionHandler(config, searchCache, versionService, de
   let reloadInProgress = false;
 
   function logEvent(interaction, payload) {
-    return writeAuditLog(config.workspaceRoot, config.security.auditLogPath, {
-      timestamp: new Date().toISOString(),
-      guildId: interaction.guildId,
-      channelId: interaction.channelId,
-      userId: interaction.user.id,
-      userTag: interaction.user.tag,
-      commandName: interaction.commandName,
-      ...payload,
-    });
+    return writeAuditLog(
+      config.workspaceRoot,
+      config.security.auditLogPath,
+      {
+        timestamp: new Date().toISOString(),
+        guildId: interaction.guildId,
+        channelId: interaction.channelId,
+        userId: interaction.user.id,
+        userTag: interaction.user.tag,
+        commandName: interaction.commandName,
+        ...payload,
+      },
+      {
+        maxBytes: config.security.auditLogMaxBytes,
+        maxFiles: config.security.auditLogMaxFiles,
+      },
+    );
   }
 
   async function logRateLimitEvent(interaction, auditKey, payload) {

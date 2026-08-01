@@ -3,6 +3,8 @@ import path from "node:path";
 
 const SPIGET_API_ROOT = "https://api.spiget.org/v2";
 const PAPER_API_ROOT = "https://fill.papermc.io/v3/projects/paper";
+const PERSISTED_STATE_SCHEMA_VERSION = 1;
+const MAX_PERSISTED_STATE_BYTES = 1024 * 1024;
 const DISPLAY_ORDER = [
   "paper",
   "cmi",
@@ -320,7 +322,162 @@ export function createVersionService(config) {
   };
   let timer = null;
   let inFlight = null;
+  let persistenceQueue = Promise.resolve();
   const catalogPath = path.resolve(config.workspaceRoot, config.versions.catalogPath);
+  const statePath = path.resolve(
+    config.workspaceRoot,
+    config.versions.statePath || "logs/upstream-versions.json",
+  );
+
+  function createEmptyState(catalog = null) {
+    return {
+      catalog,
+      paper: null,
+      plugins: new Map(),
+      companions: new Map(),
+      checkedAt: null,
+      errorCount: 0,
+    };
+  }
+
+  function sanitizePersistedVersion(value, { requireBuild = false } = {}) {
+    if (!value || typeof value !== "object" || !value.version) {
+      return null;
+    }
+
+    const record = {
+      version: String(value.version),
+      stale: true,
+    };
+    if (value.build != null) {
+      const build = Number(value.build);
+      if (Number.isFinite(build) && build >= 0) {
+        record.build = build;
+      }
+    }
+    if (requireBuild && record.build == null) {
+      return null;
+    }
+    if (typeof value.channel === "string" && value.channel) {
+      record.channel = value.channel;
+    }
+    if (typeof value.lastSuccessfulCheckAt === "string" && value.lastSuccessfulCheckAt) {
+      record.lastSuccessfulCheckAt = value.lastSuccessfulCheckAt;
+    }
+    return record;
+  }
+
+  function serializeVersion(value) {
+    if (!value?.version) {
+      return null;
+    }
+
+    return {
+      version: String(value.version),
+      ...(value.build != null ? { build: Number(value.build) } : {}),
+      ...(value.channel ? { channel: String(value.channel) } : {}),
+      ...(value.lastSuccessfulCheckAt
+        ? { lastSuccessfulCheckAt: String(value.lastSuccessfulCheckAt) }
+        : {}),
+    };
+  }
+
+  function serializePersistentState(state) {
+    return {
+      schemaVersion: PERSISTED_STATE_SCHEMA_VERSION,
+      savedAt: new Date().toISOString(),
+      paper: serializeVersion(state.paper),
+      plugins: Object.fromEntries(
+        [...state.plugins.entries()]
+          .map(([id, value]) => [id, serializeVersion(value)])
+          .filter(([, value]) => value),
+      ),
+      companions: Object.fromEntries(
+        [...state.companions.entries()]
+          .map(([id, value]) => [id, serializeVersion(value)])
+          .filter(([, value]) => value),
+      ),
+    };
+  }
+
+  async function readPersistentState(catalog) {
+    if (!config.versions.checkEnabled) {
+      return createEmptyState(catalog);
+    }
+
+    try {
+      const file = await fs.readFile(statePath);
+      if (file.byteLength > MAX_PERSISTED_STATE_BYTES) {
+        throw new Error(`state file exceeds ${MAX_PERSISTED_STATE_BYTES} bytes`);
+      }
+      const parsed = JSON.parse(file.toString("utf8"));
+      if (parsed.schemaVersion !== PERSISTED_STATE_SCHEMA_VERSION) {
+        throw new Error(`unsupported schema version ${parsed.schemaVersion ?? "unknown"}`);
+      }
+
+      const state = createEmptyState(catalog);
+      const paper = sanitizePersistedVersion(parsed.paper, { requireBuild: true });
+      if (paper && String(paper.version) === String(config.versions.paperVersion)) {
+        state.paper = paper;
+      }
+
+      const trackedPluginIds = new Set(
+        catalog.plugins
+          .filter((entry) => entry.resourceId || entry.versionSource)
+          .map((entry) => entry.id),
+      );
+      for (const id of trackedPluginIds) {
+        const record = sanitizePersistedVersion(parsed.plugins?.[id]);
+        if (record) {
+          state.plugins.set(id, record);
+        }
+      }
+
+      const trackedCompanionIds = new Set(
+        catalog.companions
+          .filter((entry) => entry.versionSource)
+          .map((entry) => entry.id),
+      );
+      for (const id of trackedCompanionIds) {
+        const record = sanitizePersistedVersion(parsed.companions?.[id]);
+        if (record) {
+          state.companions.set(id, record);
+        }
+      }
+      return state;
+    } catch (error) {
+      if (error.code !== "ENOENT") {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`[LookupBot] Ignoring invalid persisted upstream version state: ${message}`);
+      }
+      return createEmptyState(catalog);
+    }
+  }
+
+  function queuePersistentStateWrite(state) {
+    if (!config.versions.checkEnabled) {
+      return persistenceQueue;
+    }
+
+    const content = `${JSON.stringify(serializePersistentState(state), null, 2)}\n`;
+    persistenceQueue = persistenceQueue
+      .catch(() => {})
+      .then(async () => {
+        const temporaryPath = `${statePath}.${process.pid}.tmp`;
+        await fs.mkdir(path.dirname(statePath), { recursive: true });
+        try {
+          await fs.writeFile(temporaryPath, content, { encoding: "utf8", mode: 0o600 });
+          await fs.rename(temporaryPath, statePath);
+        } finally {
+          await fs.rm(temporaryPath, { force: true }).catch(() => {});
+        }
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`[LookupBot] Failed to persist upstream version state: ${message}`);
+      });
+    return persistenceQueue;
+  }
 
   function getSnapshot(state = activeState) {
     return {
@@ -538,6 +695,7 @@ export function createVersionService(config) {
 
         activeState = nextState;
         settled = true;
+        void queuePersistentStateWrite(nextState);
         return getSnapshot();
       },
       discard() {
@@ -548,7 +706,8 @@ export function createVersionService(config) {
 
   async function prepareReload() {
     const catalog = await readLocalCatalog();
-    return createReloadTransaction(await buildState(catalog));
+    const previousState = activeState.catalog ? activeState : await readPersistentState(catalog);
+    return createReloadTransaction(await buildState(catalog, previousState));
   }
 
   async function refreshUpstream() {
@@ -561,8 +720,10 @@ export function createVersionService(config) {
 
     inFlight = (async () => {
       const catalog = activeState.catalog ?? (await readLocalCatalog());
-      const nextState = await buildState(catalog);
+      const previousState = activeState.catalog ? activeState : await readPersistentState(catalog);
+      const nextState = await buildState(catalog, previousState);
       activeState = nextState;
+      await queuePersistentStateWrite(nextState);
       return getSnapshot();
     })().finally(() => {
       inFlight = null;
@@ -597,6 +758,9 @@ export function createVersionService(config) {
     prepareReload,
     refreshUpstream,
     getSnapshot,
+    flushPersistence() {
+      return persistenceQueue;
+    },
     stop() {
       if (timer) {
         clearInterval(timer);

@@ -229,11 +229,12 @@ The CMI companion section always tracks CMI-API, CMI-Bungee, CMI-Velocity, CMI-V
 
 Tracked Spigot resource versions are checked through the public Spiget API, Paper builds through Paper's official Fill API, LuckPerms through its official metadata service, and PlaceholderAPI through its latest successful Jenkins artifact. CMI companion downloads use their Zrips listings, while CMI-API uses its GitHub project version. PlaceholderAPI output includes both its plugin version and Jenkins build number. A failed or disabled network check never prevents the bot from starting; the command continues to show the local inventory.
 
-Upstream refreshes are resilient per resource. After a resource has checked successfully during the current bot process, a temporary timeout or provider failure retains that last-known version in RAM while unrelated successful checks still update normally. Retained values are clearly marked as last known in private and public version output, and recover automatically after the provider succeeds again. A resource with no successful check yet remains unavailable rather than inventing a version.
+Upstream refreshes are resilient per resource. After a resource has checked successfully, a temporary timeout or provider failure retains that last-known version while unrelated successful checks still update normally. The sanitized last-known state is atomically persisted to the ignored `VERSION_STATE_PATH`, so fallback survives bot and machine restarts. Retained values are clearly marked as last known in private and public version output, and recover automatically after the provider succeeds again. A resource with no successful check yet remains unavailable rather than inventing a version.
 
 Version controls:
 
 - `VERSION_CATALOG_PATH=data/versions.json`
+- `VERSION_STATE_PATH=logs/upstream-versions.json`
 - `VERSION_CHECK_ENABLED=true`
 - `VERSION_CHECK_INTERVAL_HOURS=12`
 - `VERSION_CHECK_TIMEOUT_SECONDS=8`
@@ -315,7 +316,7 @@ Reload reports are private. If the global per-plugin breakdown exceeds one Disco
 - Debug has a global cooldown, while reload has both a global cooldown and a single-flight guard.
 - Rate-limit state is memory-bounded and expired buckets are pruned automatically.
 - Repeated rate-limit audit events are coalesced to prevent JSONL log flooding.
-- Usage is written as JSON lines to `logs/cmibot-usage.jsonl`.
+- Usage is written as JSON lines to `logs/cmibot-usage.jsonl`. Before the active log would exceed `AUDIT_LOG_MAX_SIZE_MB`, it rotates to numbered archives and retains at most `AUDIT_LOG_MAX_FILES` archives.
 - Every interaction runs behind a top-level rejection boundary. Unexpected command and fallback-response errors are logged without terminating the bot.
 - Discord client and shard errors have explicit listeners so an emitted runtime error cannot become an unhandled `error` event.
 
@@ -331,6 +332,9 @@ SUMMARY_COOLDOWN_SECONDS=15
 DEBUG_COOLDOWN_SECONDS=10
 RELOAD_COOLDOWN_SECONDS=30
 RATE_LIMIT_AUDIT_COOLDOWN_SECONDS=30
+AUDIT_LOG_PATH=logs/cmibot-usage.jsonl
+AUDIT_LOG_MAX_SIZE_MB=10
+AUDIT_LOG_MAX_FILES=5
 ```
 
 ## Install
