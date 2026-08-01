@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-01T06:25:31.239Z",
+  "generatedAt": "2026-08-01T06:50:59.181Z",
   "sourceServer": "servers/Paper-26.2",
   "paper": {
     "id": "paper",
@@ -165,9 +165,9 @@
     {
       "id": "cmi-api",
       "label": "CMI-API",
-      "version": null,
-      "jar": null,
-      "location": null,
+      "version": "9.8.6.4",
+      "jar": "CMI-API9.8.6.4.jar",
+      "location": "companions",
       "resourceUrl": "https://github.com/Zrips/CMI-API",
       "versionSource": {
         "type": "github-pom",
@@ -178,9 +178,9 @@
     {
       "id": "cmi-bungee",
       "label": "CMI-Bungee",
-      "version": null,
-      "jar": null,
-      "location": null,
+      "version": "1.0.4.2",
+      "jar": "CMIB-1.0.4.2.jar",
+      "location": "companions",
       "resourceUrl": "https://www.zrips.net/cmib/",
       "versionSource": {
         "type": "zrips-listing",
@@ -191,9 +191,9 @@
     {
       "id": "cmi-velocity",
       "label": "CMI-Velocity",
-      "version": null,
-      "jar": null,
-      "location": null,
+      "version": "1.0.2.4",
+      "jar": "CMIV-1.0.2.4.jar",
+      "location": "companions",
       "resourceUrl": "https://www.zrips.net/cmiv/",
       "versionSource": {
         "type": "zrips-listing",
@@ -206,7 +206,7 @@
       "label": "CMI-Vault",
       "version": "1.7.4",
       "jar": "Vault-1.7.4.jar",
-      "location": "plugins",
+      "location": "companions",
       "resourceUrl": "https://www.zrips.net/cmivault/",
       "versionSource": {
         "type": "zrips-listing",
@@ -217,9 +217,9 @@
     {
       "id": "cmi-e-injector",
       "label": "CMI-E-Injector",
-      "version": null,
-      "jar": null,
-      "location": null,
+      "version": "1.0.2.4",
+      "jar": "CMIEInjector1.0.2.4.jar",
+      "location": "companions",
       "resourceUrl": "https://zrips.net/cmii/",
       "versionSource": {
         "type": "zrips-listing",

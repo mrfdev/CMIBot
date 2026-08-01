@@ -128,10 +128,12 @@ The bot's YAML data is generated from a clean first-install Paper server instead
 ```text
 servers/
 |- _template-Paper-26.2/
+|  `- companions/
 `- Paper-26.2/
+   `- companions/
 ```
 
-`servers/` is ignored by Git. Never start or modify `_template-Paper-26.2` directly. It is a reusable source containing Paper, its cache/libraries, and the plugin jars.
+`servers/` is ignored by Git. Never start or modify `_template-Paper-26.2` directly. It is a reusable source containing Paper, its cache/libraries, and the plugin jars. Non-Paper companion artifacts belong in the template's `companions/` directory, which the refresh copies into the disposable server without loading those jars as plugins.
 
 The maintained template uses PaperScript's `STABLE` channel, same-version build upgrades, and the fixed `Paper-{version}.jar` filename. Its broad process-name fallback is disabled because another project can legitimately run a jar with the same name; exact test-port detection remains enabled.
 
@@ -144,7 +146,7 @@ npm run refresh:data
 The refresh script performs these steps:
 
 1. Moves the existing `servers/Paper-26.2` to a temporary backup.
-2. Clones `_template-Paper-26.2` into a new disposable working server.
+2. Clones `_template-Paper-26.2` into a new disposable working server, including its non-loaded `companions/` inventory.
 3. Removes generated plugin, world, log, and Paper config state from the clone only.
 4. Runs Paperclip's documented patch-only mode in the clone so the exact stable Paper API and runtime libraries are present without starting the template.
 5. Builds `LookupRuntimeExporter` with JDK 25 against the API coordinate in `runtime-exporter/compatibility.json`, verifies Java 25 class bytecode, and places the jar in the disposable clone only.
@@ -218,7 +220,7 @@ Generated files outside `data/` are replaced on each clean refresh so removed or
 
 The all-resources response is grouped for readability: the first private message lists the main Zrips plugins, and the second lists CMI companion resources followed by Paper and other third-party resources.
 
-The CMI companion section always tracks CMI-API, CMI-Bungee, CMI-Velocity, CMI-Vault, and CMI-E-Injector through their official GitHub or Zrips sources. CMI-Vault is detected from the Paper plugin directory. API and proxy artifacts can optionally be stored in the ignored `servers/Paper-26.2/companions/` directory so their local versions can be compared without loading them into Paper.
+The CMI companion section always tracks CMI-API, CMI-Bungee, CMI-Velocity, CMI-Vault, and CMI-E-Injector through their official GitHub or Zrips sources. Their local jars are stored in the ignored `servers/_template-Paper-26.2/companions/` directory and copied to `servers/Paper-26.2/companions/` during a refresh. They are inventoried for version comparisons but are never placed in Paper's `plugins/` directory or started by the clean server.
 
 Tracked Spigot resource versions are checked through the public Spiget API, Paper builds through Paper's official Fill API, CMI companion downloads through their Zrips listings, and CMI-API through its GitHub project version. A failed or disabled network check never prevents the bot from starting; the command continues to show the local inventory.
 
