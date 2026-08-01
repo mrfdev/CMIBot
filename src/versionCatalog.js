@@ -138,6 +138,11 @@ function formatCompanionVersionLine(companion, upstream, checkEnabled) {
   return `${prefix} | upstream \`${upstream.version}\` (${status})`;
 }
 
+function formatPublicPluginVersionLine(plugin, upstream) {
+  const label = linkedLabel(plugin.label, plugin.resourceUrl || plugin.website);
+  return `- **${label}:** \`${upstream.version}\``;
+}
+
 function orderPlugins(plugins) {
   const order = new Map(DISPLAY_ORDER.map((id, index) => [id, index]));
   return [...plugins].sort((left, right) => {
@@ -213,6 +218,42 @@ export function formatLatestVersionMessages(snapshot, plugin, scope = "context")
     return [message];
   }
   return [message.slice(0, boundary), message.slice(boundary + 1)];
+}
+
+export function formatPublicLatestVersions(snapshot, plugin) {
+  if (!snapshot.catalog) {
+    throw new Error("The version catalog is not available yet.");
+  }
+  if (!snapshot.checkEnabled) {
+    throw new Error("Upstream version checks are disabled.");
+  }
+
+  const contextPlugin = snapshot.catalog.plugins.find((entry) => entry.contextId === plugin.id);
+  const cmilib = snapshot.catalog.plugins.find((entry) => entry.id === "cmilib");
+
+  if (!contextPlugin) {
+    throw new Error(`No tracked upstream resource is configured for ${plugin.label}.`);
+  }
+  if (!cmilib) {
+    throw new Error("No tracked upstream resource is configured for CMILib.");
+  }
+
+  const plugins = [contextPlugin, cmilib];
+  const unavailable = plugins.filter((entry) => !snapshot.plugins.get(entry.id)?.version);
+  if (unavailable.length) {
+    throw new Error(
+      `Latest upstream ${unavailable.length === 1 ? "version is" : "versions are"} currently unavailable for ${unavailable
+        .map((entry) => entry.label)
+        .join(" and ")}.`,
+    );
+  }
+
+  const lines = [`### Latest ${contextPlugin.label} & CMILib Versions`];
+  for (const entry of plugins) {
+    lines.push(formatPublicPluginVersionLine(entry, snapshot.plugins.get(entry.id)));
+  }
+  lines.push("", "We recommend updating both plugins to these current releases before troubleshooting version-related issues.");
+  return lines.join("\n");
 }
 
 export function formatVersionServiceSummary(snapshot) {

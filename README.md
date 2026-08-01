@@ -54,6 +54,7 @@ CMILib config and English locale files are shared with every plugin context.
 /lookup langstats
 /lookup stats
 /lookup latest
+/lookup latest public:true
 /lookup latest scope:all
 /lookup debug
 /lookup reload
@@ -88,6 +89,7 @@ CMILib config and English locale files are shared with every plugin context.
 /lookup cmd bottle
 /lookup perm bottledexp.command.consume
 /lookup latest
+/lookup latest public:true
 /lookup latest scope:all
 ```
 
@@ -210,7 +212,9 @@ Generated files outside `data/` are replaced on each clean refresh so removed or
 
 ## Version Checks
 
-`/lookup latest` shows the clean snapshot version for the active plugin, CMILib, and Paper. `/lookup latest scope:all` also lists every jar in the clean reference server, support dependencies such as LuckPerms and PlaceholderAPI, and the tracked CMI companion resources.
+`/lookup latest` privately shows the clean snapshot version for the active plugin, CMILib, and Paper. `/lookup latest public:true` posts a compact public response containing only the latest upstream versions for the active plugin and CMILib, followed by an upgrade recommendation. It never includes the local clean snapshot, Paper, internal generation timestamps, or other tracked resources.
+
+`/lookup latest scope:all` privately lists every jar in the clean reference server, support dependencies such as LuckPerms and PlaceholderAPI, and the tracked CMI companion resources. Public output is intentionally limited to the current channel context, so `scope:all public:true` is rejected privately.
 
 The all-resources response is grouped for readability: the first private message lists the main Zrips plugins, and the second lists CMI companion resources followed by Paper and other third-party resources.
 

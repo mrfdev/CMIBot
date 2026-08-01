@@ -5,7 +5,11 @@ import { writeAuditLog } from "./auditLog.js";
 import { formatCacheSummary } from "./cache.js";
 import { createCooldownManager, resolveFileFilter, sanitizeForDisplay, validateQuery } from "./security.js";
 import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
-import { formatLatestVersionMessages, formatVersionServiceSummary } from "./versionCatalog.js";
+import {
+  formatLatestVersionMessages,
+  formatPublicLatestVersions,
+  formatVersionServiceSummary,
+} from "./versionCatalog.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 
 const PRIMARY_COMMAND_NAME = "lookup";
@@ -229,6 +233,11 @@ function buildCommandTree(commandName, config) {
               { name: "current context", value: "context" },
               { name: "all resources", value: "all" },
             ),
+        )
+        .addBooleanOption((option) =>
+          option
+            .setName("public")
+            .setDescription("Post a compact upstream-only result publicly. Defaults to false."),
         ),
     )
     .addSubcommand((subcommand) =>
@@ -661,6 +670,7 @@ export function formatHelpMessage(config, member, context, commandName) {
   lines.push(`- \`${prefix} langstats\` shows language-category stats for this plugin context`);
   lines.push(`- \`${prefix} stats\` shows cache totals for this plugin context`);
   lines.push(`- \`${prefix} latest\` shows versions for this plugin and CMILib`);
+  lines.push(`- \`${prefix} latest public:true\` publicly shows only the latest plugin and CMILib releases`);
   lines.push(`- \`${prefix} latest scope:all\` shows every tracked resource and CMI companion`);
   lines.push(`- \`${prefix} debug\` shows the current channel context`);
   lines.push(`- \`${prefix} reload\` refreshes the cache for every plugin context`);
@@ -1426,30 +1436,82 @@ export function createInteractionHandler(config, searchCache, versionService) {
     }
 
     if (canonicalSubcommand === "latest") {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-      try {
-        const scope = interaction.options.getString("scope") ?? "context";
-        const snapshot = versionService.getSnapshot();
+      const scope = interaction.options.getString("scope") ?? "context";
+      const publicResponse = interaction.options.getBoolean("public") ?? false;
+
+      if (publicResponse && scope !== "context") {
         await logEvent(interaction, {
           subcommand,
           scope,
+          visibility: "public",
+          outcome: "denied",
+          reason: "public-all-scope",
+          detectedContext: context.pluginId,
+        });
+        await interaction.reply({
+          content: "Public version posts are limited to the current channel context. Remove `scope:all` and try again.",
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+        return;
+      }
+
+      const snapshot = versionService.getSnapshot();
+      let versionMessages;
+      try {
+        versionMessages = publicResponse
+          ? splitDiscordMessages(formatPublicLatestVersions(snapshot, context.plugin))
+          : formatLatestVersionMessages(snapshot, context.plugin, scope).flatMap((message) =>
+              splitDiscordMessages(message),
+            );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        await logEvent(interaction, {
+          subcommand,
+          scope,
+          visibility: publicResponse ? "public" : "private",
+          outcome: "error",
+          reason: message,
+          detectedContext: context.pluginId,
+        });
+        await interaction.reply({
+          content: publicResponse
+            ? `No public version result was posted: ${message}`
+            : `The bot hit an error while loading version information: ${message}`,
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+        return;
+      }
+
+      if (publicResponse) {
+        await interaction.deferReply();
+      } else {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      }
+
+      try {
+        await logEvent(interaction, {
+          subcommand,
+          scope,
+          visibility: publicResponse ? "public" : "private",
           outcome: "success",
           detectedContext: context.pluginId,
           versionCheckErrors: snapshot.errorCount,
         });
-        const versionMessages = formatLatestVersionMessages(snapshot, context.plugin, scope).flatMap((message) =>
-          splitDiscordMessages(message),
-        );
         await interaction.editReply({
           content: versionMessages[0],
           allowedMentions: NO_MENTIONS,
         });
         for (const message of versionMessages.slice(1)) {
-          await interaction.followUp({
+          const followUp = {
             content: message,
-            flags: MessageFlags.Ephemeral,
             allowedMentions: NO_MENTIONS,
-          });
+          };
+          if (!publicResponse) {
+            followUp.flags = MessageFlags.Ephemeral;
+          }
+          await interaction.followUp(followUp);
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
@@ -1459,10 +1521,17 @@ export function createInteractionHandler(config, searchCache, versionService) {
           reason: message,
           detectedContext: context.pluginId,
         });
-        await interaction.editReply({
-          content: `The bot hit an error while loading version information: ${message}`,
-          allowedMentions: NO_MENTIONS,
-        });
+        const content = `The bot hit an error while loading version information: ${message}`;
+        if (publicResponse) {
+          await interaction.deleteReply().catch(() => {});
+          await interaction.followUp({
+            content,
+            flags: MessageFlags.Ephemeral,
+            allowedMentions: NO_MENTIONS,
+          });
+        } else {
+          await interaction.editReply({ content, allowedMentions: NO_MENTIONS });
+        }
       }
       return;
     }
