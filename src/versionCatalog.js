@@ -95,7 +95,7 @@ function formatPluginVersionLine(plugin, upstream, checkEnabled) {
   }
 
   const comparison = compareVersions(plugin.version, upstream.version);
-  const status = comparison === 0 ? "current" : comparison < 0 ? "update available" : "snapshot newer than upstream listing";
+  const status = comparison === 0 ? "current" : comparison < 0 ? "**update available**" : "snapshot newer than upstream listing";
   return `${prefix} | upstream \`${upstream.version}\` (${status})`;
 }
 
@@ -114,7 +114,7 @@ function formatPaperVersionLine(paper, upstream, checkEnabled) {
 
   const localMatchesVersion = String(paper.version) === String(upstream.version);
   const comparison = localMatchesVersion ? Number(localBuild) - Number(upstream.build) : compareVersions(paper.version, upstream.version);
-  const status = comparison === 0 ? "current" : comparison < 0 ? "update available" : "snapshot newer than upstream listing";
+  const status = comparison === 0 ? "current" : comparison < 0 ? "**update available**" : "snapshot newer than upstream listing";
   return `${prefix} | upstream \`${upstream.version} build ${upstream.build} ${upstream.channel}\` (${status})`;
 }
 
@@ -134,7 +134,7 @@ function formatCompanionVersionLine(companion, upstream, checkEnabled) {
   }
 
   const comparison = compareVersions(companion.version, upstream.version);
-  const status = comparison === 0 ? "current" : comparison < 0 ? "update available" : "local artifact newer than upstream listing";
+  const status = comparison === 0 ? "current" : comparison < 0 ? "**update available**" : "local artifact newer than upstream listing";
   return `${prefix} | upstream \`${upstream.version}\` (${status})`;
 }
 
