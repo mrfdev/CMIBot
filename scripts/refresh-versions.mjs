@@ -7,4 +7,6 @@ const workspaceRoot = path.resolve(scriptDirectory, "..");
 const serverDirectory = path.join(workspaceRoot, "servers", "Paper-26.2");
 const { catalog, outputPath } = await writeVersionCatalog(workspaceRoot, serverDirectory);
 
-console.log(`Wrote ${catalog.plugins.length} plugin versions and Paper metadata to ${outputPath}.`);
+console.log(
+  `Wrote ${catalog.plugins.length} plugin versions, ${catalog.companions.length} companion resources, and Paper metadata to ${outputPath}.`,
+);

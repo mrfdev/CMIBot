@@ -54,7 +54,7 @@ function linkedLabel(label, url) {
   return url ? `[${label}](<${url}>)` : label;
 }
 
-async function fetchJson(url, timeoutMs) {
+async function fetchResponse(url, timeoutMs) {
   const response = await fetch(url, {
     headers: {
       accept: "application/json",
@@ -65,7 +65,19 @@ async function fetchJson(url, timeoutMs) {
   if (!response.ok) {
     throw new Error(`${response.status} ${response.statusText}`);
   }
-  return response.json();
+  return response;
+}
+
+async function fetchJson(url, timeoutMs) {
+  return (await fetchResponse(url, timeoutMs)).json();
+}
+
+async function fetchText(url, timeoutMs) {
+  return (await fetchResponse(url, timeoutMs)).text();
+}
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function formatPluginVersionLine(plugin, upstream, checkEnabled) {
@@ -106,6 +118,26 @@ function formatPaperVersionLine(paper, upstream, checkEnabled) {
   return `${prefix} | upstream \`${upstream.version} build ${upstream.build} ${upstream.channel}\` (${status})`;
 }
 
+function formatCompanionVersionLine(companion, upstream, checkEnabled) {
+  const label = linkedLabel(companion.label, companion.resourceUrl);
+  const local = companion.version ? `local artifact \`${companion.version}\`` : "not stored locally";
+  const prefix = `- **${label}:** ${local}`;
+
+  if (!checkEnabled) {
+    return `${prefix} (upstream checks disabled)`;
+  }
+  if (!upstream?.version) {
+    return `${prefix} (upstream unavailable)`;
+  }
+  if (!companion.version) {
+    return `${prefix} | upstream \`${upstream.version}\` (upstream only)`;
+  }
+
+  const comparison = compareVersions(companion.version, upstream.version);
+  const status = comparison === 0 ? "current" : comparison < 0 ? "update available" : "local artifact newer than upstream listing";
+  return `${prefix} | upstream \`${upstream.version}\` (${status})`;
+}
+
 function orderPlugins(plugins) {
   const order = new Map(DISPLAY_ORDER.map((id, index) => [id, index]));
   return [...plugins].sort((left, right) => {
@@ -129,7 +161,7 @@ export function formatLatestVersions(snapshot, plugin, scope = "context") {
         );
   const lines = [
     "### Latest Versions",
-    scope === "all" ? "Scope: `all clean-server resources`" : `Current context: \`${plugin.label}\``,
+    scope === "all" ? "Scope: `all tracked resources`" : `Current context: \`${plugin.label}\``,
   ];
 
   if (scope === "all") {
@@ -137,6 +169,12 @@ export function formatLatestVersions(snapshot, plugin, scope = "context") {
   }
   for (const entry of plugins) {
     lines.push(formatPluginVersionLine(entry, snapshot.plugins.get(entry.id), snapshot.checkEnabled));
+  }
+  if (scope === "all" && catalog.companions.length) {
+    lines.push("", "**CMI companion resources:**");
+    for (const companion of catalog.companions) {
+      lines.push(formatCompanionVersionLine(companion, snapshot.companions.get(companion.id), snapshot.checkEnabled));
+    }
   }
   if (scope !== "all") {
     lines.push(formatPaperVersionLine(catalog.paper, snapshot.paper, snapshot.checkEnabled));
@@ -146,7 +184,7 @@ export function formatLatestVersions(snapshot, plugin, scope = "context") {
   if (snapshot.checkEnabled) {
     lines.push(
       snapshot.checkedAt
-        ? `Upstream checked ${formatDiscordTimestamp(snapshot.checkedAt)} via Spiget and Paper's API${snapshot.errorCount ? `; ${snapshot.errorCount} check(s) unavailable` : ""}.`
+        ? `Upstream checked ${formatDiscordTimestamp(snapshot.checkedAt)} via Spiget, Paper, Zrips, and GitHub${snapshot.errorCount ? `; ${snapshot.errorCount} check(s) unavailable` : ""}.`
         : "The first upstream version check has not completed yet.",
     );
   } else {
@@ -157,11 +195,15 @@ export function formatLatestVersions(snapshot, plugin, scope = "context") {
 
 export function formatVersionServiceSummary(snapshot) {
   const pluginCount = snapshot.catalog?.plugins.length ?? 0;
+  const companionCount = snapshot.catalog?.companions.length ?? 0;
+  const inventory = `${pluginCount} plugins${companionCount ? ` and ${companionCount} companion resources` : ""}`;
   if (!snapshot.checkEnabled) {
-    return `Loaded clean-server versions for ${pluginCount} plugins; scheduled upstream checks are disabled.`;
+    return `Loaded clean-server versions for ${inventory}; scheduled upstream checks are disabled.`;
   }
-  const checkedCount = [...snapshot.plugins.values()].filter((entry) => entry.version).length + (snapshot.paper?.build ? 1 : 0);
-  return `Loaded clean-server versions for ${pluginCount} plugins; ${checkedCount} upstream version checks succeeded${snapshot.errorCount ? ` and ${snapshot.errorCount} failed` : ""}.`;
+  const checkedCount =
+    [...snapshot.plugins.values(), ...snapshot.companions.values()].filter((entry) => entry.version).length +
+    (snapshot.paper?.build ? 1 : 0);
+  return `Loaded clean-server versions for ${inventory}; ${checkedCount} upstream version checks succeeded${snapshot.errorCount ? ` and ${snapshot.errorCount} failed` : ""}.`;
 }
 
 export function createVersionService(config) {
@@ -172,6 +214,7 @@ export function createVersionService(config) {
   let timer = null;
   let inFlight = null;
   const plugins = new Map();
+  const companions = new Map();
   const catalogPath = path.resolve(config.workspaceRoot, config.versions.catalogPath);
 
   function getSnapshot() {
@@ -179,6 +222,7 @@ export function createVersionService(config) {
       catalog,
       paper,
       plugins: new Map(plugins),
+      companions: new Map(companions),
       checkedAt,
       errorCount,
       checkEnabled: config.versions.checkEnabled,
@@ -190,7 +234,10 @@ export function createVersionService(config) {
     if (parsed.schemaVersion !== 1 || !parsed.paper || !Array.isArray(parsed.plugins)) {
       throw new Error(`Unsupported version catalog format in ${catalogPath}`);
     }
-    catalog = parsed;
+    catalog = {
+      ...parsed,
+      companions: Array.isArray(parsed.companions) ? parsed.companions : [],
+    };
     return getSnapshot();
   }
 
@@ -227,6 +274,37 @@ export function createVersionService(config) {
     return { version: String(latest.name) };
   }
 
+  async function checkCompanion(companion) {
+    const source = companion.versionSource;
+    const content = await fetchText(source.url, config.versions.requestTimeoutMs);
+
+    if (source.type === "github-pom") {
+      const pattern = new RegExp(
+        `<artifactId>\\s*${escapeRegex(source.artifactId)}\\s*</artifactId>\\s*<version>\\s*([^<]+?)\\s*</version>`,
+        "i",
+      );
+      const match = content.match(pattern);
+      if (!match) {
+        throw new Error(`${companion.label} returned no project version.`);
+      }
+      return { version: match[1].trim() };
+    }
+
+    if (source.type === "zrips-listing") {
+      const pattern = new RegExp(
+        `file=${escapeRegex(source.filePrefix)}([0-9]+(?:\\.[0-9]+)+)\\.jar`,
+        "i",
+      );
+      const match = content.match(pattern);
+      if (!match) {
+        throw new Error(`${companion.label} returned no downloadable version.`);
+      }
+      return { version: match[1] };
+    }
+
+    throw new Error(`${companion.label} has unsupported version source ${source.type}.`);
+  }
+
   async function refreshUpstream() {
     if (!config.versions.checkEnabled) {
       return getSnapshot();
@@ -241,7 +319,12 @@ export function createVersionService(config) {
     inFlight = (async () => {
       let failures = 0;
       const trackedPlugins = catalog.plugins.filter((entry) => entry.resourceId);
-      const results = await Promise.allSettled([checkPaper(), ...trackedPlugins.map((entry) => checkPlugin(entry))]);
+      const trackedCompanions = catalog.companions.filter((entry) => entry.versionSource);
+      const results = await Promise.allSettled([
+        checkPaper(),
+        ...trackedPlugins.map((entry) => checkPlugin(entry)),
+        ...trackedCompanions.map((entry) => checkCompanion(entry)),
+      ]);
       const paperResult = results[0];
       if (paperResult.status === "fulfilled") {
         paper = paperResult.value;
@@ -257,6 +340,18 @@ export function createVersionService(config) {
           plugins.set(plugin.id, result.value);
         } else {
           plugins.delete(plugin.id);
+          failures += 1;
+        }
+      }
+
+      const companionOffset = 1 + trackedPlugins.length;
+      for (let index = 0; index < trackedCompanions.length; index += 1) {
+        const result = results[companionOffset + index];
+        const companion = trackedCompanions[index];
+        if (result.status === "fulfilled") {
+          companions.set(companion.id, result.value);
+        } else {
+          companions.delete(companion.id);
           failures += 1;
         }
       }

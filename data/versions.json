@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-28T11:25:19.347Z",
+  "generatedAt": "2026-08-01T06:25:31.239Z",
   "sourceServer": "servers/Paper-26.2",
   "paper": {
     "id": "paper",
@@ -159,19 +159,73 @@
       "resourceId": 3330,
       "resourceUrl": "https://www.spigotmc.org/resources/3330/",
       "website": "https://www.spigotmc.org/resources/tryme.3330/"
+    }
+  ],
+  "companions": [
+    {
+      "id": "cmi-api",
+      "label": "CMI-API",
+      "version": null,
+      "jar": null,
+      "location": null,
+      "resourceUrl": "https://github.com/Zrips/CMI-API",
+      "versionSource": {
+        "type": "github-pom",
+        "url": "https://raw.githubusercontent.com/Zrips/CMI-API/master/pom.xml",
+        "artifactId": "CMI-API"
+      }
     },
     {
-      "id": "vault",
-      "label": "Vault (CMI build)",
-      "pluginName": "Vault",
-      "version": "1.7.3-CMI",
+      "id": "cmi-bungee",
+      "label": "CMI-Bungee",
+      "version": null,
+      "jar": null,
+      "location": null,
+      "resourceUrl": "https://www.zrips.net/cmib/",
+      "versionSource": {
+        "type": "zrips-listing",
+        "url": "https://www.zrips.net/cmib/",
+        "filePrefix": "CMIB-"
+      }
+    },
+    {
+      "id": "cmi-velocity",
+      "label": "CMI-Velocity",
+      "version": null,
+      "jar": null,
+      "location": null,
+      "resourceUrl": "https://www.zrips.net/cmiv/",
+      "versionSource": {
+        "type": "zrips-listing",
+        "url": "https://www.zrips.net/cmiv/",
+        "filePrefix": "CMIV-"
+      }
+    },
+    {
+      "id": "cmi-vault",
+      "label": "CMI-Vault",
+      "version": "1.7.4",
       "jar": "Vault-1.7.4.jar",
-      "contextId": null,
-      "shared": false,
-      "tracked": false,
-      "resourceId": null,
-      "resourceUrl": "https://dev.bukkit.org/projects/vault",
-      "website": "https://dev.bukkit.org/projects/vault"
+      "location": "plugins",
+      "resourceUrl": "https://www.zrips.net/cmivault/",
+      "versionSource": {
+        "type": "zrips-listing",
+        "url": "https://www.zrips.net/cmivault/",
+        "filePrefix": "Vault-"
+      }
+    },
+    {
+      "id": "cmi-e-injector",
+      "label": "CMI-E-Injector",
+      "version": null,
+      "jar": null,
+      "location": null,
+      "resourceUrl": "https://zrips.net/cmii/",
+      "versionSource": {
+        "type": "zrips-listing",
+        "url": "https://zrips.net/cmii/",
+        "filePrefix": "CMIEInjector"
+      }
     }
   ]
 }

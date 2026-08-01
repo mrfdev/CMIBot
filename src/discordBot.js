@@ -224,7 +224,7 @@ function buildCommandTree(commandName, config) {
         .addStringOption((option) =>
           option
             .setName("scope")
-            .setDescription("Show this channel context or every resource in the clean server.")
+            .setDescription("Show this channel context or every tracked resource and companion.")
             .addChoices(
               { name: "current context", value: "context" },
               { name: "all resources", value: "all" },
@@ -661,7 +661,7 @@ export function formatHelpMessage(config, member, context, commandName) {
   lines.push(`- \`${prefix} langstats\` shows language-category stats for this plugin context`);
   lines.push(`- \`${prefix} stats\` shows cache totals for this plugin context`);
   lines.push(`- \`${prefix} latest\` shows versions for this plugin and CMILib`);
-  lines.push(`- \`${prefix} latest scope:all\` shows every clean-server resource`);
+  lines.push(`- \`${prefix} latest scope:all\` shows every tracked resource and CMI companion`);
   lines.push(`- \`${prefix} debug\` shows the current channel context`);
   lines.push(`- \`${prefix} reload\` refreshes the cache for every plugin context`);
 
@@ -1183,8 +1183,35 @@ export function splitDiscordMessages(message, maxLength = 1900) {
       return [chunk];
     }
     const parts = [];
-    for (let index = 0; index < chunk.length; index += maxLength) {
-      parts.push(chunk.slice(index, index + maxLength));
+    let part = "";
+    for (const line of chunk.split("\n")) {
+      if (line.length > maxLength) {
+        if (part) {
+          parts.push(part);
+          part = "";
+        }
+        for (let index = 0; index < line.length; index += maxLength) {
+          const slice = line.slice(index, index + maxLength);
+          if (slice.length === maxLength) {
+            parts.push(slice);
+          } else {
+            part = slice;
+          }
+        }
+        continue;
+      }
+      const candidate = part ? `${part}\n${line}` : line;
+      if (candidate.length <= maxLength) {
+        part = candidate;
+        continue;
+      }
+      if (part) {
+        parts.push(part);
+      }
+      part = line;
+    }
+    if (part) {
+      parts.push(part);
     }
     return parts;
   });
@@ -1407,10 +1434,18 @@ export function createInteractionHandler(config, searchCache, versionService) {
           detectedContext: context.pluginId,
           versionCheckErrors: snapshot.errorCount,
         });
+        const versionMessages = splitDiscordMessages(formatLatestVersions(snapshot, context.plugin, scope));
         await interaction.editReply({
-          content: truncateDiscordMessage(formatLatestVersions(snapshot, context.plugin, scope)),
+          content: versionMessages[0],
           allowedMentions: NO_MENTIONS,
         });
+        for (const message of versionMessages.slice(1)) {
+          await interaction.followUp({
+            content: message,
+            flags: MessageFlags.Ephemeral,
+            allowedMentions: NO_MENTIONS,
+          });
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
         await logEvent(interaction, {

@@ -2,13 +2,17 @@ import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
-import { PAPER_DEFINITION, PLUGIN_DEFINITIONS, getSpigotResourceUrl } from "./plugin-definitions.mjs";
+import {
+  COMPANION_DEFINITIONS,
+  PAPER_DEFINITION,
+  PLUGIN_DEFINITIONS,
+  getSpigotResourceUrl,
+} from "./plugin-definitions.mjs";
 import { readRuntimeCompatibility } from "./runtime-compatibility.mjs";
 
 const execFileAsync = promisify(execFile);
 const SUPPORT_PLUGIN_METADATA = new Map([
   ["placeholderapi", { label: "PlaceholderAPI", resourceUrl: "https://placeholderapi.com/" }],
-  ["vault", { label: "Vault (CMI build)", resourceUrl: "https://dev.bukkit.org/projects/vault" }],
 ]);
 
 function unquote(value) {
@@ -43,6 +47,45 @@ function slugify(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function versionFromJarName(jarName, prefix) {
+  if (!prefix || !jarName.toLowerCase().startsWith(prefix.toLowerCase())) {
+    return "";
+  }
+  return jarName.slice(prefix.length).replace(/\.jar$/i, "").replace(/^[-_]+/, "");
+}
+
+async function findStoredCompanionJars(serverDirectory) {
+  const result = new Map();
+  const companionDirectory = path.join(serverDirectory, "companions");
+  let entries;
+  try {
+    entries = await fs.readdir(companionDirectory, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return result;
+    }
+    throw error;
+  }
+
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.toLowerCase().endsWith(".jar")) {
+      continue;
+    }
+    const definition = COMPANION_DEFINITIONS.find((candidate) =>
+      entry.name.toLowerCase().startsWith(candidate.localJarPrefix.toLowerCase()),
+    );
+    if (!definition) {
+      continue;
+    }
+    result.set(definition.id, {
+      version: versionFromJarName(entry.name, definition.localJarPrefix) || "unknown",
+      jar: entry.name,
+      location: "companions",
+    });
+  }
+  return result;
 }
 
 async function readPaperMetadata(workspaceRoot, serverDirectory) {
@@ -90,6 +133,13 @@ export async function buildVersionCatalog(workspaceRoot, serverDirectory) {
     .map((entry) => entry.name)
     .sort((left, right) => left.localeCompare(right));
   const knownByPluginName = new Map(PLUGIN_DEFINITIONS.map((definition) => [definition.pluginName.toLowerCase(), definition]));
+  const companionByPluginName = new Map(
+    COMPANION_DEFINITIONS.filter((definition) => definition.localPluginName).map((definition) => [
+      definition.localPluginName.toLowerCase(),
+      definition,
+    ]),
+  );
+  const storedCompanions = await findStoredCompanionJars(serverDirectory);
   const plugins = [];
 
   for (const jarName of jarNames) {
@@ -103,6 +153,16 @@ export async function buildVersionCatalog(workspaceRoot, serverDirectory) {
     }
 
     if (metadata.name.toLowerCase() === "lookupruntimeexporter") {
+      continue;
+    }
+
+    const companionDefinition = companionByPluginName.get(metadata.name.toLowerCase());
+    if (companionDefinition) {
+      storedCompanions.set(companionDefinition.id, {
+        version: versionFromJarName(jarName, companionDefinition.localJarPrefix) || metadata.version || "unknown",
+        jar: jarName,
+        location: "plugins",
+      });
       continue;
     }
 
@@ -124,12 +184,26 @@ export async function buildVersionCatalog(workspaceRoot, serverDirectory) {
     });
   }
 
+  const companions = COMPANION_DEFINITIONS.map((definition) => {
+    const stored = storedCompanions.get(definition.id);
+    return {
+      id: definition.id,
+      label: definition.label,
+      version: stored?.version ?? null,
+      jar: stored?.jar ?? null,
+      location: stored?.location ?? null,
+      resourceUrl: definition.resourceUrl,
+      versionSource: definition.versionSource,
+    };
+  });
+
   return {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     sourceServer: path.relative(workspaceRoot, serverDirectory).split(path.sep).join("/"),
     paper: await readPaperMetadata(workspaceRoot, serverDirectory),
     plugins,
+    companions,
   };
 }
 

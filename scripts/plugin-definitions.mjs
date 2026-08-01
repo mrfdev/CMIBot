@@ -98,6 +98,66 @@ export const PLUGIN_DEFINITIONS = [
   },
 ];
 
+export const COMPANION_DEFINITIONS = [
+  {
+    id: "cmi-api",
+    label: "CMI-API",
+    resourceUrl: "https://github.com/Zrips/CMI-API",
+    localJarPrefix: "CMI-API",
+    versionSource: {
+      type: "github-pom",
+      url: "https://raw.githubusercontent.com/Zrips/CMI-API/master/pom.xml",
+      artifactId: "CMI-API",
+    },
+  },
+  {
+    id: "cmi-bungee",
+    label: "CMI-Bungee",
+    resourceUrl: "https://www.zrips.net/cmib/",
+    localJarPrefix: "CMIB-",
+    versionSource: {
+      type: "zrips-listing",
+      url: "https://www.zrips.net/cmib/",
+      filePrefix: "CMIB-",
+    },
+  },
+  {
+    id: "cmi-velocity",
+    label: "CMI-Velocity",
+    resourceUrl: "https://www.zrips.net/cmiv/",
+    localJarPrefix: "CMIV-",
+    versionSource: {
+      type: "zrips-listing",
+      url: "https://www.zrips.net/cmiv/",
+      filePrefix: "CMIV-",
+    },
+  },
+  {
+    id: "cmi-vault",
+    label: "CMI-Vault",
+    resourceUrl: "https://www.zrips.net/cmivault/",
+    localPluginName: "Vault",
+    localJarPrefix: "Vault-",
+    versionSource: {
+      type: "zrips-listing",
+      url: "https://www.zrips.net/cmivault/",
+      filePrefix: "Vault-",
+    },
+  },
+  {
+    id: "cmi-e-injector",
+    label: "CMI-E-Injector",
+    resourceUrl: "https://zrips.net/cmii/",
+    localPluginName: "CMIEInjector",
+    localJarPrefix: "CMIEInjector",
+    versionSource: {
+      type: "zrips-listing",
+      url: "https://zrips.net/cmii/",
+      filePrefix: "CMIEInjector",
+    },
+  },
+];
+
 export function getSpigotResourceUrl(resourceId) {
   return resourceId ? `https://www.spigotmc.org/resources/${resourceId}/` : "";
 }
