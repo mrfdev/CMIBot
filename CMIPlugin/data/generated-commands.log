@@ -28,6 +28,7 @@
 /cmi charges [playerName] [add/set/take/clear/reset] (-f) - Shows left spawner charges
 /cmi chat [create/join/leave/list/invite/kick/listrooms] (chatName/playerName) (-private) (-locked) (-persistent) - Create and join chat rooms
 /cmi chatcolor (playerName) - Pick chat color
+/cmi chatdelete [playerName/uuid] (uuid) (-s) - Delete players chat messages
 /cmi checkaccount (playerName/ip) - Search for a players other accounts
 /cmi checkban (playerName) - Check players ban status
 /cmi checkcommand (key word) - Search for possible commands by keyword

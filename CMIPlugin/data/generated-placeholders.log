@@ -83,6 +83,9 @@
 %cmi_jail_reason_[jailName]_[cellId]%
 
 # Time of a jail cell
+%cmi_jail_stime_[jailName]_[cellId]%
+
+# Time of a jail cell
 %cmi_jail_time_[jailName]_[cellId]%
 
 # Name of user who is jailed in particular cell
@@ -147,6 +150,9 @@
 
 # Returns player online status
 %cmi_p_[playerName]_online%
+
+# Left jail time in seconds. Example: 2365
+%cmi_p_[playerName]_sjailtime%
 
 # Current players biome name
 %cmi_player_biome%
@@ -519,6 +525,9 @@
 
 # Sign spy state
 %cmi_user_signspy%
+
+# Left jail time in seconds. Example: 2365
+%cmi_user_sjailtime%
 
 # Identification if player is sneaking
 %cmi_user_sneaking%

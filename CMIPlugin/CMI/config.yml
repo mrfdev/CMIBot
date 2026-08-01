@@ -802,11 +802,6 @@ Command:
       - tell
       - login
       - register
-    # Priority of command spam listener
-    # Changed priority will only take effect on full server restart
-    # Possible options: LOWEST, LOW, NORMAL, HIGH, HIGHEST
-    # Default: LOW
-    Priority: LOW
   Spy:
     # Commands in this list will not be shown when command spy is enabled for player for security/privacy reasons
     # This can be bypassed with cmi.command.commandspy.bypass permission node

@@ -1,14 +1,16 @@
 Chat:
+  # When enabled newer system for chat handling will be utilized
+  # Recommended to keep this enabed if you have compatible server
+  # This only applies to Paper 1.17+ servers
+  # Full server restart is needed while switching between different use types
+  UsePaperType: true
   ModifyChatFormat:
     # Will try to modify chat to display it in defined format
     # If this is disabled and you have 3rd party plugin handling chat messages, consider disabling ClickHoverMessages section too if you notice any problems with chat formatting
     Enabled: false
-    # Priority of public message format listener
-    # Changed priority will only take effect on full server restart. Possible options: LOWEST, LOW, NORMAL, HIGH, HIGHEST
-    # Default: NORMAL
-    Priority: NORMAL
     # When set to true, regular and private messages (excludes clean messages) will have additional information when hovering over it (PlaceHolderAPI supported) and can be clicked for quick reply option
     # To change default hover over messages seen on sent message, go to your locale file to Chat section
+    # Has no effect if UsePaperType is enabled
     ClickHoverMessages: true
   DiscordSRV:
     # Enables support for DiscordSRV plugin
@@ -43,10 +45,14 @@ Chat:
   HoverItems:
     # When set to true, particular variables in chat will be translated into items player are holding. List of variables belove
     Enabled: true
+    # When enabled item into chat will be replaced with an icon of that item, this only applies to items and not blocks, as not all blocks have associates sprites we could reliably utilize
+    ReplaceWithIcon: true
     # Defines regex when replacing item line in chat with players item in hand information. Only works when CMI hover over chat format is enabled
+    # Use (\[item(?::(\w+))?\]) if you want to allow [item:helmet] or [item:5], when defining this type of regex, second group needs to contain custom value
+    # Potential custom values are [item:mainhand] [item:offhand] [item:helmet] [item:chestplate] [item:pants] [item:boots] and [item:0-40] where number value is between 0 and 40 indicating inventory slot
+    # Use (\[item\]) for simple [item] detection
     ItemRegex:
-    - (\[item\])
-    - (([&§]\S)+)?\[(([&§]\S)+)?i(([&§]\S)+)?t(([&§]\S)+)?e(([&§]\S)+)?m(([&§]\S)+)?\]
+    - (\[item(?::(\w+))?\])
   Bungee:
     # Attention! This will require you to have CMI Bungee plugin which can be found at zrips.net
     # Or direct download https://www.zrips.net/cmi/
@@ -62,8 +68,9 @@ Chat:
     # Do you want to enable staff messaging over bungeecord
     StaffMessages: true
   # Used for simple chat messages. Optional variables: {displayName} {world} {prefix} {suffix} {group} {shout} {shoutcolor} {message} {nicknameprefix}. Supporting PlaceHolderAPI variables like %player_server% %cmi_user_chatcolor%
+  # As of 1.21.9 Paper servers you can include {head} to add players head icon
   # ATTENTION! Don't use gradient colors for {message} variable, if you want to apply gradient for it, utilize GeneralMessageFormat section
-  GeneralFormat: '{prefix}&f{displayName}&7: &r{message}'
+  GeneralFormat: '{head} {prefix}&f{displayName}&7: &r{message}'
   # Will define message format itself, this allows to have gradients in messages
   # It NEEDS to contain {message} otherwise we will ignore this setup
   # For 1.16+ servers you can use color gradients like '{#b3a28f>}{message}{#d7b8e6<}'
@@ -143,10 +150,6 @@ Chat:
       # cmi.colors.publicmessage.[colorName]
       # Colors: black(&0), darkblue(&1), darkgreen(&2), darkaqua(&3), darkred(&4), darkpurple(&5), gold(&6), gray(&7), darkgray(&8), blue(&9), green(&a), aqua(&b), red(&c), lightpurple(&d), yellow(&e), white(&f), magic(&k), bold(&l), strikethrough(&m), underline(&n), italic(&o), reset(&r)
       Enabled: true
-      # Priority of public message color listener
-      # Changed priority will only take effect on full server restart. Possible options: LOWEST, LOW, NORMAL, HIGH, HIGHEST
-      # Default: NORMAL
-      Priority: NORMAL
     PrivateMessage: true
     # If set to true then /me messages will be filtered from color codes and will allow to colorize them with appropriate permission node
     # cmi.colors.me.[colorName]
@@ -205,11 +208,6 @@ ChatBubble:
   # Do you want to enable chat bubbles for public messages
   # Each player can disable this with /options command personally
   PublicMessages: true
-  # Priority of chat bubble listener
-  # Changed priority will only take effect on full server restart
-  # Possible options: LOWEST, LOW, NORMAL, HIGH, HIGHEST, MONITOR
-  # Default: MONITOR
-  Priority: MONITOR
   # How high we should show chat bubble
   Offset: 2.5
   # Base time in seconds for chat bubble to be visible

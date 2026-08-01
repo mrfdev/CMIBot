@@ -12,9 +12,11 @@ cmi.bossbar.colors - Allows to use colors in bossbarmsg command
 cmi.bossbar.hpbar - Allows to see hp boss bar when dealing damage to entity. Rechecks every minute.; Default: true
 cmi.bungee.publicmessages.$1 - Allows to send public messages to target server
 cmi.buttonteleport - Allows to teleport to target location when clicking on inventory edit GUI on location icon; Default: op
+cmi.chat.head - Allows to include heads into chat messages
 cmi.chat.rangebypass - Allows to send messages over greater distances
 cmi.chat.rangespy - Allows to see all messages over greater distances
 cmi.chat.shout - Allows to send messges over greater distances
+cmi.chat.sprite - Allows to include sprites into chat messages
 cmi.chatbubblegroup.$1 - Defines player custom chat bubble group for public messages
 cmi.chatfilter.bypass.$1 - Allows to bypass particular chat filter group
 cmi.chatfilter.capbypass - Allows to bypass chat caps filter

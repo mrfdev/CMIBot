@@ -1,10 +1,5 @@
 ChatFilter:
   Enabled: false
-  # Priority of chat filter listener
-  # Changed priority will only take effect on full server restart
-  # Possible options: LOWEST, LOW, NORMAL, HIGH, HIGHEST
-  # Default: LOW
-  Priority: LOW
   Deny:
     ipBlock:
       Enabled: true
@@ -49,11 +44,6 @@ ChatFilter:
   DuplicatedMessagePrevention:
     # When set to true, plugin will prevent spaming of same or similar messages in short time range. Can be bypased with cmi.chatfilter.spambypass permission
     Use: false
-    # Priority of chat spam listener
-    # Changed priority will only take effect on full server restart
-    # Possible options: LOWEST, LOW, NORMAL, HIGH, HIGHEST
-    # Default: LOW
-    Priority: LOW
     # How much in percentage message is counted as same
     Percentage: 80
     # Defines how often in seconds you can send same/similar message
@@ -64,11 +54,6 @@ ChatFilter:
     # When nebaled we will try to prevent chat messages with multiple capitalized letters by defined criteria
     # Can be bypassed with cmi.chatfilter.capbypass permission node
     Filter: true
-    # Priority of chat capitalization listener
-    # Changed priority will only take effect on full server restart
-    # Possible options: LOWEST, LOW, NORMAL, HIGH, HIGHEST
-    # Default: LOW
-    Priority: MONITOR
     # Defines amount of letters we can ignore
     # For example ':DDD' would be made of 2 letters with 3 capitalized letters which would make it 75% capitalized
     IgnoreUnder: 6
@@ -95,11 +80,6 @@ ChatFilter:
     - LSMH
     - LMHO
   SimpleReplacer:
-    # Priority of simple replacer listener
-    # Changed priority will only take effect on full server restart
-    # Possible options: LOWEST, LOW, NORMAL, HIGH, HIGHEST
-    # Default: LOWEST
-    Priority: LOWEST
     # Enables simpler replacer feature for public and private messages
     Enabled: false
     # Quick replacer for inputs like :heart: into ❤

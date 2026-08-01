@@ -283,7 +283,8 @@ Chat:
   staffHover: '{gcp}Sent time: {gcs}%server_time_hh:mm:ss%'
   helpopHover: '{gcp}Sent time: {gcs}%server_time_hh:mm:ss%'
   link: '&l{gcw}[{gcn}LINK{gcw}]'
-  item: '{gcn}[%cmi_iteminhand_displayname%[amount]{gcn}]'
+  # Use either [displayName] or [material] to display item name
+  itemInformation: '{gcn}[[displayName][amount]{gcn}]'
   itemAmount: ' x[amount]'
   itemEmpty: '{gcn}[Mighty fist]'
 Spy:
@@ -743,6 +744,10 @@ command:
       args: (playerName)
     info:
       reset: '{gcp}Reset'
+  chatdelete:
+    help:
+      info: Delete players chat messages
+      args: '[playerName/uuid] (uuid) (-s)'
   checkaccount:
     help:
       info: Search for a players other accounts

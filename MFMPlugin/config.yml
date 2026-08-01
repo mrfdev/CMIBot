@@ -50,7 +50,7 @@ EntitySpawn:
   GroupChunksRadius: 2
 #  
 # When set to true entities which are above allowed limit will get removed
-# Disabling this will prevent entities from disappearing in front of your eyes, but this can allow player from stacking dozens or even hundreds of mobs in one chunk throw multiple methods
+# Disabling this will prevent entities from disappearing in front of your eyes, but this can allow player from stacking dozens or even hundreds of mobs in one chunk through multiple methods
 # Disable at your own risk
 RemoveExisting: true
 #  
@@ -233,6 +233,10 @@ EntityTypes:
     # Max amount of entities, set to -1 if you want to disable limit
     # If you not sure what is that entity, then keep it at -1 limit, to not limit its spawning
     Limit: -1
+    # When enabled during clean cycle existing entities can be included into removal
+    # This can create effect of entities disapearing in front of players eyes, but still recommended to keep it enabled to prevent exploitation of mobs being pushed into chunks over stacking them
+    # If not set then global state is picked from general RemoveExisting
+    RemoveExisting: true
     # When enabled entity will be included in clean process while using /mfm clean command
     # If not set then defaults to true
     ManualClean: true
@@ -261,7 +265,7 @@ EntityTypes:
     Limit: 20
   ARMADILLO:
     Use: true
-    Limit: -1
+    Limit: 30
   ARMOR_STAND:
     Use: true
     Limit: 10
@@ -294,7 +298,7 @@ EntityTypes:
     Limit: 30
   BOGGED:
     Use: true
-    Limit: -1
+    Limit: 20
   BREEZE:
     Use: true
     Limit: -1
@@ -306,7 +310,7 @@ EntityTypes:
     Limit: 10
   CAMEL_HUSK:
     Use: true
-    Limit: -1
+    Limit: 20
   CAT:
     Use: true
     Limit: -1
@@ -333,13 +337,13 @@ EntityTypes:
     Limit: -1
   COPPER_GOLEM:
     Use: true
-    Limit: -1
+    Limit: 30
   COW:
     Use: true
     Limit: 20
   CREAKING:
     Use: true
-    Limit: -1
+    Limit: 20
   CREEPER:
     Use: true
     Limit: 30
@@ -354,7 +358,7 @@ EntityTypes:
     Limit: 10
   DONKEY:
     Use: true
-    Limit: -1
+    Limit: 30
   DRAGON_FIREBALL:
     Use: true
     Limit: -1
@@ -384,7 +388,7 @@ EntityTypes:
     Limit: -1
   EVOKER:
     Use: true
-    Limit: -1
+    Limit: 30
   EXPERIENCE_BOTTLE:
     Use: true
     Limit: -1
@@ -432,7 +436,7 @@ EntityTypes:
     Limit: 20
   GUARDIAN:
     Use: true
-    Limit: -1
+    Limit: 30
   HAPPY_GHAST:
     Use: true
     Limit: -1
@@ -450,7 +454,7 @@ EntityTypes:
     Limit: 20
   ILLUSIONER:
     Use: true
-    Limit: -1
+    Limit: 20
   IRON_GOLEM:
     Use: true
     Limit: 20
@@ -474,7 +478,7 @@ EntityTypes:
     Limit: -1
   LLAMA:
     Use: true
-    Limit: -1
+    Limit: 30
   MAGMA_CUBE:
     Use: true
     Limit: 20
@@ -486,7 +490,7 @@ EntityTypes:
     Limit: -1
   MANNEQUIN:
     Use: true
-    Limit: -1
+    Limit: 30
   MARKER:
     Use: true
     Limit: -1
@@ -498,10 +502,10 @@ EntityTypes:
     Limit: 20
   MULE:
     Use: true
-    Limit: -1
+    Limit: 30
   NAUTILUS:
     Use: true
-    Limit: -1
+    Limit: 30
   OAK_BOAT:
     Use: true
     Limit: -1
@@ -528,7 +532,7 @@ EntityTypes:
     Limit: 20
   PARCHED:
     Use: true
-    Limit: -1
+    Limit: 20
   PARROT:
     Use: true
     Limit: 10
@@ -543,10 +547,10 @@ EntityTypes:
     Limit: 20
   PIGLIN_BRUTE:
     Use: true
-    Limit: -1
+    Limit: 20
   PILLAGER:
     Use: true
-    Limit: -1
+    Limit: 20
   PLAYER:
     Use: true
     Limit: -1
@@ -558,10 +562,10 @@ EntityTypes:
     Limit: 20
   RABBIT:
     Use: true
-    Limit: -1
+    Limit: 30
   RAVAGER:
     Use: true
-    Limit: -1
+    Limit: 20
   SALMON:
     Use: true
     Limit: 20
@@ -570,7 +574,7 @@ EntityTypes:
     Limit: 20
   SHULKER:
     Use: true
-    Limit: -1
+    Limit: 30
   SHULKER_BULLET:
     Use: true
     Limit: -1
@@ -597,7 +601,7 @@ EntityTypes:
     Limit: -1
   SNOW_GOLEM:
     Use: true
-    Limit: -1
+    Limit: 30
   SPAWNER_MINECART:
     Use: true
     Limit: -1
@@ -627,7 +631,7 @@ EntityTypes:
     Limit: 20
   SULFUR_CUBE:
     Use: true
-    Limit: -1
+    Limit: 20
   TADPOLE:
     Use: true
     Limit: 20
@@ -651,13 +655,13 @@ EntityTypes:
     Limit: 20
   VEX:
     Use: true
-    Limit: -1
+    Limit: 20
   VILLAGER:
     Use: true
     Limit: 20
   VINDICATOR:
     Use: true
-    Limit: -1
+    Limit: 20
   WANDERING_TRADER:
     Use: true
     Limit: -1
@@ -693,10 +697,10 @@ EntityTypes:
     Limit: 10
   ZOMBIE_NAUTILUS:
     Use: true
-    Limit: -1
+    Limit: 20
   ZOMBIE_VILLAGER:
     Use: true
-    Limit: -1
+    Limit: 20
   ZOMBIFIED_PIGLIN:
     Use: true
     Limit: 20

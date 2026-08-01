@@ -136,6 +136,10 @@ Alias:
   chatcolor:
     Enabled: true
     Tab: true
+  # /cmi chatdelete $1-
+  chatdelete:
+    Enabled: true
+    Tab: true
   # /cmi checkaccount $1-
   checkaccount:
     Enabled: true
