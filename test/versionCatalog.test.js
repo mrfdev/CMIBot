@@ -102,10 +102,12 @@ function createFetchFixture(t) {
     cmilibVersion: "1.0.0",
     companionVersion: "1.0.0",
     failures: new Set(),
+    requests: [],
   };
 
   t.mock.method(globalThis, "fetch", async (input) => {
     const url = String(input);
+    state.requests.push(url);
     let key;
     let body;
 
@@ -144,6 +146,31 @@ function createFetchFixture(t) {
 
   return state;
 }
+
+test("Spiget requests bypass stale CDN entries on every refresh", async (t) => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-version-cache-bust-"));
+  const catalogPath = path.join(workspaceRoot, "versions.json");
+  const service = createVersionService(makeNetworkConfig(workspaceRoot));
+  const upstream = createFetchFixture(t);
+
+  try {
+    await fs.writeFile(catalogPath, JSON.stringify(makeTrackedCatalog()), "utf8");
+    await service.start();
+    await service.refreshUpstream();
+
+    const cmiRequests = upstream.requests.filter((url) => url.includes("/resources/3742/versions/latest"));
+    const cmilibRequests = upstream.requests.filter((url) => url.includes("/resources/87610/versions/latest"));
+    assert.equal(cmiRequests.length, 2);
+    assert.equal(cmilibRequests.length, 2);
+    assert.match(cmiRequests[0], /[?&]cacheBust=\d+-\d+$/);
+    assert.match(cmilibRequests[0], /[?&]cacheBust=\d+-\d+$/);
+    assert.notEqual(cmiRequests[0], cmiRequests[1]);
+    assert.notEqual(cmilibRequests[0], cmilibRequests[1]);
+  } finally {
+    service.stop();
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
 
 test("a version catalog reload stays staged until commit", async () => {
   const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-version-"));

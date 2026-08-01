@@ -323,11 +323,20 @@ export function createVersionService(config) {
   let timer = null;
   let inFlight = null;
   let persistenceQueue = Promise.resolve();
+  let spigetRequestSequence = 0;
   const catalogPath = path.resolve(config.workspaceRoot, config.versions.catalogPath);
   const statePath = path.resolve(
     config.workspaceRoot,
     config.versions.statePath || "logs/upstream-versions.json",
   );
+
+  function getSpigetLatestUrl(resourceId) {
+    const url = new URL(`${SPIGET_API_ROOT}/resources/${resourceId}/versions/latest`);
+    // Spiget's CDN can retain versions/latest responses well beyond its advertised TTL.
+    spigetRequestSequence += 1;
+    url.searchParams.set("cacheBust", `${Date.now()}-${spigetRequestSequence}`);
+    return url.toString();
+  }
 
   function createEmptyState(catalog = null) {
     return {
@@ -528,7 +537,7 @@ export function createVersionService(config) {
   async function checkPlugin(plugin) {
     if (plugin.resourceId) {
       const latest = await fetchJson(
-        `${SPIGET_API_ROOT}/resources/${plugin.resourceId}/versions/latest`,
+        getSpigetLatestUrl(plugin.resourceId),
         config.versions.requestTimeoutMs,
       );
       if (!latest?.name) {
