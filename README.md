@@ -140,6 +140,8 @@ servers/
 
 For a premium plugin update, preserve or remove the superseded jar so `plugins/` contains exactly one active jar for that plugin, copy the verified replacement into `_template-Paper-26.2/plugins/`, and run `npm run refresh:data`. Preserve superseded jars under the ignored `servers/plugin-archive/` tree when needed; that directory is outside the template, so archived jars are neither copied into the disposable server nor loaded by Paper.
 
+`data/versions.json` is the authoritative record of the clean snapshot versions. It is regenerated from verified jar metadata during every successful refresh, so plugin versions are intentionally not hardcoded in this README.
+
 The maintained template uses PaperScript's `STABLE` channel, same-version build upgrades, and the fixed `Paper-{version}.jar` filename. Its broad process-name fallback is disabled because another project can legitimately run a jar with the same name; exact test-port detection remains enabled.
 
 Run the complete refresh with:

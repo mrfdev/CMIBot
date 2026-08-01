@@ -983,6 +983,7 @@ ItemRenaming:
   # This can prevent items with specific names being completely disabled from being renamed and prevent other items being renamed into them
   CheckSource: true
   # List of materials followed with optional regex code which can prevent specific naming, like renaming mob spawners into another type while still allowing renaming spawner into anything else
+  # Use * for material name if you want to apply this filter to all items, for example *:([A-z])
   List:
   - mobspawner:([A-z]+ (?i)\w*spawner)
 SpawnMob:
