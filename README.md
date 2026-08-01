@@ -349,14 +349,23 @@ Requirements:
 Install and start:
 
 ```bash
-npm install
+npm ci
 cp .env.example .env
 npm start
 ```
 
+`npm ci` installs the exact dependency versions recorded in `package-lock.json`, which is the recommended path for the live bot and fresh clones. Use `npm install` only when intentionally updating dependencies locally.
+
 Fill in the Discord token, application ID, guild ID, channel IDs, and role IDs in `.env`. The real `.env` is ignored and must be created independently on each machine.
 
 OpenAI support is optional and disabled by default with `OPENAI_ENABLED=false`. In disabled mode, the bot stays lexical-only: it does not import the OpenAI SDK, construct an API client, or require `AI_ROLE_IDS`/`OPENAI_API_KEY`. This avoids the SDK's runtime memory overhead until AI is explicitly enabled.
+
+## Dependency Maintenance
+
+- `npm run audit:deps` checks production dependencies for moderate-or-higher security advisories.
+- `npm run outdated:deps` reports direct dependency drift. npm exits with status `1` when updates are available, which is expected for this informational command.
+- Weekly Dependabot checks group compatible minor and patch updates into a reviewable pull request. Major updates remain separate and are never merged automatically.
+- Keep `package-lock.json` committed, review dependency diffs, run `npm run check`, and rerun `npm run audit:deps` before deploying an update.
 
 ## Local CLI
 
