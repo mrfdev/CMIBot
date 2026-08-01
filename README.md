@@ -374,6 +374,24 @@ OpenAI support is optional and disabled by default with `OPENAI_ENABLED=false`. 
 - Weekly Dependabot checks group compatible minor and patch updates into a reviewable pull request. Major updates remain separate and are never merged automatically.
 - Keep `package-lock.json` committed, review dependency diffs, run `npm run check`, and rerun `npm run audit:deps` before deploying an update.
 
+## Safe Source Updates
+
+The live bot is updated manually; it does not pull source code, install dependencies, restart itself, or create an operating-system schedule. An occasional check, such as once per month or before a planned maintenance restart, is enough for now:
+
+```bash
+npm run update:check
+```
+
+This fetches remote metadata and reports whether the current tracked branch is current or has a safe fast-forward available. It does not change tracked files. If an update is available, stop the bot in its `tmux` session and run:
+
+```bash
+npm run update:safe
+```
+
+The updater requires a clean worktree, an attached branch, and a configured upstream. It refuses local-ahead or diverged histories, and its only source-changing Git operation is `git pull --ff-only`; it never stashes, resets, switches branches, merges, or rebases. If `package.json` or `package-lock.json` changed, it runs `npm ci` against the committed lockfile. It then runs the portable bot syntax and test suite with `npm run check:bot`.
+
+Only restart with `npm start` after the updater reports success. A failed fetch, pull, dependency install, or verification exits nonzero and never starts or restarts the bot. The full developer check remains `npm run check`, which additionally verifies the locally maintained Paper/JDK environment and is intentionally not required on a lightweight remote bot host.
+
 ## Local CLI
 
 The CLI defaults to CMI, or accepts a plugin context first:
