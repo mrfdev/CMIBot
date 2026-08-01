@@ -18,7 +18,7 @@
     "check:paper": "node scripts/verify-paper-compatibility.mjs",
     "audit:deps": "npm audit --omit=dev --audit-level=moderate",
     "outdated:deps": "npm outdated --depth=0",
-    "check": "for file in src/*.js scripts/*.mjs; do node --check \"$file\" || exit 1; done && node --test && node scripts/verify-paper-compatibility.mjs --offline"
+    "check": "for file in src/*.js src/discord/*.js scripts/*.mjs; do node --check \"$file\" || exit 1; done && node --test && node scripts/verify-paper-compatibility.mjs --offline"
   },
   "engines": {
     "node": ">=20"

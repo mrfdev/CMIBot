@@ -213,9 +213,16 @@ runtime-exporter/
 |- compatibility.json
 scripts/
 src/
+`- discord/
 ```
 
 Generated files outside `data/` are replaced on each clean refresh so removed or renamed upstream settings disappear from the bot too. Curated files belong in a plugin's `data/` directory so the refresh preserves them. The clearly named `generated-*.log` files are the only generated exception inside those directories.
+
+## Source Layout
+
+Discord responsibilities are separated under `src/discord/`: command schema and registration, shared command constants, channel context and role checks, diagnostics, help output, result formatting, and interaction safety. `src/discordBot.js` owns the interaction pipeline and keeps compatibility re-exports for existing callers. Search, cache, config, indexing, security, audit logging, AI loading, and version checks remain independent top-level services in `src/`.
+
+Keep new Discord presentation or routing behavior in the matching focused module instead of growing the central interaction handler. `npm run check` syntax-checks both top-level source files and every `src/discord/*.js` module before running the tests.
 
 ## Version Checks
 
