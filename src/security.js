@@ -194,34 +194,184 @@ export function resolveFileFilter(rawFileFilter, entries, { profileLabel = "inde
   };
 }
 
-export function createCooldownManager() {
+function normalizePositiveNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
+function normalizeBucketLimit(value, fallback = 10_000) {
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number > 0 ? number : fallback;
+}
+
+export function createCooldownManager({ now = () => Date.now(), maxBuckets = 10_000 } = {}) {
   const state = new Map();
+  const bucketLimit = normalizeBucketLimit(maxBuckets);
+  let checksSinceCleanup = 0;
 
   function getKey(userId, bucket) {
     return `${userId}:${bucket}`;
   }
 
+  function pruneExpired(nowMs) {
+    for (const [key, expiresAt] of state) {
+      if (expiresAt <= nowMs) {
+        state.delete(key);
+      }
+    }
+  }
+
+  function makeRoom(nowMs) {
+    pruneExpired(nowMs);
+    while (state.size >= bucketLimit) {
+      const oldestKey = state.keys().next().value;
+      if (oldestKey === undefined) {
+        break;
+      }
+      state.delete(oldestKey);
+    }
+  }
+
   return {
     check(userId, bucket, cooldownSeconds) {
-      if (!cooldownSeconds) {
+      const durationSeconds = normalizePositiveNumber(cooldownSeconds);
+      if (!durationSeconds) {
         return { allowed: true, retryAfterSeconds: 0 };
       }
 
-      const now = Date.now();
+      const nowMs = now();
       const key = getKey(userId, bucket);
       const expiresAt = state.get(key) ?? 0;
-      if (expiresAt > now) {
+      if (expiresAt > nowMs) {
         return {
           allowed: false,
-          retryAfterSeconds: Math.ceil((expiresAt - now) / 1000),
+          retryAfterSeconds: Math.ceil((expiresAt - nowMs) / 1000),
         };
       }
 
-      state.set(key, now + cooldownSeconds * 1000);
+      checksSinceCleanup += 1;
+      if (checksSinceCleanup >= 100) {
+        pruneExpired(nowMs);
+        checksSinceCleanup = 0;
+      }
+      if (!state.has(key) && state.size >= bucketLimit) {
+        makeRoom(nowMs);
+      }
+
+      state.delete(key);
+      state.set(key, nowMs + durationSeconds * 1000);
       return {
         allowed: true,
         retryAfterSeconds: 0,
       };
     },
+  };
+}
+
+export function createSlidingWindowRateLimiter({ now = () => Date.now(), maxBuckets = 10_000 } = {}) {
+  const state = new Map();
+  const bucketLimit = normalizeBucketLimit(maxBuckets);
+  let checksSinceCleanup = 0;
+
+  function normalizeRule(rule) {
+    const maxRequests = Math.floor(normalizePositiveNumber(rule?.maxRequests));
+    const windowSeconds = normalizePositiveNumber(rule?.windowSeconds);
+    if (!rule?.key || !maxRequests || !windowSeconds) {
+      return null;
+    }
+
+    return {
+      key: String(rule.key),
+      scope: rule.scope || "rate-limit",
+      maxRequests,
+      windowMs: windowSeconds * 1000,
+    };
+  }
+
+  function activeTimestamps(entry, nowMs, windowMs) {
+    const cutoff = nowMs - windowMs;
+    return entry?.timestamps.filter((timestamp) => timestamp > cutoff) ?? [];
+  }
+
+  function pruneExpired(nowMs) {
+    for (const [key, entry] of state) {
+      const timestamps = activeTimestamps(entry, nowMs, entry.windowMs);
+      if (!timestamps.length) {
+        state.delete(key);
+      } else {
+        entry.timestamps = timestamps;
+      }
+    }
+  }
+
+  function makeRoom(nowMs) {
+    pruneExpired(nowMs);
+    while (state.size >= bucketLimit) {
+      let oldestKey;
+      let oldestSeenAt = Number.POSITIVE_INFINITY;
+      for (const [key, entry] of state) {
+        if (entry.lastSeenAt < oldestSeenAt) {
+          oldestKey = key;
+          oldestSeenAt = entry.lastSeenAt;
+        }
+      }
+      if (oldestKey === undefined) {
+        break;
+      }
+      state.delete(oldestKey);
+    }
+  }
+
+  function checkMany(rules) {
+    const normalizedRules = rules.map(normalizeRule).filter(Boolean);
+    if (!normalizedRules.length) {
+      return { allowed: true, retryAfterSeconds: 0, scope: "" };
+    }
+
+    const nowMs = now();
+    const preparedRules = normalizedRules.map((rule) => {
+      const entry = state.get(rule.key);
+      return {
+        ...rule,
+        timestamps: activeTimestamps(entry, nowMs, rule.windowMs),
+      };
+    });
+    const deniedRule = preparedRules.find((rule) => rule.timestamps.length >= rule.maxRequests);
+
+    if (deniedRule) {
+      const retryAt = deniedRule.timestamps[0] + deniedRule.windowMs;
+      return {
+        allowed: false,
+        retryAfterSeconds: Math.max(1, Math.ceil((retryAt - nowMs) / 1000)),
+        scope: deniedRule.scope,
+      };
+    }
+
+    checksSinceCleanup += 1;
+    if (checksSinceCleanup >= 100) {
+      pruneExpired(nowMs);
+      checksSinceCleanup = 0;
+    }
+
+    for (const rule of preparedRules) {
+      if (!state.has(rule.key) && state.size >= bucketLimit) {
+        makeRoom(nowMs);
+      }
+      state.delete(rule.key);
+      state.set(rule.key, {
+        timestamps: [...rule.timestamps, nowMs],
+        windowMs: rule.windowMs,
+        lastSeenAt: nowMs,
+      });
+    }
+
+    return { allowed: true, retryAfterSeconds: 0, scope: "" };
+  }
+
+  return {
+    check(key, maxRequests, windowSeconds, scope = "rate-limit") {
+      return checkMany([{ key, maxRequests, windowSeconds, scope }]);
+    },
+    checkMany,
   };
 }

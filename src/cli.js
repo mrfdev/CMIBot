@@ -1,14 +1,16 @@
 import "dotenv/config";
+import { createLazyAiResolver } from "./aiLoader.js";
 import { createSearchCache, formatCacheSummary } from "./cache.js";
 import { loadConfig } from "./config.js";
 import { formatLanguageCategoryStats } from "./langStats.js";
-import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
+import { lexicalSearch, orderMatchesForDisplay } from "./search.js";
 import { resolveFileFilter } from "./security.js";
 import { createVersionService, formatLatestVersions } from "./versionCatalog.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 
 async function main() {
   const config = loadConfig();
+  const resolveAiReranker = createLazyAiResolver(config.openai);
   const args = process.argv.slice(2);
   const requestedPlugin = args[0] && config.plugins[args[0]] ? args.shift() : "cmi";
   const plugin = config.plugins[requestedPlugin];
@@ -120,8 +122,8 @@ async function main() {
 
   const entries = fileFilter.filteredEntries;
   const lexicalMatches = lexicalSearch(keyword, entries, { limit: 25, mode });
-  const reranker = new AiReranker(config.openai);
-  const rerankedMatches = await reranker.rerank(keyword, lexicalMatches);
+  const reranker = await resolveAiReranker();
+  const rerankedMatches = reranker ? await reranker.rerank(keyword, lexicalMatches) : lexicalMatches;
   const matches = orderMatchesForDisplay(rerankedMatches);
   const profile = plugin.profiles[subcommand];
   const visibleLimit = profile.defaultResultLimit ?? config.search.defaultResultLimit;
@@ -147,7 +149,7 @@ async function main() {
     console.log("");
   }
 
-  if (summary) {
+  if (summary && reranker) {
     const aiSummary =
       (await reranker.summarize(keyword, matches.slice(0, visibleLimit), { profileName: `${plugin.id}:${subcommand}` })) ||
       "";

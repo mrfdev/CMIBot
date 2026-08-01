@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
+    "test": "node --test",
     "lookup": "node src/cli.js",
     "build:exporter": "node scripts/build-runtime-exporter.mjs",
     "refresh:data": "node scripts/refresh-clean-server.mjs",
@@ -15,7 +16,7 @@
     "smoke:java25": "node scripts/smoke-paper-runtime.mjs --expect 25 --label java25",
     "smoke:java26": "node scripts/smoke-paper-runtime.mjs --expect 26 --label java26",
     "check:paper": "node scripts/verify-paper-compatibility.mjs",
-    "check": "for file in src/*.js scripts/*.mjs; do node --check \"$file\" || exit 1; done && node scripts/verify-paper-compatibility.mjs --offline"
+    "check": "for file in src/*.js scripts/*.mjs; do node --check \"$file\" || exit 1; done && node --test && node scripts/verify-paper-compatibility.mjs --offline"
   },
   "engines": {
     "node": ">=20"

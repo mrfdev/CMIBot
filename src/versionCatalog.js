@@ -84,6 +84,18 @@ function formatPluginRelease(version, build) {
   return build == null ? String(version) : `${version} build ${build}`;
 }
 
+function countRetainedUpstreams(snapshot) {
+  return (
+    (snapshot.paper?.stale ? 1 : 0) +
+    [...snapshot.plugins.values()].filter((entry) => entry.stale).length +
+    [...snapshot.companions.values()].filter((entry) => entry.stale).length
+  );
+}
+
+function formatFreshnessSuffix(upstream) {
+  return upstream?.stale ? "; **last known, refresh unavailable**" : "";
+}
+
 function comparePluginRelease(plugin, upstream) {
   const versionComparison = compareVersions(plugin.version, upstream.version);
   if (versionComparison !== 0) {
@@ -111,7 +123,7 @@ function formatPluginVersionLine(plugin, upstream, checkEnabled) {
 
   const comparison = comparePluginRelease(plugin, upstream);
   const status = comparison === 0 ? "current" : comparison < 0 ? "**update available**" : "snapshot newer than upstream listing";
-  return `${prefix} | upstream \`${formatPluginRelease(upstream.version, upstream.build)}\` (${status})`;
+  return `${prefix} | upstream \`${formatPluginRelease(upstream.version, upstream.build)}\` (${status}${formatFreshnessSuffix(upstream)})`;
 }
 
 function formatPaperVersionLine(paper, upstream, checkEnabled) {
@@ -130,7 +142,7 @@ function formatPaperVersionLine(paper, upstream, checkEnabled) {
   const localMatchesVersion = String(paper.version) === String(upstream.version);
   const comparison = localMatchesVersion ? Number(localBuild) - Number(upstream.build) : compareVersions(paper.version, upstream.version);
   const status = comparison === 0 ? "current" : comparison < 0 ? "**update available**" : "snapshot newer than upstream listing";
-  return `${prefix} | upstream \`${upstream.version} build ${upstream.build} ${upstream.channel}\` (${status})`;
+  return `${prefix} | upstream \`${upstream.version} build ${upstream.build} ${upstream.channel}\` (${status}${formatFreshnessSuffix(upstream)})`;
 }
 
 function formatCompanionVersionLine(companion, upstream, checkEnabled) {
@@ -145,17 +157,18 @@ function formatCompanionVersionLine(companion, upstream, checkEnabled) {
     return `${prefix} (upstream unavailable)`;
   }
   if (!companion.version) {
-    return `${prefix} | upstream \`${upstream.version}\` (upstream only)`;
+    return `${prefix} | upstream \`${upstream.version}\` (upstream only${formatFreshnessSuffix(upstream)})`;
   }
 
   const comparison = compareVersions(companion.version, upstream.version);
   const status = comparison === 0 ? "current" : comparison < 0 ? "**update available**" : "local artifact newer than upstream listing";
-  return `${prefix} | upstream \`${upstream.version}\` (${status})`;
+  return `${prefix} | upstream \`${upstream.version}\` (${status}${formatFreshnessSuffix(upstream)})`;
 }
 
 function formatPublicPluginVersionLine(plugin, upstream) {
   const label = linkedLabel(plugin.label, plugin.resourceUrl || plugin.website);
-  return `- **${label}:** \`${upstream.version}\``;
+  const freshness = upstream.stale ? " **(last known; live refresh unavailable)**" : "";
+  return `- **${label}:** \`${upstream.version}\`${freshness}`;
 }
 
 function orderPlugins(plugins) {
@@ -210,9 +223,10 @@ export function formatLatestVersions(snapshot, plugin, scope = "context") {
 
   lines.push("", `Clean data generated ${formatDiscordTimestamp(catalog.generatedAt)}.`);
   if (snapshot.checkEnabled) {
+    const retainedCount = snapshot.retainedCount ?? countRetainedUpstreams(snapshot);
     lines.push(
       snapshot.checkedAt
-        ? `Upstream checked ${formatDiscordTimestamp(snapshot.checkedAt)} via Spiget, Paper, project metadata/CI, Zrips, and GitHub${snapshot.errorCount ? `; ${snapshot.errorCount} check(s) unavailable` : ""}.`
+        ? `Upstream refresh attempted ${formatDiscordTimestamp(snapshot.checkedAt)} via Spiget, Paper, project metadata/CI, Zrips, and GitHub${snapshot.errorCount ? `; ${snapshot.errorCount} check(s) failed${retainedCount ? ` and ${retainedCount} last-known result(s) were retained` : ""}` : ""}.`
         : "The first upstream version check has not completed yet.",
     );
   } else {
@@ -267,7 +281,17 @@ export function formatPublicLatestVersions(snapshot, plugin) {
   for (const entry of plugins) {
     lines.push(formatPublicPluginVersionLine(entry, snapshot.plugins.get(entry.id)));
   }
-  lines.push("", "We recommend updating both plugins to these current releases before troubleshooting version-related issues.");
+  const retained = plugins.filter((entry) => snapshot.plugins.get(entry.id)?.stale);
+  if (retained.length) {
+    lines.push(
+      "",
+      `A live refresh failed for ${retained.map((entry) => entry.label).join(" and ")}; the marked ${retained.length === 1 ? "version is" : "versions are"} the last successfully checked result.`,
+    );
+  }
+  lines.push(
+    "",
+    `We recommend updating both plugins to these ${retained.length ? "latest known" : "current"} releases before troubleshooting version-related issues.`,
+  );
   return lines.join("\n");
 }
 
@@ -278,45 +302,48 @@ export function formatVersionServiceSummary(snapshot) {
   if (!snapshot.checkEnabled) {
     return `Loaded clean-server versions for ${inventory}; scheduled upstream checks are disabled.`;
   }
+  const retainedCount = snapshot.retainedCount ?? countRetainedUpstreams(snapshot);
   const checkedCount =
-    [...snapshot.plugins.values(), ...snapshot.companions.values()].filter((entry) => entry.version).length +
-    (snapshot.paper?.build ? 1 : 0);
-  return `Loaded clean-server versions for ${inventory}; ${checkedCount} upstream version checks succeeded${snapshot.errorCount ? ` and ${snapshot.errorCount} failed` : ""}.`;
+    [...snapshot.plugins.values(), ...snapshot.companions.values()].filter((entry) => entry.version && !entry.stale).length +
+    (snapshot.paper?.build && !snapshot.paper.stale ? 1 : 0);
+  return `Loaded clean-server versions for ${inventory}; ${checkedCount} upstream version checks succeeded${snapshot.errorCount ? ` and ${snapshot.errorCount} failed` : ""}${retainedCount ? `; ${retainedCount} last-known result${retainedCount === 1 ? "" : "s"} retained` : ""}.`;
 }
 
 export function createVersionService(config) {
-  let catalog = null;
-  let paper = null;
-  let checkedAt = null;
-  let errorCount = 0;
+  let activeState = {
+    catalog: null,
+    paper: null,
+    plugins: new Map(),
+    companions: new Map(),
+    checkedAt: null,
+    errorCount: 0,
+  };
   let timer = null;
   let inFlight = null;
-  const plugins = new Map();
-  const companions = new Map();
   const catalogPath = path.resolve(config.workspaceRoot, config.versions.catalogPath);
 
-  function getSnapshot() {
+  function getSnapshot(state = activeState) {
     return {
-      catalog,
-      paper,
-      plugins: new Map(plugins),
-      companions: new Map(companions),
-      checkedAt,
-      errorCount,
+      catalog: state.catalog,
+      paper: state.paper,
+      plugins: new Map(state.plugins),
+      companions: new Map(state.companions),
+      checkedAt: state.checkedAt,
+      errorCount: state.errorCount,
+      retainedCount: countRetainedUpstreams(state),
       checkEnabled: config.versions.checkEnabled,
     };
   }
 
-  async function loadLocal() {
+  async function readLocalCatalog() {
     const parsed = JSON.parse(await fs.readFile(catalogPath, "utf8"));
     if (parsed.schemaVersion !== 1 || !parsed.paper || !Array.isArray(parsed.plugins)) {
       throw new Error(`Unsupported version catalog format in ${catalogPath}`);
     }
-    catalog = {
+    return {
       ...parsed,
       companions: Array.isArray(parsed.companions) ? parsed.companions : [],
     };
-    return getSnapshot();
   }
 
   async function checkPaper() {
@@ -410,59 +437,132 @@ export function createVersionService(config) {
     throw new Error(`${companion.label} has unsupported version source ${source.type}.`);
   }
 
+  async function buildState(catalog, previousState = activeState) {
+    const nextState = {
+      catalog,
+      paper: null,
+      plugins: new Map(),
+      companions: new Map(),
+      checkedAt: null,
+      errorCount: 0,
+    };
+
+    if (!config.versions.checkEnabled) {
+      return nextState;
+    }
+
+    const trackedPlugins = catalog.plugins.filter((entry) => entry.resourceId || entry.versionSource);
+    const trackedCompanions = catalog.companions.filter((entry) => entry.versionSource);
+    const results = await Promise.allSettled([
+      checkPaper(),
+      ...trackedPlugins.map((entry) => checkPlugin(entry)),
+      ...trackedCompanions.map((entry) => checkCompanion(entry)),
+    ]);
+    const checkedAt = new Date().toISOString();
+    const paperResult = results[0];
+    if (paperResult.status === "fulfilled") {
+      nextState.paper = {
+        ...paperResult.value,
+        stale: false,
+        lastSuccessfulCheckAt: checkedAt,
+      };
+    } else {
+      nextState.errorCount += 1;
+      if (
+        previousState.paper?.build &&
+        String(previousState.paper.version) === String(config.versions.paperVersion)
+      ) {
+        nextState.paper = {
+          ...previousState.paper,
+          stale: true,
+        };
+      }
+    }
+
+    for (let index = 0; index < trackedPlugins.length; index += 1) {
+      const result = results[index + 1];
+      const plugin = trackedPlugins[index];
+      if (result.status === "fulfilled") {
+        nextState.plugins.set(plugin.id, {
+          ...result.value,
+          stale: false,
+          lastSuccessfulCheckAt: checkedAt,
+        });
+      } else {
+        nextState.errorCount += 1;
+        const previous = previousState.plugins.get(plugin.id);
+        if (previous?.version) {
+          nextState.plugins.set(plugin.id, {
+            ...previous,
+            stale: true,
+          });
+        }
+      }
+    }
+
+    const companionOffset = 1 + trackedPlugins.length;
+    for (let index = 0; index < trackedCompanions.length; index += 1) {
+      const result = results[companionOffset + index];
+      const companion = trackedCompanions[index];
+      if (result.status === "fulfilled") {
+        nextState.companions.set(companion.id, {
+          ...result.value,
+          stale: false,
+          lastSuccessfulCheckAt: checkedAt,
+        });
+      } else {
+        nextState.errorCount += 1;
+        const previous = previousState.companions.get(companion.id);
+        if (previous?.version) {
+          nextState.companions.set(companion.id, {
+            ...previous,
+            stale: true,
+          });
+        }
+      }
+    }
+
+    nextState.checkedAt = checkedAt;
+    return nextState;
+  }
+
+  function createReloadTransaction(nextState) {
+    let settled = false;
+
+    return {
+      snapshot: getSnapshot(nextState),
+      commit() {
+        if (settled) {
+          throw new Error("Version catalog reload transaction has already been settled.");
+        }
+
+        activeState = nextState;
+        settled = true;
+        return getSnapshot();
+      },
+      discard() {
+        settled = true;
+      },
+    };
+  }
+
+  async function prepareReload() {
+    const catalog = await readLocalCatalog();
+    return createReloadTransaction(await buildState(catalog));
+  }
+
   async function refreshUpstream() {
     if (!config.versions.checkEnabled) {
       return getSnapshot();
-    }
-    if (!catalog) {
-      await loadLocal();
     }
     if (inFlight) {
       return inFlight;
     }
 
     inFlight = (async () => {
-      let failures = 0;
-      const trackedPlugins = catalog.plugins.filter((entry) => entry.resourceId || entry.versionSource);
-      const trackedCompanions = catalog.companions.filter((entry) => entry.versionSource);
-      const results = await Promise.allSettled([
-        checkPaper(),
-        ...trackedPlugins.map((entry) => checkPlugin(entry)),
-        ...trackedCompanions.map((entry) => checkCompanion(entry)),
-      ]);
-      const paperResult = results[0];
-      if (paperResult.status === "fulfilled") {
-        paper = paperResult.value;
-      } else {
-        paper = null;
-        failures += 1;
-      }
-
-      for (let index = 0; index < trackedPlugins.length; index += 1) {
-        const result = results[index + 1];
-        const plugin = trackedPlugins[index];
-        if (result.status === "fulfilled") {
-          plugins.set(plugin.id, result.value);
-        } else {
-          plugins.delete(plugin.id);
-          failures += 1;
-        }
-      }
-
-      const companionOffset = 1 + trackedPlugins.length;
-      for (let index = 0; index < trackedCompanions.length; index += 1) {
-        const result = results[companionOffset + index];
-        const companion = trackedCompanions[index];
-        if (result.status === "fulfilled") {
-          companions.set(companion.id, result.value);
-        } else {
-          companions.delete(companion.id);
-          failures += 1;
-        }
-      }
-
-      checkedAt = new Date().toISOString();
-      errorCount = failures;
+      const catalog = activeState.catalog ?? (await readLocalCatalog());
+      const nextState = await buildState(catalog);
+      activeState = nextState;
       return getSnapshot();
     })().finally(() => {
       inFlight = null;
@@ -471,13 +571,13 @@ export function createVersionService(config) {
   }
 
   async function start() {
-    await loadLocal();
+    const transaction = await prepareReload();
+    const snapshot = transaction.commit();
     if (config.versions.checkEnabled) {
-      await refreshUpstream();
       timer = setInterval(() => {
         void refreshUpstream()
-          .then((snapshot) => {
-            console.log(`[LookupBot] ${formatVersionServiceSummary(snapshot)}`);
+          .then((refreshedSnapshot) => {
+            console.log(`[LookupBot] ${formatVersionServiceSummary(refreshedSnapshot)}`);
           })
           .catch((error) => {
             console.error(`[LookupBot] Scheduled version check failed: ${error.message}`);
@@ -485,15 +585,16 @@ export function createVersionService(config) {
       }, config.versions.checkIntervalMs);
       timer.unref();
     }
-    return getSnapshot();
+    return snapshot;
   }
 
   return {
     start,
     async reload() {
-      await loadLocal();
-      return refreshUpstream();
+      const transaction = await prepareReload();
+      return transaction.commit();
     },
+    prepareReload,
     refreshUpstream,
     getSnapshot,
     stop() {

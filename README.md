@@ -16,7 +16,8 @@ The repository is still named `CMIBot`, but `/lookup` is the only registered sla
 - Clean first-install plugin data generated from a disposable Paper server
 - Local version inventory plus scheduled Paper and Spigot resource checks
 - Paper 26.2 stable/API drift checks plus Java 25 and Java 26 smoke commands
-- Per-user cooldowns, input validation, disabled mentions, role-ID access checks, and JSONL audit logs
+- One canonical CMILib cache composed into every supporting plugin context
+- Layered user/channel/global rate limits, input validation, disabled mentions, role-ID access checks, and JSONL audit logs
 - Context-aware help, stats, language stats, latest versions, and debug output
 
 ## Plugin Contexts
@@ -32,7 +33,7 @@ The repository is still named `CMIBot`, but `/lookup` is the only registered sla
 | TradeMe | config, language, generated placeholder, generated command, generated permission |
 | BottledExp | config, language, generated command, generated permission |
 
-All contexts also support `help`, `stats`, `langstats`, `latest`, `debug`, and the global admin-only `reload` command. Unsupported search features are hidden from the context-specific available list and are reported clearly if called directly.
+All contexts also support `help`, `stats`, `langstats`, and `latest`. The global `debug` and `reload` commands are admin-only. Unsupported search features are hidden from the context-specific available list and are reported clearly if called directly.
 
 CMILib config and English locale files are shared with every plugin context.
 
@@ -56,7 +57,7 @@ CMILib config and English locale files are shared with every plugin context.
 /lookup latest
 /lookup latest public:true
 /lookup latest scope:all
-/lookup debug
+/lookup debug                 # admin only
 /lookup reload
 ```
 
@@ -70,6 +71,8 @@ CMILib config and English locale files are shared with every plugin context.
 - `limit:1-15` controls most result lists and defaults to `DEFAULT_RESULT_LIMIT`.
 - CMI `material` supports up to 25 results and defaults to 25.
 - `file:<name>` restricts config results to a valid indexed file in the active context.
+- Source filenames and repository paths are metadata, not searchable content. Use `file:` when you intentionally want to restrict a config lookup to an indexed file.
+- Found totals and file counts are calculated before the display limit is applied.
 - `related:true` adds nearby YAML entries to config and language results.
 - `summary:true` requests an AI summary only when OpenAI support and the configured AI role are enabled.
 
@@ -106,7 +109,7 @@ Only IDs listed in `DISCORD_ALLOWED_CHANNEL_IDS` can use the bot. The active plu
 - `DISCORD_RESIDENCE_CHANNEL_IDS`
 - `DISCORD_BOTTLEDEXP_CHANNEL_IDS`
 
-Current default routes are documented in `.env.example`. BottledExp has no production channel assigned yet, so its channel list is empty by default.
+Current default routes, including the BottledExp production channel, are documented in `.env.example`.
 
 Configured test channels can switch context without restarting the bot:
 
@@ -117,7 +120,7 @@ Configured test channels can switch context without restarting the bot:
 /lookup debug context:auto
 ```
 
-Only an admin role can change the test-channel override. `auto` returns the test channel to `DISCORD_TEST_DEFAULT_CONTEXT`.
+Only an admin role can use `/lookup debug` or change the test-channel override. `auto` returns the test channel to `DISCORD_TEST_DEFAULT_CONTEXT`.
 
 ## Clean Reference Data
 
@@ -226,6 +229,8 @@ The CMI companion section always tracks CMI-API, CMI-Bungee, CMI-Velocity, CMI-V
 
 Tracked Spigot resource versions are checked through the public Spiget API, Paper builds through Paper's official Fill API, LuckPerms through its official metadata service, and PlaceholderAPI through its latest successful Jenkins artifact. CMI companion downloads use their Zrips listings, while CMI-API uses its GitHub project version. PlaceholderAPI output includes both its plugin version and Jenkins build number. A failed or disabled network check never prevents the bot from starting; the command continues to show the local inventory.
 
+Upstream refreshes are resilient per resource. After a resource has checked successfully during the current bot process, a temporary timeout or provider failure retains that last-known version in RAM while unrelated successful checks still update normally. Retained values are clearly marked as last known in private and public version output, and recover automatically after the provider succeeds again. A resource with no successful check yet remains unavailable rather than inventing a version.
+
 Version controls:
 
 - `VERSION_CATALOG_PATH=data/versions.json`
@@ -262,6 +267,12 @@ The scripts use the exact JDK paths from the compatibility manifest by default. 
 
 All indexed YAML plus curated and jar-generated log data is loaded into RAM during startup. `/lookup reload` globally rebuilds every plugin cache, reloads the version catalog, and refreshes upstream version checks.
 
+CMILib is cached once through the `CMILIB_*_INCLUDE_GLOBS` profiles. Plugin contexts retain only their own entries, then compose the matching shared CMILib config, language, and placeholder entries into searches at read time. This preserves the same `/lookup` results and per-context stats without retaining another copy of every CMILib entry for every Zrips plugin.
+
+The startup, reload, and debug global totals describe entries actually retained in RAM: local plugin entries plus one CMILib copy. Per-context `/lookup stats` totals continue to describe everything searchable in that channel, including shared CMILib data. Legacy plugin include globs that still mention `CMILibPlugin/**` are excluded from local caches defensively.
+
+Reload is transactional. The next search cache and version snapshot are prepared separately from live state while lookups continue using the previous snapshots. Both are committed together only after every profile and the version catalog finish successfully; otherwise the prepared data is discarded and the complete previous state remains active.
+
 Use reload after adding, replacing, renaming, or removing indexed files:
 
 ```text
@@ -276,7 +287,7 @@ Reload reports are private. If the global per-plugin breakdown exceeds one Disco
 
 ## Debug Output
 
-`/lookup debug` is ephemeral and reports:
+`/lookup debug` is admin-only, ephemeral, and reports:
 
 - active plugin and channel route
 - tracked contexts and supported commands
@@ -292,14 +303,35 @@ Reload reports are private. If the global per-plugin breakdown exceeds one Disco
 ## Security
 
 - Access is matched by immutable Discord role IDs, never role names.
-- Reload and test-context changes are admin-only.
-- AI features use their own role-ID list and hard enable switch.
+- Debug, reload, and test-context changes are admin-only.
+- When enabled, AI features use their own role-ID list and hard enable switch; disabled installations do not require AI credentials or roles.
 - Queries have configurable length, filler-word, and character validation.
 - Short valid terms such as `rt`, `rtp`, `tp`, and placeholders can be allowlisted.
 - Discord mentions are disabled on all bot responses.
 - `file:` only resolves against files already indexed in the active plugin profile.
-- Per-user cooldowns limit lookup and AI-summary abuse.
+- A sliding-window limit follows each user across every subcommand, so switching commands cannot bypass throttling.
+- Authorized support commands also share per-channel and process-wide windows to contain coordinated bursts.
+- Lookup and AI-summary operations retain separate per-user cooldowns; lookup throttling runs before cache filtering.
+- Debug has a global cooldown, while reload has both a global cooldown and a single-flight guard.
+- Rate-limit state is memory-bounded and expired buckets are pruned automatically.
+- Repeated rate-limit audit events are coalesced to prevent JSONL log flooding.
 - Usage is written as JSON lines to `logs/cmibot-usage.jsonl`.
+- Every interaction runs behind a top-level rejection boundary. Unexpected command and fallback-response errors are logged without terminating the bot.
+- Discord client and shard errors have explicit listeners so an emitted runtime error cannot become an unhandled `error` event.
+
+The abuse-control defaults are configurable. Set a limit or its window to `0` to disable that layer:
+
+```dotenv
+COMMAND_USER_RATE_LIMIT=10
+COMMAND_CHANNEL_RATE_LIMIT=30
+COMMAND_GLOBAL_RATE_LIMIT=100
+COMMAND_RATE_WINDOW_SECONDS=30
+LOOKUP_COOLDOWN_SECONDS=3
+SUMMARY_COOLDOWN_SECONDS=15
+DEBUG_COOLDOWN_SECONDS=10
+RELOAD_COOLDOWN_SECONDS=30
+RATE_LIMIT_AUDIT_COOLDOWN_SECONDS=30
+```
 
 ## Install
 
@@ -320,7 +352,7 @@ npm start
 
 Fill in the Discord token, application ID, guild ID, channel IDs, and role IDs in `.env`. The real `.env` is ignored and must be created independently on each machine.
 
-OpenAI support is optional and disabled by default with `OPENAI_ENABLED=false`.
+OpenAI support is optional and disabled by default with `OPENAI_ENABLED=false`. In disabled mode, the bot stays lexical-only: it does not import the OpenAI SDK, construct an API client, or require `AI_ROLE_IDS`/`OPENAI_API_KEY`. This avoids the SDK's runtime memory overhead until AI is explicitly enabled.
 
 ## Local CLI
 

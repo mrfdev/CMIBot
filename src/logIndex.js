@@ -30,15 +30,15 @@ function buildEntry({
     yamlPath,
     comments,
     snippet,
-    searchText: extractTextForSearch(comments, `${yamlPath}\n${value}`, relativePath),
+    searchText: extractTextForSearch(comments, `${yamlPath}\n${value}`),
     codeLanguage,
     sourceType: "log",
   };
 }
 
-function extractTextForSearch(comments, key, relativePath) {
+function extractTextForSearch(comments, content) {
   const commentText = comments.map((line) => normalizeCommentLine(line)).join("\n");
-  return [relativePath, key, commentText].join("\n").toLowerCase();
+  return [content, commentText].join("\n").toLowerCase();
 }
 
 export function extractEntriesFromCommentLogText(fileText, relativePath) {

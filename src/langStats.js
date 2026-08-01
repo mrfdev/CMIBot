@@ -89,9 +89,10 @@ function buildFallbackLabel(englishRelativePath) {
   return `${root} (${humanizeToken(shortName)} locale)`;
 }
 
-export async function buildLanguageCategoryStats(workspaceRoot, includeGlobs) {
+export async function buildLanguageCategoryStats(workspaceRoot, includeGlobs, excludeGlobs = []) {
   const englishRelativePaths = await fg(includeGlobs, {
     cwd: workspaceRoot,
+    ignore: excludeGlobs,
     onlyFiles: true,
     unique: true,
     dot: false,

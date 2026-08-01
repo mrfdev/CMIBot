@@ -99,6 +99,7 @@ function buildSimplePluginProfiles({
       sourceType: "yaml",
       entryLabel: "YAML entries",
       statsFileLabel: "YAML configuration files",
+      sharedProfileName: "config",
       include: parseCsv(configInclude),
       exclude: parseCsv(configExcludeEnv ?? configExcludeDefault),
     }),
@@ -106,8 +107,41 @@ function buildSimplePluginProfiles({
       sourceType: "yaml",
       entryLabel: "YAML entries",
       statsFileLabel: "YAML locale files",
+      sharedProfileName: "language",
       include: parseCsv(languageInclude),
       exclude: parseCsv(languageExcludeEnv ?? languageExcludeDefault),
+    }),
+  };
+}
+
+function buildSharedCmilibProfiles() {
+  return {
+    config: createProfile("config", {
+      sourceType: "yaml",
+      entryLabel: "YAML entries",
+      statsFileLabel: "YAML configuration files",
+      include: parseCsv(process.env.CMILIB_LOOKUP_INCLUDE_GLOBS ?? "CMILibPlugin/CMILib/config.yml"),
+      exclude: parseCsv(process.env.CMILIB_LOOKUP_EXCLUDE_GLOBS),
+    }),
+    language: createProfile("language", {
+      sourceType: "yaml",
+      entryLabel: "YAML entries",
+      statsFileLabel: "YAML locale files",
+      include: parseCsv(
+        process.env.CMILIB_LANGUAGE_INCLUDE_GLOBS ?? "CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+      ),
+      exclude: parseCsv(process.env.CMILIB_LANGUAGE_EXCLUDE_GLOBS),
+    }),
+    placeholder: createProfile("placeholder", {
+      sourceType: "log",
+      entryLabel: "placeholder entries",
+      statsFileLabel: "generated placeholder data files",
+      parserType: "commentBlocks",
+      codeLanguage: "yml",
+      include: parseCsv(
+        process.env.CMILIB_PLACEHOLDER_INCLUDE_GLOBS ?? "CMILibPlugin/data/generated-placeholders.log",
+      ),
+      exclude: parseCsv(process.env.CMILIB_PLACEHOLDER_EXCLUDE_GLOBS),
     }),
   };
 }
@@ -151,9 +185,10 @@ function buildCmiProfiles() {
       sourceType: "yaml",
       entryLabel: "YAML entries",
       statsFileLabel: "YAML configuration files",
+      sharedProfileName: "config",
       include: parseCsv(
         process.env.LOOKUP_INCLUDE_GLOBS ??
-          "CMIPlugin/CMI/config.yml,CMIPlugin/CMI/Settings/**/*.yml,CMILibPlugin/CMILib/config.yml",
+          "CMIPlugin/CMI/config.yml,CMIPlugin/CMI/Settings/**/*.yml",
       ),
       exclude: parseCsv(
         process.env.LOOKUP_EXCLUDE_GLOBS ??
@@ -164,9 +199,10 @@ function buildCmiProfiles() {
       sourceType: "yaml",
       entryLabel: "YAML entries",
       statsFileLabel: "YAML locale files",
+      sharedProfileName: "language",
       include: parseCsv(
         process.env.LANGLOOKUP_INCLUDE_GLOBS ??
-          "CMIPlugin/CMI/Translations/**/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+          "CMIPlugin/CMI/Translations/**/Locale_EN.yml",
       ),
       exclude: parseCsv(process.env.LANGLOOKUP_EXCLUDE_GLOBS),
     }),
@@ -178,10 +214,11 @@ function buildCmiProfiles() {
       referenceUrl: "https://www.zrips.net/cmi/placeholders/",
       parserType: "commentBlocks",
       codeLanguage: "yml",
+      sharedProfileName: "placeholder",
       include: parseCsvWithRequired(
         process.env.PLACEHOLDER_INCLUDE_GLOBS,
         "CMIPlugin/data/placeholders.log",
-        ["CMIPlugin/data/generated-placeholders.log", "CMILibPlugin/data/generated-placeholders.log"],
+        ["CMIPlugin/data/generated-placeholders.log"],
       ),
       exclude: parseCsv(process.env.PLACEHOLDER_EXCLUDE_GLOBS),
     }),
@@ -250,9 +287,10 @@ function buildJobsProfiles() {
       sourceType: "yaml",
       entryLabel: "YAML entries",
       statsFileLabel: "YAML configuration files",
+      sharedProfileName: "config",
       include: parseCsv(
         process.env.JOBS_LOOKUP_INCLUDE_GLOBS ??
-          "JobsPlugin/*.yml,JobsPlugin/jobs/**/*.yml,CMILibPlugin/CMILib/config.yml",
+          "JobsPlugin/*.yml,JobsPlugin/jobs/**/*.yml",
       ),
       exclude: parseCsv(
         process.env.JOBS_LOOKUP_EXCLUDE_GLOBS ??
@@ -263,9 +301,10 @@ function buildJobsProfiles() {
       sourceType: "yaml",
       entryLabel: "YAML entries",
       statsFileLabel: "YAML locale files",
+      sharedProfileName: "language",
       include: parseCsv(
         process.env.JOBS_LANGUAGE_INCLUDE_GLOBS ??
-          "JobsPlugin/locale/messages_en.yml,JobsPlugin/TranslatableWords/Words_en.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+          "JobsPlugin/locale/messages_en.yml,JobsPlugin/TranslatableWords/Words_en.yml",
       ),
       exclude: parseCsv(process.env.JOBS_LANGUAGE_EXCLUDE_GLOBS),
     }),
@@ -277,10 +316,11 @@ function buildJobsProfiles() {
       referenceUrl: "https://www.zrips.net/jobs/placeholders/",
       parserType: "commentBlocks",
       codeLanguage: "yml",
+      sharedProfileName: "placeholder",
       include: parseCsvWithRequired(
         process.env.JOBS_PLACEHOLDER_INCLUDE_GLOBS,
         "JobsPlugin/data/placeholders.log",
-        ["JobsPlugin/data/generated-placeholders.log", "CMILibPlugin/data/generated-placeholders.log"],
+        ["JobsPlugin/data/generated-placeholders.log"],
       ),
       exclude: parseCsv(process.env.JOBS_PLACEHOLDER_EXCLUDE_GLOBS),
     }),
@@ -329,11 +369,10 @@ function buildSvisProfiles() {
   return {
     ...buildSimplePluginProfiles({
       configInclude:
-        process.env.SVIS_LOOKUP_INCLUDE_GLOBS ?? "SVISPlugin/config.yml,CMILibPlugin/CMILib/config.yml",
+        process.env.SVIS_LOOKUP_INCLUDE_GLOBS ?? "SVISPlugin/config.yml",
       configExcludeEnv: process.env.SVIS_LOOKUP_EXCLUDE_GLOBS,
       languageInclude:
-        process.env.SVIS_LANGUAGE_INCLUDE_GLOBS ??
-        "SVISPlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+        process.env.SVIS_LANGUAGE_INCLUDE_GLOBS ?? "SVISPlugin/Locale_EN.yml",
       languageExcludeEnv: process.env.SVIS_LANGUAGE_EXCLUDE_GLOBS,
     }),
     command: createProfile("command", {
@@ -371,11 +410,10 @@ function buildMfmProfiles() {
   return {
     ...buildSimplePluginProfiles({
       configInclude:
-        process.env.MFM_LOOKUP_INCLUDE_GLOBS ?? "MFMPlugin/config.yml,CMILibPlugin/CMILib/config.yml",
+        process.env.MFM_LOOKUP_INCLUDE_GLOBS ?? "MFMPlugin/config.yml",
       configExcludeEnv: process.env.MFM_LOOKUP_EXCLUDE_GLOBS,
       languageInclude:
-        process.env.MFM_LANGUAGE_INCLUDE_GLOBS ??
-        "MFMPlugin/Locale/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+        process.env.MFM_LANGUAGE_INCLUDE_GLOBS ?? "MFMPlugin/Locale/Locale_EN.yml",
       languageExcludeEnv: process.env.MFM_LANGUAGE_EXCLUDE_GLOBS,
     }),
     ...buildGeneratedJarProfiles({
@@ -390,12 +428,11 @@ function buildTrymeProfiles() {
   return {
     ...buildSimplePluginProfiles({
       configInclude:
-        process.env.TRYME_LOOKUP_INCLUDE_GLOBS ?? "TryMePlugin/*.yml,CMILibPlugin/CMILib/config.yml",
+        process.env.TRYME_LOOKUP_INCLUDE_GLOBS ?? "TryMePlugin/*.yml",
       configExcludeEnv: process.env.TRYME_LOOKUP_EXCLUDE_GLOBS,
       configExcludeDefault: "TryMePlugin/Locale_EN.yml,TryMePlugin/Signs.yml",
       languageInclude:
-        process.env.TRYME_LANGUAGE_INCLUDE_GLOBS ??
-        "TryMePlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+        process.env.TRYME_LANGUAGE_INCLUDE_GLOBS ?? "TryMePlugin/Locale_EN.yml",
       languageExcludeEnv: process.env.TRYME_LANGUAGE_EXCLUDE_GLOBS,
     }),
     ...buildGeneratedJarProfiles({
@@ -411,9 +448,9 @@ function buildTrymeProfiles() {
       referenceUrl: "https://www.spigotmc.org/resources/3330/",
       parserType: "commentBlocks",
       codeLanguage: "yml",
+      sharedProfileName: "placeholder",
       include: parseCsvWithRequired(process.env.TRYME_PLACEHOLDER_INCLUDE_GLOBS, "", [
         "TryMePlugin/data/generated-placeholders.log",
-        "CMILibPlugin/data/generated-placeholders.log",
       ]),
       exclude: parseCsv(process.env.TRYME_PLACEHOLDER_EXCLUDE_GLOBS),
     }),
@@ -425,11 +462,10 @@ function buildBottledExpProfiles() {
     ...buildSimplePluginProfiles({
       configInclude:
         process.env.BOTTLEDEXP_LOOKUP_INCLUDE_GLOBS ??
-        "BottledExpPlugin/config.yml,BottledExpPlugin/recipes.yml,CMILibPlugin/CMILib/config.yml",
+        "BottledExpPlugin/config.yml,BottledExpPlugin/recipes.yml",
       configExcludeEnv: process.env.BOTTLEDEXP_LOOKUP_EXCLUDE_GLOBS,
       languageInclude:
-        process.env.BOTTLEDEXP_LANGUAGE_INCLUDE_GLOBS ??
-        "BottledExpPlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+        process.env.BOTTLEDEXP_LANGUAGE_INCLUDE_GLOBS ?? "BottledExpPlugin/Locale_EN.yml",
       languageExcludeEnv: process.env.BOTTLEDEXP_LANGUAGE_EXCLUDE_GLOBS,
     }),
     ...buildGeneratedJarProfiles({
@@ -444,11 +480,10 @@ function buildTrademeProfiles() {
   return {
     ...buildSimplePluginProfiles({
       configInclude:
-        process.env.TRADEME_LOOKUP_INCLUDE_GLOBS ?? "TradeMePlugin/config.yml,CMILibPlugin/CMILib/config.yml",
+        process.env.TRADEME_LOOKUP_INCLUDE_GLOBS ?? "TradeMePlugin/config.yml",
       configExcludeEnv: process.env.TRADEME_LOOKUP_EXCLUDE_GLOBS,
       languageInclude:
-        process.env.TRADEME_LANGUAGE_INCLUDE_GLOBS ??
-        "TradeMePlugin/Locale_EN.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+        process.env.TRADEME_LANGUAGE_INCLUDE_GLOBS ?? "TradeMePlugin/Locale_EN.yml",
       languageExcludeEnv: process.env.TRADEME_LANGUAGE_EXCLUDE_GLOBS,
     }),
     ...buildGeneratedJarProfiles({
@@ -464,9 +499,9 @@ function buildTrademeProfiles() {
       referenceUrl: "https://www.spigotmc.org/resources/7544/",
       parserType: "commentBlocks",
       codeLanguage: "yml",
+      sharedProfileName: "placeholder",
       include: parseCsvWithRequired(process.env.TRADEME_PLACEHOLDER_INCLUDE_GLOBS, "", [
         "TradeMePlugin/data/generated-placeholders.log",
-        "CMILibPlugin/data/generated-placeholders.log",
       ]),
       exclude: parseCsv(process.env.TRADEME_PLACEHOLDER_EXCLUDE_GLOBS),
     }),
@@ -479,9 +514,10 @@ function buildResidenceProfiles() {
       sourceType: "yaml",
       entryLabel: "YAML entries",
       statsFileLabel: "YAML configuration files",
+      sharedProfileName: "config",
       include: parseCsv(
         process.env.RESIDENCE_LOOKUP_INCLUDE_GLOBS ??
-          "ResidencePlugin/config.yml,ResidencePlugin/groups.yml,ResidencePlugin/flags.yml,ResidencePlugin/ShopVotes.yml,CMILibPlugin/CMILib/config.yml",
+          "ResidencePlugin/config.yml,ResidencePlugin/groups.yml,ResidencePlugin/flags.yml,ResidencePlugin/ShopVotes.yml",
       ),
       exclude: parseCsv(process.env.RESIDENCE_LOOKUP_EXCLUDE_GLOBS),
     }),
@@ -489,9 +525,10 @@ function buildResidenceProfiles() {
       sourceType: "yaml",
       entryLabel: "YAML entries",
       statsFileLabel: "YAML locale files",
+      sharedProfileName: "language",
       include: parseCsv(
         process.env.RESIDENCE_LANGUAGE_INCLUDE_GLOBS ??
-          "ResidencePlugin/Language/English.yml,CMILibPlugin/CMILib/Translations/**/*_EN.yml",
+          "ResidencePlugin/Language/English.yml",
       ),
       exclude: parseCsv(process.env.RESIDENCE_LANGUAGE_EXCLUDE_GLOBS),
     }),
@@ -503,10 +540,11 @@ function buildResidenceProfiles() {
       referenceUrl: "https://www.zrips.net/residence/placeholders/",
       parserType: "delimited",
       codeLanguage: "yml",
+      sharedProfileName: "placeholder",
       include: parseCsvWithRequired(
         process.env.RESIDENCE_PLACEHOLDER_INCLUDE_GLOBS,
         "ResidencePlugin/data/placeholders.log",
-        ["ResidencePlugin/data/generated-placeholders.log", "CMILibPlugin/data/generated-placeholders.log"],
+        ["ResidencePlugin/data/generated-placeholders.log"],
       ),
       exclude: parseCsv(process.env.RESIDENCE_PLACEHOLDER_EXCLUDE_GLOBS),
     }),
@@ -573,6 +611,7 @@ export function loadConfig() {
   const trademeProfiles = buildTrademeProfiles();
   const bottledExpProfiles = buildBottledExpProfiles();
   const residenceProfiles = buildResidenceProfiles();
+  const sharedCmilibProfiles = buildSharedCmilibProfiles();
   const configuredTestChannelIds = parseCsv(process.env.DISCORD_TEST_CHANNEL_IDS);
   const fallbackLegacyTestChannelIds = parseCsv(process.env.DISCORD_CMI_TEST_CHANNEL_IDS);
   const testChannelIds = configuredTestChannelIds.length ? configuredTestChannelIds : fallbackLegacyTestChannelIds;
@@ -626,6 +665,11 @@ export function loadConfig() {
         directories: ["CMILibPlugin"],
       },
     ],
+    sharedCmilib: {
+      id: "cmilib",
+      label: "Shared CMILib data",
+      profiles: sharedCmilibProfiles,
+    },
     plugins: {
       cmi: {
         id: "cmi",
@@ -738,8 +782,18 @@ export function loadConfig() {
       },
     },
     security: {
+      commandUserRateLimit: Math.max(0, parseInteger(process.env.COMMAND_USER_RATE_LIMIT, 10)),
+      commandChannelRateLimit: Math.max(0, parseInteger(process.env.COMMAND_CHANNEL_RATE_LIMIT, 30)),
+      commandGlobalRateLimit: Math.max(0, parseInteger(process.env.COMMAND_GLOBAL_RATE_LIMIT, 100)),
+      commandRateWindowSeconds: Math.max(0, parseInteger(process.env.COMMAND_RATE_WINDOW_SECONDS, 30)),
       lookupCooldownSeconds: Math.max(0, parseInteger(process.env.LOOKUP_COOLDOWN_SECONDS, 3)),
       summaryCooldownSeconds: Math.max(0, parseInteger(process.env.SUMMARY_COOLDOWN_SECONDS, 15)),
+      debugCooldownSeconds: Math.max(0, parseInteger(process.env.DEBUG_COOLDOWN_SECONDS, 10)),
+      reloadCooldownSeconds: Math.max(0, parseInteger(process.env.RELOAD_COOLDOWN_SECONDS, 30)),
+      rateLimitAuditCooldownSeconds: Math.max(
+        0,
+        parseInteger(process.env.RATE_LIMIT_AUDIT_COOLDOWN_SECONDS, 30),
+      ),
       queryMinLength: Math.max(1, parseInteger(process.env.QUERY_MIN_LENGTH, 2)),
       queryMaxLength: Math.max(5, parseInteger(process.env.QUERY_MAX_LENGTH, 80)),
       queryBlocklist: parseCsv(process.env.QUERY_BLOCKLIST).map((item) => item.toLowerCase()),
@@ -774,7 +828,10 @@ export function validateBotConfig(config) {
   if (!config.discord.adminRoleIds.length) {
     throw new Error("Define ADMIN_ROLE_IDS so the bot can guard the reload command.");
   }
-  if (!config.discord.aiRoleIds.length) {
+  if (config.openai.enabled && !config.openai.apiKey) {
+    throw new Error("Define OPENAI_API_KEY when OPENAI_ENABLED=true.");
+  }
+  if (config.openai.enabled && !config.discord.aiRoleIds.length) {
     throw new Error("Define AI_ROLE_IDS so the bot can guard AI-backed features.");
   }
 }

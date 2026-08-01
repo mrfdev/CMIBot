@@ -1,10 +1,17 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { MessageFlags, REST, Routes, SlashCommandBuilder, version as discordJsVersion } from "discord.js";
+import { createLazyAiResolver, isAiEnabled } from "./aiLoader.js";
 import { writeAuditLog } from "./auditLog.js";
 import { formatCacheSummary } from "./cache.js";
-import { createCooldownManager, resolveFileFilter, sanitizeForDisplay, validateQuery } from "./security.js";
-import { AiReranker, lexicalSearch, orderMatchesForDisplay } from "./search.js";
+import {
+  createCooldownManager,
+  createSlidingWindowRateLimiter,
+  resolveFileFilter,
+  sanitizeForDisplay,
+  validateQuery,
+} from "./security.js";
+import { lexicalSearchWithStats, orderMatchesForDisplay } from "./search.js";
 import {
   formatLatestVersionMessages,
   formatPublicLatestVersions,
@@ -18,6 +25,111 @@ const MAX_RESULT_LIMIT = 15;
 const MATERIAL_MAX_RESULT_LIMIT = 25;
 const NO_MENTIONS = { parse: [] };
 const DEBUG_SIZE_SKIP_DIRS = new Set([".git"]);
+const UNEXPECTED_ERROR_MESSAGE =
+  "The bot could not complete this command because of an unexpected error. The failure was logged and the bot is still running.";
+
+function getErrorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+export function createSafeInteractionListener(handleInteraction, handleError) {
+  return function handleInteractionSafely(interaction) {
+    return Promise.resolve()
+      .then(() => handleInteraction(interaction))
+      .catch(async (error) => {
+        try {
+          await handleError(interaction, error);
+        } catch (recoveryError) {
+          console.error("[LookupBot] Interaction error recovery also failed.", recoveryError);
+        }
+      });
+  };
+}
+
+export async function reloadServicesAtomically(searchCache, versionService) {
+  const [cacheResult, versionResult] = await Promise.allSettled([
+    searchCache.prepareReload(),
+    versionService.prepareReload(),
+  ]);
+  const failures = [];
+
+  if (cacheResult.status === "rejected") {
+    failures.push(`search cache: ${getErrorMessage(cacheResult.reason)}`);
+  }
+  if (versionResult.status === "rejected") {
+    failures.push(`version catalog: ${getErrorMessage(versionResult.reason)}`);
+  }
+
+  if (failures.length) {
+    if (cacheResult.status === "fulfilled") {
+      cacheResult.value.discard();
+    }
+    if (versionResult.status === "fulfilled") {
+      versionResult.value.discard();
+    }
+    throw new Error(`Reload preparation failed (${failures.join("; ")}).`);
+  }
+
+  const summary = cacheResult.value.commit();
+  const versionSnapshot = versionResult.value.commit();
+  return { summary, versionSnapshot };
+}
+
+async function reportUnexpectedInteractionError(interaction, error, logEvent) {
+  const errorMessage = getErrorMessage(error);
+  const commandName = interaction.commandName || "unknown-command";
+  const channelId = interaction.channelId || "unknown-channel";
+  const userId = interaction.user?.id || "unknown-user";
+
+  console.error(
+    `[LookupBot] Unexpected interaction error for /${commandName} in channel ${channelId} from user ${userId}.`,
+    error,
+  );
+
+  try {
+    await logEvent(interaction, {
+      subcommand: "unknown",
+      outcome: "unexpected-error",
+      reason: errorMessage.slice(0, 1000),
+    });
+  } catch (auditError) {
+    console.error("[LookupBot] Failed to audit an unexpected interaction error.", auditError);
+  }
+
+  if (typeof interaction.isRepliable === "function" && !interaction.isRepliable()) {
+    return;
+  }
+
+  try {
+    if (interaction.replied) {
+      await interaction.followUp({
+        content: UNEXPECTED_ERROR_MESSAGE,
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
+    if (interaction.deferred) {
+      await interaction.editReply({
+        content: UNEXPECTED_ERROR_MESSAGE,
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
+    await interaction.reply({
+      content: UNEXPECTED_ERROR_MESSAGE,
+      flags: MessageFlags.Ephemeral,
+      allowedMentions: NO_MENTIONS,
+    });
+  } catch (responseError) {
+    console.error(
+      `[LookupBot] Could not send the fallback response for /${commandName} in channel ${channelId}.`,
+      responseError,
+    );
+  }
+}
 
 function pluralize(count, singular, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
@@ -581,7 +693,7 @@ async function formatDebugMessage(interaction, context, config, searchCache, ver
         ? `${paperRuntime.version} build ${paperRuntime.build ?? "unknown"} ${paperRuntime.channel ?? "unknown"}, API ${paperRuntime.apiCoordinate ?? "unknown"}, exporter Java ${paperRuntime.javaTarget ?? "unknown"}`
         : "unknown"
     }\``,
-    `Upstream versions: \`${versionSnapshot.checkedAt ? `${formatTimestamp(versionSnapshot.checkedAt)}, ${versionSnapshot.errorCount} unavailable` : versionSnapshot.checkEnabled ? "pending" : "disabled"}\``,
+    `Upstream versions: \`${versionSnapshot.checkedAt ? `${formatTimestamp(versionSnapshot.checkedAt)}, ${versionSnapshot.errorCount} refresh failures${versionSnapshot.retainedCount ? `, ${versionSnapshot.retainedCount} last-known retained` : ""}` : versionSnapshot.checkEnabled ? "pending" : "disabled"}\``,
     `Largest cache bucket: \`${largestBucket ? `${largestBucket.scopeLabel} ${largestBucket.profileLabel} (${largestBucket.entryCount} entries / ${largestBucket.fileCount} files)` : "unknown"}\``,
     `Active test overrides: \`${formatTestOverrideSummary(config.discord.testChannelIds, testOverrides, config)}\``,
     `Disk footprint: \`${diskFootprint}\``,
@@ -621,7 +733,7 @@ export function formatHelpMessage(config, member, context, commandName) {
   const canLookup = hasRole(member, { roleIds: config.discord.allowedRoleIds });
   const canReload = hasRole(member, { roleIds: config.discord.adminRoleIds });
   const canUseAi = hasRole(member, { roleIds: config.discord.aiRoleIds });
-  const aiEnabled = config.openai.enabled;
+  const aiEnabled = isAiEnabled(config.openai);
   const prefix = `/${PRIMARY_COMMAND_NAME}`;
   const currentCommand = `/${commandName}`;
   const lines = ["### Lookup Help"];
@@ -672,8 +784,10 @@ export function formatHelpMessage(config, member, context, commandName) {
   lines.push(`- \`${prefix} latest\` shows versions for this plugin and CMILib`);
   lines.push(`- \`${prefix} latest public:true\` publicly shows only the latest plugin and CMILib releases`);
   lines.push(`- \`${prefix} latest scope:all\` shows every tracked resource and CMI companion`);
-  lines.push(`- \`${prefix} debug\` shows the current channel context`);
-  lines.push(`- \`${prefix} reload\` refreshes the cache for every plugin context`);
+  if (canReload) {
+    lines.push(`- \`${prefix} debug\` shows the current channel context and runtime diagnostics`);
+    lines.push(`- \`${prefix} reload\` refreshes the cache for every plugin context`);
+  }
 
   if (comingSoonCommands.length) {
     lines.push("", `Still being worked on for ${plugin.label}:`);
@@ -718,9 +832,9 @@ export function formatHelpMessage(config, member, context, commandName) {
       : "- `summary: true|false` is currently disabled in bot config",
   );
 
-  if (context.isTestChannel) {
+  if (context.isTestChannel && canReload) {
     lines.push(
-      "- `debug context:<plugin>|auto` can switch the test channel context live when used by an admin",
+      "- `debug context:<plugin>|auto` can switch the test channel context live",
     );
   }
 
@@ -792,15 +906,15 @@ export function formatHelpMessage(config, member, context, commandName) {
   if (!canLookup) {
     lines.push(
       "",
-      "Notice: search, stats, and reload are limited to the configured support/admin role IDs. Help and debug stay available in allowed channels.",
+      "Notice: search commands and stats are limited to configured support role IDs. `/lookup debug` and `/lookup reload` are admin-only.",
     );
   } else if (aiEnabled && !canReload && !canUseAi) {
     lines.push(
       "",
-      "Notice: you can use search commands here, but `/lookup reload` and AI-backed options like `summary:true` are restricted.",
+      "Notice: you can use search commands here, but `/lookup debug`, `/lookup reload`, and AI-backed options like `summary:true` are restricted.",
     );
   } else if (!canReload) {
-    lines.push("", "Notice: you can use search commands here, but `/lookup reload` is admin-only.");
+    lines.push("", "Notice: you can use search commands here, but `/lookup debug` and `/lookup reload` are admin-only.");
   } else {
     lines.push("", `Notice: ${currentCommand} is available here.`);
   }
@@ -1239,10 +1353,15 @@ export async function registerCommands(config) {
   });
 }
 
-export function createInteractionHandler(config, searchCache, versionService) {
-  const reranker = new AiReranker(config.openai);
+export function createInteractionHandler(config, searchCache, versionService, dependencies = {}) {
+  const aiEnabled = isAiEnabled(config.openai);
+  const resolveAiReranker = createLazyAiResolver(config.openai, {
+    loadAiModule: dependencies.loadAiModule,
+  });
   const cooldowns = createCooldownManager();
+  const rateLimiter = createSlidingWindowRateLimiter();
   const testOverrides = new Map();
+  let reloadInProgress = false;
 
   function logEvent(interaction, payload) {
     return writeAuditLog(config.workspaceRoot, config.security.auditLogPath, {
@@ -1256,6 +1375,17 @@ export function createInteractionHandler(config, searchCache, versionService) {
     });
   }
 
+  async function logRateLimitEvent(interaction, auditKey, payload) {
+    const auditCooldown = cooldowns.check(
+      "rate-limit-audit",
+      auditKey,
+      config.security.rateLimitAuditCooldownSeconds ?? 30,
+    );
+    if (auditCooldown.allowed) {
+      await logEvent(interaction, payload);
+    }
+  }
+
   function validationMessage(reason) {
     if (config.security.queryDebugErrors) {
       return reason;
@@ -1264,7 +1394,7 @@ export function createInteractionHandler(config, searchCache, versionService) {
     return "That search was rejected by input validation. Please use a short, specific keyword or phrase.";
   }
 
-  return async function handleInteraction(interaction) {
+  async function handleInteraction(interaction) {
     if (!interaction.isChatInputCommand() || !SUPPORTED_COMMAND_NAMES.has(interaction.commandName)) {
       return;
     }
@@ -1272,6 +1402,31 @@ export function createInteractionHandler(config, searchCache, versionService) {
     if (interaction.guildId !== config.discord.guildId) {
       await interaction.reply({
         content: "This bot is locked to a different Discord server.",
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
+    const subcommand = interaction.options.getSubcommand();
+    const canonicalSubcommand = resolveCanonicalSubcommand(subcommand);
+    let context = resolveChannelContext(interaction.channelId, config, testOverrides);
+
+    const userRateLimit = rateLimiter.check(
+      `user:${interaction.user.id}`,
+      config.security.commandUserRateLimit,
+      config.security.commandRateWindowSeconds,
+      "user",
+    );
+    if (!userRateLimit.allowed) {
+      await logRateLimitEvent(interaction, `user:${interaction.user.id}`, {
+        subcommand,
+        outcome: "rejected",
+        reason: `user-rate-limit:${userRateLimit.retryAfterSeconds}`,
+        detectedContext: context.pluginId || "unknown",
+      });
+      await interaction.reply({
+        content: `You are sending bot commands too quickly. Try again in ${userRateLimit.retryAfterSeconds}s.`,
         flags: MessageFlags.Ephemeral,
         allowedMentions: NO_MENTIONS,
       });
@@ -1287,26 +1442,44 @@ export function createInteractionHandler(config, searchCache, versionService) {
       return;
     }
 
-    const subcommand = interaction.options.getSubcommand();
-    const canonicalSubcommand = resolveCanonicalSubcommand(subcommand);
-    let context = resolveChannelContext(interaction.channelId, config, testOverrides);
-
     if (canonicalSubcommand === "debug") {
+      if (!hasRole(interaction.member, { roleIds: config.discord.adminRoleIds })) {
+        await logEvent(interaction, {
+          subcommand,
+          outcome: "denied",
+          reason: "debug-role",
+          detectedContext: context.pluginId || "unknown",
+        });
+        await interaction.reply({
+          content: "Only the configured admin role can use the debug command.",
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+        return;
+      }
+
+      const debugCooldown = cooldowns.check("global", "admin:debug", config.security.debugCooldownSeconds);
+      if (!debugCooldown.allowed) {
+        await logRateLimitEvent(interaction, "admin:debug", {
+          subcommand,
+          outcome: "rejected",
+          reason: `debug-cooldown:${debugCooldown.retryAfterSeconds}`,
+          detectedContext: context.pluginId || "unknown",
+        });
+        await interaction.reply({
+          content: `Debug diagnostics were just generated. Try again in ${debugCooldown.retryAfterSeconds}s.`,
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+        return;
+      }
+
       const requestedContext = interaction.options.getString("context") ?? "";
 
       if (requestedContext) {
         if (!context.isTestChannel) {
           await interaction.reply({
             content: "Context overrides can only be changed from a configured test channel.",
-            flags: MessageFlags.Ephemeral,
-            allowedMentions: NO_MENTIONS,
-          });
-          return;
-        }
-
-        if (!hasRole(interaction.member, { roleIds: config.discord.adminRoleIds })) {
-          await interaction.reply({
-            content: "Only the configured admin role can change the active test-channel context.",
             flags: MessageFlags.Ephemeral,
             allowedMentions: NO_MENTIONS,
           });
@@ -1378,10 +1551,63 @@ export function createInteractionHandler(config, searchCache, versionService) {
         return;
       }
 
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      if (reloadInProgress) {
+        await logRateLimitEvent(interaction, "admin:reload-in-progress", {
+          subcommand,
+          outcome: "rejected",
+          reason: "reload-in-progress",
+          detectedContext: context.pluginId,
+        });
+        await interaction.reply({
+          content: "A global cache reload is already in progress. Please wait for it to finish.",
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+        return;
+      }
 
+      const reloadCooldown = cooldowns.check(
+        "global",
+        "admin:reload",
+        config.security.reloadCooldownSeconds,
+      );
+      if (!reloadCooldown.allowed) {
+        await logRateLimitEvent(interaction, "admin:reload", {
+          subcommand,
+          outcome: "rejected",
+          reason: `reload-cooldown:${reloadCooldown.retryAfterSeconds}`,
+          detectedContext: context.pluginId,
+        });
+        await interaction.reply({
+          content: `The global cache was reloaded recently. Try again in ${reloadCooldown.retryAfterSeconds}s.`,
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+        return;
+      }
+
+      reloadInProgress = true;
       try {
-        const [summary, versionSnapshot] = await Promise.all([searchCache.reloadAll(), versionService.reload()]);
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+        let reloadResult;
+        try {
+          reloadResult = await reloadServicesAtomically(searchCache, versionService);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Unknown error";
+          await logEvent(interaction, {
+            subcommand,
+            outcome: "error",
+            reason: message,
+          });
+          await interaction.editReply({
+            content: `The bot failed to prepare a complete reload, so the existing cache and version snapshots remain active: ${message}`,
+            allowedMentions: NO_MENTIONS,
+          });
+          return;
+        }
+
+        const { summary, versionSnapshot } = reloadResult;
         await logEvent(interaction, {
           subcommand,
           outcome: "success",
@@ -1405,17 +1631,8 @@ export function createInteractionHandler(config, searchCache, versionService) {
             allowedMentions: NO_MENTIONS,
           });
         }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error";
-        await logEvent(interaction, {
-          subcommand,
-          outcome: "error",
-          reason: message,
-        });
-        await interaction.editReply({
-          content: `The bot failed to reload the search cache: ${message}`,
-          allowedMentions: NO_MENTIONS,
-        });
+      } finally {
+        reloadInProgress = false;
       }
       return;
     }
@@ -1429,6 +1646,42 @@ export function createInteractionHandler(config, searchCache, versionService) {
       });
       await interaction.reply({
         content: "You do not have one of the allowed support roles for this command.",
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
+    const sharedRateLimit = rateLimiter.checkMany([
+      {
+        key: `channel:${interaction.channelId}`,
+        scope: "channel",
+        maxRequests: config.security.commandChannelRateLimit,
+        windowSeconds: config.security.commandRateWindowSeconds,
+      },
+      {
+        key: "global",
+        scope: "global",
+        maxRequests: config.security.commandGlobalRateLimit,
+        windowSeconds: config.security.commandRateWindowSeconds,
+      },
+    ]);
+    if (!sharedRateLimit.allowed) {
+      const isChannelLimit = sharedRateLimit.scope === "channel";
+      await logRateLimitEvent(
+        interaction,
+        isChannelLimit ? `channel:${interaction.channelId}` : "global",
+        {
+          subcommand,
+          outcome: "rejected",
+          reason: `${sharedRateLimit.scope}-rate-limit:${sharedRateLimit.retryAfterSeconds}`,
+          detectedContext: context.pluginId,
+        },
+      );
+      await interaction.reply({
+        content: isChannelLimit
+          ? `This channel is receiving too many bot requests. Try again in ${sharedRateLimit.retryAfterSeconds}s.`
+          : `The bot is temporarily handling too many requests. Try again in ${sharedRateLimit.retryAfterSeconds}s.`,
         flags: MessageFlags.Ephemeral,
         allowedMentions: NO_MENTIONS,
       });
@@ -1657,6 +1910,30 @@ export function createInteractionHandler(config, searchCache, versionService) {
       return;
     }
 
+    const lookupCooldown = cooldowns.check(
+      interaction.user.id,
+      `${context.plugin.id}:${canonicalSubcommand}:lookup`,
+      config.security.lookupCooldownSeconds,
+    );
+    if (!lookupCooldown.allowed) {
+      await logRateLimitEvent(interaction, `lookup:${interaction.user.id}:${context.plugin.id}:${canonicalSubcommand}`, {
+        subcommand,
+        keyword,
+        mode,
+        related,
+        summary,
+        outcome: "rejected",
+        reason: `lookup-cooldown:${lookupCooldown.retryAfterSeconds}`,
+        detectedContext: context.pluginId,
+      });
+      await interaction.reply({
+        content: `Please wait ${lookupCooldown.retryAfterSeconds}s before running another lookup.`,
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
     const allProfileEntries = searchCache.getEntries(context.plugin.id, canonicalSubcommand);
     const fileFilter = resolveFileFilter(fileInput, allProfileEntries, {
       profileLabel: canonicalSubcommand === "config" ? `${context.plugin.label} config` : `${context.plugin.label} ${canonicalSubcommand}`,
@@ -1682,30 +1959,6 @@ export function createInteractionHandler(config, searchCache, versionService) {
       return;
     }
 
-    const lookupCooldown = cooldowns.check(
-      interaction.user.id,
-      `${context.plugin.id}:${canonicalSubcommand}:lookup`,
-      config.security.lookupCooldownSeconds,
-    );
-    if (!lookupCooldown.allowed) {
-      await logEvent(interaction, {
-        subcommand,
-        keyword,
-        mode,
-        related,
-        summary,
-        outcome: "rejected",
-        reason: `lookup-cooldown:${lookupCooldown.retryAfterSeconds}`,
-        detectedContext: context.pluginId,
-      });
-      await interaction.reply({
-        content: `Please wait ${lookupCooldown.retryAfterSeconds}s before running another lookup.`,
-        flags: MessageFlags.Ephemeral,
-        allowedMentions: NO_MENTIONS,
-      });
-      return;
-    }
-
     if (summary && !canUseAi) {
       await logEvent(interaction, {
         subcommand,
@@ -1718,7 +1971,7 @@ export function createInteractionHandler(config, searchCache, versionService) {
         detectedContext: context.pluginId,
       });
       await interaction.reply({
-        content: config.openai.enabled
+        content: aiEnabled
           ? "AI-backed options like `summary:true` are currently limited to the configured admin-only group."
           : "AI-backed options are currently disabled in bot config.",
         flags: MessageFlags.Ephemeral,
@@ -1727,7 +1980,7 @@ export function createInteractionHandler(config, searchCache, versionService) {
       return;
     }
 
-    if (summary) {
+    if (summary && aiEnabled) {
       const summaryCooldown = cooldowns.check(
         interaction.user.id,
         `${context.plugin.id}:${canonicalSubcommand}:summary`,
@@ -1757,9 +2010,10 @@ export function createInteractionHandler(config, searchCache, versionService) {
 
     try {
       const entries = fileFilter.filteredEntries;
-      const lexicalMatches = lexicalSearch(keyword, entries, { limit: 25, mode });
-      const rerankedMatches =
-        config.openai.enabled && canUseAi ? await reranker.rerank(keyword, lexicalMatches) : lexicalMatches;
+      const searchResult = lexicalSearchWithStats(keyword, entries, { limit: 25, mode });
+      const lexicalMatches = searchResult.matches;
+      const reranker = aiEnabled && canUseAi ? await resolveAiReranker() : null;
+      const rerankedMatches = reranker ? await reranker.rerank(keyword, lexicalMatches) : lexicalMatches;
       const orderedMatches = orderMatchesForDisplay(rerankedMatches);
       const finalMatches = orderedMatches.slice(0, limit);
 
@@ -1785,13 +2039,13 @@ export function createInteractionHandler(config, searchCache, versionService) {
         ...makeDisplayContext(item.entry, context.plugin.id, config.formatDisplayPath),
         related: related ? findRelatedEntries(item.entry, entries) : [],
       }));
-      const totalMentions = orderedMatches.length;
-      const fileCount = new Set(orderedMatches.map((item) => item.entry.relativePath)).size;
+      const totalMentions = searchResult.totalMatches;
+      const fileCount = searchResult.matchedFiles.length;
       let aiSummary = "";
-      if (summary && config.openai.enabled && canUseAi) {
+      if (summary && reranker && canUseAi) {
         aiSummary = (await reranker.summarize(keyword, finalMatches, { profileName: `${context.plugin.id}:${canonicalSubcommand}` })) || "";
       }
-      const allMatchedFiles = [...new Set(orderedMatches.map((item) => item.entry.relativePath))];
+      const allMatchedFiles = searchResult.matchedFiles;
       const message = formatResultsMessage(keyword, visibleResults, totalMentions, fileCount, aiSummary, allMatchedFiles, {
         profile,
         preferShortPath: canonicalSubcommand === "language",
@@ -1847,5 +2101,9 @@ export function createInteractionHandler(config, searchCache, versionService) {
         allowedMentions: NO_MENTIONS,
       });
     }
-  };
+  }
+
+  return createSafeInteractionListener(handleInteraction, (interaction, error) =>
+    reportUnexpectedInteractionError(interaction, error, logEvent),
+  );
 }

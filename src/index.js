@@ -24,6 +24,14 @@ async function main() {
     console.log(`LookupBot connected as ${client.user?.tag ?? "unknown-user"}.`);
   });
 
+  client.on("error", (error) => {
+    console.error("[LookupBot] Discord client error.", error);
+  });
+
+  client.on("shardError", (error) => {
+    console.error("[LookupBot] Discord shard error.", error);
+  });
+
   client.on("interactionCreate", createInteractionHandler(config, searchCache, versionService));
 
   await client.login(config.discord.token);

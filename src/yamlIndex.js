@@ -69,10 +69,10 @@ function buildSnippet(lines, lineNumber, commentBuffer, continuationLines = []) 
   };
 }
 
-function extractTextForSearch(comments, yamlPath, key, value, relativePath, continuationLines = []) {
+function extractTextForSearch(comments, yamlPath, key, value, continuationLines = []) {
   const commentText = comments.map((line) => normalizeCommentLine(line)).join("\n");
   const continuationText = continuationLines.join("\n");
-  return [relativePath, yamlPath, key, value, continuationText, commentText].join("\n").toLowerCase();
+  return [yamlPath, key, value, continuationText, commentText].join("\n").toLowerCase();
 }
 
 export function extractEntriesFromText(fileText, relativePath) {
@@ -128,7 +128,6 @@ export function extractEntriesFromText(fileText, relativePath) {
         yamlPath,
         rawKey,
         value,
-        relativePath,
         continuationLines,
       ),
     });
