@@ -172,8 +172,20 @@
 # Clean name of player from a provided place in a list
 %cmi_playtimetop_cname_[1-10]%
 
+# Playtime only days of player from a provided place in a list
+%cmi_playtimetop_days_[1-10]%
+
+# Playtime only hours of player from a provided place in a list
+%cmi_playtimetop_hours_[1-10]%
+
+# Playtime only munutes of player from a provided place in a list
+%cmi_playtimetop_minutes_[1-10]%
+
 # Name of player from a provided place in a list
 %cmi_playtimetop_name_[1-10]%
+
+# Playtime only seconds of player from a provided place in a list
+%cmi_playtimetop_seconds_[1-10]%
 
 # Playtime of player from a provided place in a list
 %cmi_playtimetop_time_[1-10]%

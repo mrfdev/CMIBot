@@ -16,9 +16,9 @@ restrictedareas:
   area1:
     enabled: false
     multipliers:
-      Money: -0.8
-      Exp: -0.4
-      Points: 0.2
+      Money: 0.5
+      Exp: 0.0
+      Points: -0.2
     world: world
     point1: 125;0;125
     point2: 150;100;150
@@ -27,9 +27,9 @@ restrictedareas:
   area2:
     enabled: false
     multipliers:
-      Money: 0.5
-      Exp: 0.1
-      Points: -0.7
+      Money: 0.0
+      Exp: 0.5
+      Points: -0.1
     world: world_nether
     point1: -100;0;-100
     point2: -150;100;-150

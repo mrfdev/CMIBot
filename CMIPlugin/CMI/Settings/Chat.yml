@@ -1,6 +1,6 @@
 Chat:
   # When enabled newer system for chat handling will be utilized
-  # Recommended to keep this enabed if you have compatible server
+  # Recommended to keep this enabed if you have compatible server 
   # This only applies to Paper 1.17+ servers
   # Full server restart is needed while switching between different use types
   UsePaperType: true

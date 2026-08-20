@@ -63,6 +63,7 @@ residence.command.message.leave.remove - Allows to remove residence leave messag
 residence.command.mirror - Allows to access particular command; Default: true
 residence.command.padd - Allows to access particular command; Default: true
 residence.command.pdel - Allows to access particular command; Default: true
+residence.command.pmirror - Allows to access particular command; Default: true
 residence.command.pset - Allows to access particular command; Default: true
 residence.command.rc - Allows to access particular command; Default: true
 residence.command.reload - Allows to access particular command; Default: op

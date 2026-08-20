@@ -3,29 +3,29 @@ welcome:
   Label: '{#white}Welcome {#gray}%cmi_user_display_name% {#white}to {#edward}%cmi_user_world_formatted%'
   Description:
     Width: 300
-    Lines:
+    Lines: 
     - '{#green}Best minecraft server on earth!'
     - ''
     - '{#white}We are glad to have you here %cmi_user_display_name%{#white}!'
     - 'If you have any questions, feel free to ask our staff'
   VisualFields:
   - Width: 300
-    Lines:
+    Lines: 
     - '{#brown}Extra info line!'
   Buttons:
-    Columns: 3
+    Columns: 3 
     List:
-    - Label: '{#red}Read The Rules'
+    - Label: '{#red}Read The Rules' 
       Width: 100
       OpenDialog: license
-      Tooltip:
+      Tooltip: 
       - '{#red}Read it before starting to play!'
     - Label: '{#green>}Read a joke{#darkgreen<}'
       Width: 100
       OpenDialog: 'randomtext'
     - Label: '{#edward>}Start Playing{#darkgreen<}'
       Width: 100
-      Commands:
+      Commands: 
       - closeinv!
     - Label: '{#blue}Select a thing'
       Width: 100
@@ -40,9 +40,9 @@ welcome:
       Url: www.zrips.net
   Close:
     Label: '{#pink>}Go Away!{#edward<}'
-    Tooltip:
+    Tooltip: 
     - '{#pink>}Lets go %cmi_user_display_name%!{#edward<}'
-    Commands:
+    Commands: 
     - 'cmi feed [playerName]'
     Width: 150
 visualexample:
@@ -50,16 +50,16 @@ visualexample:
   Label: '{#white}Visual examples'
   Description:
     Width: 300
-    Lines:
+    Lines: 
     - '{#green}Descrption at the top!'
   VisualFields:
   - Width: 300
-    Lines:
+    Lines: 
     - '{#brown}Extra info line!'
   - Item: Stone;n{{#red}Custom name};e{sharpness:2}
     Text:
       Width: 150
-      Lines:
+      Lines: 
       - '{#green}Item text with some auto wrapping and'
       - ''
       - '{#white}Multiline'
@@ -70,14 +70,14 @@ visualexample:
   - Item: potato
     Text:
       Width: 150
-      Lines:
+      Lines: 
       - '{#green}No tooltip on item'
     Width: 16
     Height: 16
     ShowTooltip: false
   - Item: '[ItemInHand]'
     Text:
-      Lines:
+      Lines: 
       - '{#green}%cmi_iteminhand_displayname% {#white}is what you are holding in your hand!'
   Close:
     Label: '{#edward}Go Back!'
@@ -98,14 +98,14 @@ inputexample:
       - 'cmi heal [playerName]'
     - Label: Option C
   - Label: 'Select it and get healed on save!'
-    OnTrue:
+    OnTrue: 
       Commands:
       - cmi heal [playerName]
-    OnFalse:
+    OnFalse: 
       Commands:
       - msg! [playerName] No free heal for you!
   Buttons:
-    Columns: 1
+    Columns: 1 
     List:
     - Label: '{#yellow}Save'
       Width: 150
@@ -118,7 +118,7 @@ license:
   Label: '{#white}User Agreement'
   VisualFields:
   - Width: 350
-    Lines:
+    Lines: 
     - 'By clicking “Agree with terms” or continuing to play on this server, you solemnly swear that:'
     - ''
     - ''
@@ -142,13 +142,13 @@ license:
   Inputs:
   - Type: Boolean
     Label: 'Agree with terms'
-    OnTrue:
+    OnTrue: 
       Commands:
       - asConsole! cmi heal [playerName]
       - closeinv!
     OnFalse:
       Commands:
-      - asConsole! cmi kick [playerName] You disagreed!
+      - asConsole! cmi kick [playerName] You disagreed! 
   Close:
     Label: 'Update!'
     Save: true

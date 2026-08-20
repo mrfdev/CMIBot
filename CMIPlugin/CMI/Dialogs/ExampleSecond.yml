@@ -2,7 +2,7 @@ randomtext:
   Enabled: true
   Description:
     Randomize: true
-    Lines:
+    Lines: 
     - "{#yellow}Why did the creeper break up with the skeleton?\n\n{#green}Because he felt blown away!"
     - "{#yellow}Why don't Endermen like jokes?\n\n{#green}They can't take things lightly!"
     - '{#yellow}Why did Steve get lost?\n\n{#green}He didn’t follow the chunky breadcrumbs!'

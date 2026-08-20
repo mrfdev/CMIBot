@@ -87,7 +87,7 @@ TradeModes:
     Button:
       Name: '&2Exp erhöhen um &6[amount]'
       Lore:
-     - '&eLinks Klick zum hinzufügen'
+      - '&eLinks Klick zum hinzufügen'
       - '&eRechts Klick zum entfernen'
       - '&eHalte SHIFT um 10-fach zu erhöhen bzw zu verringern'
       - '&6maximal Verfügbar: &6[balance]'
@@ -119,7 +119,7 @@ TradeModes:
     Button:
       Name: '&2Landings erhöhen um &6[amount]'
       Lore:
-     - '&eLinks Klick zum hinzufügen'
+      - '&eLinks Klick zum hinzufügen'
       - '&eRechts Klick zum entfernen'
       - '&eHalte SHIFT um 10-fach zu erhöhen bzw zu verringern'
       - '&6maximal Verfügbar: &6[balance]'
@@ -148,7 +148,7 @@ TradeModes:
     Button:
       Name: '&2Job-EXP erhöhen um &6[amount]'
       Lore:
-     - '&eLinks Klick zum hinzufügen'
+      - '&eLinks Klick zum hinzufügen'
       - '&eRechts Klick zum entfernen'
       - '&eHalte SHIFT um 10-fach zu erhöhen bzw zu verringern'
       - '&eMaximal Verfügbar: &6[balance]'
@@ -161,7 +161,7 @@ TradeModes:
     OfferedButton:
       Name: '&2[player]''s Job-EXP Angebot'
       Lore:
-     - '&eAngebote Insgesamt:'
+      - '&eAngebote Insgesamt:'
       - '[list]'
     TargetLimit: '&eDer Spieler kann nicht über Level &6[level]&e kommen! Maximal
       kann er &6[amount] Job-EXP erhalten'
@@ -183,7 +183,7 @@ TradeModes:
     Button:
       Name: '&2Jobpunkte erhöhen um &6[amount]'
       Lore:
-     - '&eLinks Klick zum hinzufügen'
+      - '&eLinks Klick zum hinzufügen'
       - '&eRechts Klick zum entfernen'
       - '&eHalte SHIFT um 10-fach zu erhöhen bzw zu verringern'
       - '&eMaximal Verfügbar: &6[balance]'

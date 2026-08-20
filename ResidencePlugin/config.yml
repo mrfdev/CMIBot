@@ -175,7 +175,7 @@ Global:
     - SomeWorldNames
   RandomTeleportation:
     Worlds:
-      world_the_end:
+      world_nether:
         Enabled: true
         MaxCoord: 1000
         MinCoord: 500
@@ -187,7 +187,7 @@ Global:
         MinCoord: 500
         CenterX: 0
         CenterZ: 0
-      world_nether:
+      world_the_end:
         Enabled: true
         MaxCoord: 1000
         MinCoord: 500
@@ -463,6 +463,8 @@ Global:
   Visualizer:
     # With this enabled player will see particle effects to mark selection boundaries
     Use: true
+    # Which type of visualization we should use. Particle or Modern.
+    Type: Modern
     # Range in blocks to draw particle effects for player
     # Keep it no more as 30, as player cant see more than 16 blocks
     Range: 16
@@ -499,6 +501,30 @@ Global:
     EnterAnimation: true
     # Shows particle effect when player are being pushed back
     BounceAnimation: true
+    Modern:
+      # Defines spacing between side lines of the grid
+      # Recommended to use power of 2. Default value: 8
+      GridSize: 8
+      # How many blocks does player need to travel before visual update is triggered
+      # This can be set as low as 1, but its not recommended to use lower value. Default value: 4
+      UpdateRateByTravel: 4
+      # Thickness of the lines
+      # Block is 100, which is 100cm, while default value for line is 5cm
+      LineThickness: 5
+      # Only block type materials are accepted here.
+      Materials:
+        SELECTION:
+          Edges: BLUE_WOOL
+          Sides: GREEN_WOOL
+        ERROR:
+          Edges: RED_WOOL
+          Sides: RED_WOOL
+        ENTER_EXIT:
+          Edges: BLUE_WOOL
+          Sides: LIGHT_GRAY_WOOL
+        BOUNCE:
+          Edges: RED_WOOL
+          Sides: RED_WOOL
   GUI:
     # Enable or disable flag GUI
     Enabled: true
@@ -520,7 +546,7 @@ Global:
   # By setting this to true, partial compatibility for kCouldron servers will be enabled. Action bar messages and selection visualizer will be disabled automatically as off incorrect compatibility
   Couldroncompatibility: false
 WebMap:
-  # Enables or disable DynMap, Pl3exMap or BlueMap support
+  # Enables or disables DynMap, Pl3xMap, squaremap, or BlueMap support
   Use: true
   # When set to true we will hide residence areas by default on WebMap window
   # Residences can still be enabled throw provided WebMap option on left top side
@@ -552,7 +578,7 @@ WebMap:
   VisibleRegions: []
   # Hides region on map even if its not hidden in game
   HiddenRegions: []
-  # List of player names whose residences should be hidden in DynMap, Pl3exMap or BlueMap independent of their settings
+  # List of player names whose residences should be hidden in DynMap, Pl3xMap, squaremap, or BlueMap independent of their settings
   HiddenPlayerResidences: []
 # In development
 Raid:
