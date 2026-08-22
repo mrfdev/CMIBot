@@ -369,6 +369,39 @@ Fill in the Discord token, application ID, guild ID, channel IDs, and role IDs i
 
 OpenAI support is optional and disabled by default with `OPENAI_ENABLED=false`. In disabled mode, the bot stays lexical-only: it does not import the OpenAI SDK, construct an API client, or require `AI_ROLE_IDS`/`OPENAI_API_KEY`. This avoids the SDK's runtime memory overhead until AI is explicitly enabled.
 
+## Managed Mac mini Service
+
+The production Mac mini can run LookupBot as the per-user LaunchAgent `com.mrfdev.cmibot`. The tracked source plist is `operations/com.mrfdev.cmibot.plist`; it runs only in Floris's logged-in user session, uses `/opt/homebrew/bin/node`, and writes stdout and stderr to the shared `logs/` directory. It contains no Discord, OpenAI, or other credentials. Installing or loading this plist is an explicit host-administration step and is never performed by `npm ci`.
+
+Operator commands:
+
+```bash
+./scripts/status
+./scripts/start
+./scripts/stop
+./scripts/restart
+./scripts/logs --lines 100
+./scripts/logs --follow
+```
+
+`status` exits `0` when launchd reports a running process and `3` when the job is stopped or waiting. `start` bootstraps an unloaded job or kickstarts a loaded-but-waiting job. `stop` uses `launchctl bootout`, which gives the Node process time to handle `SIGTERM`; `restart` unloads and bootstraps the job so launchd remains the only process owner.
+
+Deploy the currently committed, clean Git revision with:
+
+```bash
+./scripts/deploy
+```
+
+Deployment data is generated under ignored `.deploy/`. The deployer acquires an exclusive lock, exports only the committed Git revision to a new release, links the host-specific `.env` and persistent `logs/` directory instead of copying them, runs `npm ci` and `npm run check:bot`, and only then atomically switches `.deploy/current`. After launchd restarts the bot, deployment succeeds only when the job is running and a fresh `LookupBot connected as ...` line appears in the service log. A failed health check automatically restores, restarts, and verifies the preceding release.
+
+The last two verified releases can be swapped explicitly with:
+
+```bash
+./scripts/deploy --rollback
+```
+
+The LaunchAgent points at `.deploy/current`. Each release is assembled with its generated `node_modules` during staging and is left unchanged after activation; `.env`, usage logs, and upstream-version state remain shared at the project root across deploys and rollbacks.
+
 ## Dependency Maintenance
 
 - `npm run audit:deps` checks production dependencies for moderate-or-higher security advisories.
@@ -378,13 +411,13 @@ OpenAI support is optional and disabled by default with `OPENAI_ENABLED=false`. 
 
 ## Safe Source Updates
 
-The live bot is updated manually; it does not pull source code, install dependencies, restart itself, or create an operating-system schedule. An occasional check, such as once per month or before a planned maintenance restart, is enough for now:
+Source updates and deployments are operator-invoked; the bot never pulls code, installs dependencies, restarts itself, or creates an operating-system schedule. An occasional check, such as once per month or before a planned maintenance restart, is enough for now:
 
 ```bash
 npm run update:check
 ```
 
-This fetches remote metadata and reports whether the current tracked branch is current or has a safe fast-forward available. It does not change tracked files. If an update is available, stop the bot in its `tmux` session and run:
+This fetches remote metadata and reports whether the current tracked branch is current or has a safe fast-forward available. It does not change tracked files. If an update is available, run:
 
 ```bash
 npm run update:safe
@@ -392,7 +425,7 @@ npm run update:safe
 
 The updater requires a clean worktree, an attached branch, and a configured upstream. It refuses local-ahead or diverged histories, and its only source-changing Git operation is `git pull --ff-only`; it never stashes, resets, switches branches, merges, or rebases. If `package.json` or `package-lock.json` changed, it runs `npm ci` against the committed lockfile. It then runs the portable bot syntax and test suite with `npm run check:bot`.
 
-Only restart with `npm start` after the updater reports success. A failed fetch, pull, dependency install, or verification exits nonzero and never starts or restarts the bot. The full developer check remains `npm run check`, which additionally verifies the locally maintained Paper/JDK environment and is intentionally not required on a lightweight remote bot host.
+On a host where the managed LaunchAgent has been installed, follow a successful source update with `./scripts/deploy`; do not run a second manual `npm start` process. A failed fetch, pull, dependency install, release verification, or health check exits nonzero, and deployment keeps or restores the preceding verified release. The full developer check remains `npm run check`, which additionally verifies the locally maintained Paper/JDK environment and is intentionally not required on a lightweight remote bot host.
 
 ## Local CLI
 
