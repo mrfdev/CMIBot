@@ -89,6 +89,21 @@ async function waitForRunningJob() {
   throw new Error(`launchd accepted the job, but LookupBot did not reach the running state within ${timeout}ms.`);
 }
 
+async function waitForUnloadedJob() {
+  const timeout = configuredMilliseconds("CMIBOT_STOP_TIMEOUT_MS", 30_000);
+  const interval = configuredMilliseconds("CMIBOT_STOP_INTERVAL_MS", 100);
+  const deadline = Date.now() + timeout;
+
+  while (Date.now() <= deadline) {
+    if (!(await readLaunchdJob())) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, interval));
+  }
+
+  throw new Error(`launchd accepted the stop request, but LookupBot remained loaded after ${timeout}ms.`);
+}
+
 async function startService({ announce = true } = {}) {
   const currentJob = await readLaunchdJob();
   if (currentJob?.match(/^\s*state\s*=\s*running\s*$/m)) {
@@ -129,9 +144,7 @@ async function stopService({ announce = true } = {}) {
     encoding: "utf8",
   });
 
-  if (await readLaunchdJob()) {
-    throw new Error("launchd accepted the stop request, but LookupBot is still loaded.");
-  }
+  await waitForUnloadedJob();
   if (announce) {
     console.log("LookupBot stopped.");
   }

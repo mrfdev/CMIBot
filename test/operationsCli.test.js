@@ -12,13 +12,15 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 
 async function createLaunchctlFixture(
   temporaryRoot,
-  { running = false, loaded = running, startDelayChecks = 0 } = {},
+  { running = false, loaded = running, startDelayChecks = 0, stopDelayChecks = 0 } = {},
 ) {
   const launchctlPath = path.join(temporaryRoot, "launchctl");
   const statePath = path.join(temporaryRoot, "launchctl.state");
   const loadedPath = path.join(temporaryRoot, "launchctl.loaded");
   const counterPath = path.join(temporaryRoot, "launchctl.counter");
   const startDelayPath = path.join(temporaryRoot, "launchctl.start-delay");
+  const stopDelayPath = path.join(temporaryRoot, "launchctl.stop-delay");
+  const stopPendingPath = path.join(temporaryRoot, "launchctl.stop-pending");
   const launchAgentsDirectory = path.join(temporaryRoot, "LaunchAgents");
   const plistPath = path.join(launchAgentsDirectory, "com.mrfdev.cmibot.plist");
 
@@ -34,6 +36,7 @@ async function createLaunchctlFixture(
     await fs.writeFile(counterPath, "2467\n", "utf8");
   }
   await fs.writeFile(startDelayPath, `${startDelayChecks}\n`, "utf8");
+  await fs.writeFile(stopDelayPath, `${stopDelayChecks}\n`, "utf8");
   await fs.writeFile(
     launchctlPath,
     [
@@ -42,6 +45,16 @@ async function createLaunchctlFixture(
       "case \"$1\" in",
       "  print)",
       "    if [ -f \"$CMIBOT_TEST_LAUNCHCTL_LOADED\" ]; then",
+      "      if [ -f \"$CMIBOT_TEST_LAUNCHCTL_STOP_PENDING\" ]; then",
+      "        test_delay=$(cat \"$CMIBOT_TEST_LAUNCHCTL_STOP_DELAY\")",
+      "        if [ \"$test_delay\" -gt 0 ]; then",
+      "          printf '%s\\n' \"$((test_delay - 1))\" > \"$CMIBOT_TEST_LAUNCHCTL_STOP_DELAY\"",
+      "          printf '%s\\n' 'state = exited'",
+      "          exit 0",
+      "        fi",
+      "        rm -f \"$CMIBOT_TEST_LAUNCHCTL_LOADED\" \"$CMIBOT_TEST_LAUNCHCTL_STOP_PENDING\"",
+      "        exit 113",
+      "      fi",
       "      if [ -f \"$CMIBOT_TEST_LAUNCHCTL_STATE\" ]; then",
       "        test_delay=$(cat \"$CMIBOT_TEST_LAUNCHCTL_START_DELAY\")",
       "        if [ \"$test_delay\" -gt 0 ]; then",
@@ -75,7 +88,13 @@ async function createLaunchctlFixture(
       "    exit 0",
       "    ;;",
       "  bootout)",
-      "    rm -f \"$CMIBOT_TEST_LAUNCHCTL_STATE\" \"$CMIBOT_TEST_LAUNCHCTL_LOADED\"",
+      "    rm -f \"$CMIBOT_TEST_LAUNCHCTL_STATE\"",
+      "    test_delay=$(cat \"$CMIBOT_TEST_LAUNCHCTL_STOP_DELAY\")",
+      "    if [ \"$test_delay\" -gt 0 ]; then",
+      "      : > \"$CMIBOT_TEST_LAUNCHCTL_STOP_PENDING\"",
+      "    else",
+      "      rm -f \"$CMIBOT_TEST_LAUNCHCTL_LOADED\"",
+      "    fi",
       "    exit 0",
       "    ;;",
       "esac",
@@ -94,9 +113,13 @@ async function createLaunchctlFixture(
       CMIBOT_TEST_LAUNCHCTL_LOADED: loadedPath,
       CMIBOT_TEST_LAUNCHCTL_START_DELAY: startDelayPath,
       CMIBOT_TEST_LAUNCHCTL_STATE: statePath,
+      CMIBOT_TEST_LAUNCHCTL_STOP_DELAY: stopDelayPath,
+      CMIBOT_TEST_LAUNCHCTL_STOP_PENDING: stopPendingPath,
       CMIBOT_UID: "501",
       CMIBOT_START_INTERVAL_MS: "10",
       CMIBOT_START_TIMEOUT_MS: "1000",
+      CMIBOT_STOP_INTERVAL_MS: "10",
+      CMIBOT_STOP_TIMEOUT_MS: "1000",
     },
   };
 }
@@ -175,6 +198,23 @@ test("stop makes a running launchd job observable as stopped", async () => {
     await assert.rejects(runOperation("status", fixture.environment), (error) => {
       assert.equal(error.code, 3);
       assert.match(error.stdout, /LookupBot is stopped\./);
+      return true;
+    });
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("stop waits for launchd to finish unloading the job", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-operations-"));
+
+  try {
+    const fixture = await createLaunchctlFixture(temporaryRoot, { running: true, stopDelayChecks: 2 });
+    const stopped = await runOperation("stop", fixture.environment);
+
+    assert.match(stopped.stdout, /LookupBot stopped\./);
+    await assert.rejects(runOperation("status", fixture.environment), (error) => {
+      assert.equal(error.code, 3);
       return true;
     });
   } finally {
