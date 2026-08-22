@@ -100,6 +100,7 @@ function createFetchFixture(t) {
     paperBuild: 87,
     cmiVersion: "1.0.0",
     cmilibVersion: "1.0.0",
+    residenceVersion: "6.0.3.0",
     companionVersion: "1.0.0",
     failures: new Set(),
     requests: [],
@@ -120,7 +121,13 @@ function createFetchFixture(t) {
     } else if (url.includes("/resources/87610/")) {
       key = "cmilib";
       body = { name: state.cmilibVersion };
-    } else if (url === "https://example.test/companions") {
+    } else if (url.startsWith("https://example.test/residence?")) {
+      key = "residence";
+      body = [
+        '<a href="download.php?file=Residence6.0.1.0.jar">Residence 6.0.1.0</a>',
+        `<a href="download.php?file=Residence${state.residenceVersion}.jar">Residence ${state.residenceVersion}</a>`,
+      ].join("\n");
+    } else if (url.startsWith("https://example.test/companions?")) {
       key = "companion";
       body = `file=CMIB${state.companionVersion}.jar`;
     } else {
@@ -168,6 +175,55 @@ test("Spiget requests bypass stale CDN entries on every refresh", async (t) => {
     assert.notEqual(cmilibRequests[0], cmilibRequests[1]);
   } finally {
     service.stop();
+    await service.flushPersistence();
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("Residence uses the free Zrips listing and appears in latest context output", async (t) => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-version-residence-"));
+  const catalogPath = path.join(workspaceRoot, "versions.json");
+  const service = createVersionService(makeNetworkConfig(workspaceRoot));
+  const upstream = createFetchFixture(t);
+  const catalog = makeTrackedCatalog();
+  catalog.plugins.push({
+    id: "residence",
+    label: "Residence",
+    version: "6.0.2.4",
+    contextId: "residence",
+    tracked: true,
+    resourceId: 11480,
+    resourceUrl: "https://zrips.net/Residence/",
+    versionSource: {
+      type: "zrips-listing",
+      url: "https://example.test/residence",
+      filePrefix: "Residence",
+    },
+  });
+
+  try {
+    await fs.writeFile(catalogPath, JSON.stringify(catalog), "utf8");
+    const snapshot = await service.start();
+
+    assert.equal(snapshot.plugins.get("residence").version, "6.0.3.0");
+    const residenceRequests = upstream.requests.filter((url) =>
+      url.startsWith("https://example.test/residence?"),
+    );
+    assert.equal(residenceRequests.length, 1);
+    assert.match(residenceRequests[0], /[?&]cacheBust=\d+-\d+$/);
+    assert.equal(upstream.requests.some((url) => url.includes("/resources/11480/")), false);
+
+    const plugin = { id: "residence", label: "Residence" };
+    const privateOutput = formatLatestVersions(snapshot, plugin);
+    const publicOutput = formatPublicLatestVersions(snapshot, plugin);
+    assert.match(privateOutput, /Current context: `Residence`/);
+    assert.match(privateOutput, /clean snapshot `6\.0\.2\.4` \| upstream `6\.0\.3\.0` \(\*\*update available\*\*\)/);
+    assert.match(privateOutput, /https:\/\/zrips\.net\/Residence\//);
+    assert.match(publicOutput, /### Latest Residence & CMILib Versions/);
+    assert.match(publicOutput, /\*\*\[Residence\]\(<https:\/\/zrips\.net\/Residence\/>\):\*\* `6\.0\.3\.0`/);
+  } finally {
+    service.stop();
+    await service.flushPersistence();
     await fs.rm(workspaceRoot, { recursive: true, force: true });
   }
 });

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-20T14:37:18.971Z",
+  "generatedAt": "2026-08-22T06:20:34.895Z",
   "sourceServer": "servers/Paper-26.2",
   "paper": {
     "id": "paper",
@@ -122,14 +122,19 @@
       "id": "residence",
       "label": "Residence",
       "pluginName": "Residence",
-      "version": "6.0.3.0",
-      "jar": "Residence6.0.3.0.jar",
+      "version": "6.0.3.2",
+      "jar": "Residence6.0.3.2.jar",
       "contextId": "residence",
       "shared": false,
       "tracked": true,
       "resourceId": 11480,
-      "resourceUrl": "https://www.spigotmc.org/resources/11480/",
-      "website": "https://www.spigotmc.org/resources/residence.11480/"
+      "resourceUrl": "https://zrips.net/Residence/",
+      "website": "https://www.spigotmc.org/resources/residence.11480/",
+      "versionSource": {
+        "type": "zrips-listing",
+        "url": "https://zrips.net/Residence/",
+        "filePrefix": "Residence"
+      }
     },
     {
       "id": "svis",

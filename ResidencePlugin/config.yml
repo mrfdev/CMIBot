@@ -492,39 +492,58 @@ Global:
     # If using spigot based server different particles can be used:
     # dispenser_dispense, dispenser_fail, dispenser_projectile_launch, door_toggle, iron_door_toggle, trapdoor_toggle, iron_trapdoor_toggle, fence_gate_toggle, door_close, iron_door_close, trapdoor_close, iron_trapdoor_close, fence_gate_close, endereye_launch, firework_shoot, extinguish, record_play, record_stop, ghast_shriek, ghast_shoot, ender_dragon_shoot, blaze_shoot, zombie_chew_wooden_door, zombie_chew_iron_door, zombie_destroy_door, wither_break_block, wither_spawned, wither_shoot, bat_takeoff, zombie_infect, zombie_converted_to_villager, ender_dragon_death, anvil_break, anvil_use, anvil_land, portal_travel, chorus_flower_grow, chorus_flower_death, brewing_stand_brew, end_portal_created_in_overworld, phantom_bite, zombie_converted_to_drowned, husk_converted_to_zombie, grindstone_use, book_page_turn, smithing_table_use, pointed_dripstone_land, pointed_dripstone_drip_lava_into_cauldron, pointed_dripstone_drip_water_into_cauldron, skeleton_converted_to_stray, crafter_craft, crafter_fail, wind_charge_shoot, sulfur_spike_land, composter_fill_attempt, lava_interact, redstone_torch_burnout, end_portal_frame_fill, dripping_dripstone, bone_meal_use, smoke_shoot, step_sound, destroy_block, potion_break, ender_signal, mobspawner_flames, ender_dragon_breath, instant_potion_break, ender_dragon_destroy_block, sponge_dry, white_smoke_shoot, bee_growth, turtle_egg_placement, smash_attack, end_gateway_spawn, ender_dragon_growl, electric_spark, copper_wax_on, copper_wax_off, oxidised_copper_scrape, sculk_charge, sculk_shriek, brush_block_complete, egg_crack, gust_dust, trial_spawner_spawn, trial_spawner_spawn_mob_at, trial_spawner_detect_player, trial_spawner_eject_item, vault_activate, vault_deactivate, vault_eject_item, spawn_cobweb, trial_spawner_detect_player_ominous, trial_spawner_become_ominous, trial_spawner_spawn_item
     Selected:
-      Frame: dust:125,150,150
-      Sides: dust:150,255,200
+      Frame: dust;125,150,150
+      Sides: dust;150,255,200
     Overlap:
-      Frame: dust:255,0,255
-      Sides: dust:255,100,100
+      Frame: dust;255,0,255
+      Sides: dust;255,100,100
     # Shows particle effect when player enters residence. Only applies to main residence area
     EnterAnimation: true
     # Shows particle effect when player are being pushed back
     BounceAnimation: true
     Modern:
-      # Defines spacing between side lines of the grid
-      # Recommended to use power of 2. Default value: 8
-      GridSize: 8
       # How many blocks does player need to travel before visual update is triggered
       # This can be set as low as 1, but its not recommended to use lower value. Default value: 4
       UpdateRateByTravel: 4
-      # Thickness of the lines
-      # Block is 100, which is 100cm, while default value for line is 5cm
-      LineThickness: 5
-      # Only block type materials are accepted here.
       Materials:
         SELECTION:
+          # Only block type materials are accepted here.
           Edges: BLUE_WOOL
+          # Only block type materials are accepted here.
           Sides: GREEN_WOOL
+          # Lowest value 0.01, highest 1
+          # Default: 0.05
+          LineThickness: 0.05
+          # Lowest value 0.25, highest 64. ATENTION! Only use low values in combination with lower Range
+          # Default: 8
+          GridSize: 8.0
+          # Lowest value 0.1, highest 300
+          # Default: 30
+          HideInSeconds: 30.0
+          # Lowest value 1, highest 128
+          # Default: 32
+          Range: 32
         ERROR:
           Edges: RED_WOOL
           Sides: RED_WOOL
+          LineThickness: 0.05
+          GridSize: 8.0
+          HideInSeconds: 30.0
+          Range: 32
         ENTER_EXIT:
           Edges: BLUE_WOOL
           Sides: LIGHT_GRAY_WOOL
+          LineThickness: 0.025
+          GridSize: 0.5
+          HideInSeconds: 1.0
+          Range: 4
         BOUNCE:
           Edges: RED_WOOL
           Sides: RED_WOOL
+          LineThickness: 0.025
+          GridSize: 0.5
+          HideInSeconds: 1.0
+          Range: 4
   GUI:
     # Enable or disable flag GUI
     Enabled: true

@@ -192,6 +192,7 @@ export async function buildVersionCatalog(workspaceRoot, serverDirectory) {
     const definition = knownByPluginName.get(metadata.name.toLowerCase());
     const supportMetadata = SUPPORT_PLUGIN_METADATA.get(metadata.name.toLowerCase());
     const resourceId = definition?.resourceId ?? null;
+    const versionSource = definition?.versionSource ?? supportMetadata?.versionSource;
     const localBuildMatch = supportMetadata?.localBuildPattern
       ? jarName.match(supportMetadata.localBuildPattern)
       : null;
@@ -205,10 +206,11 @@ export async function buildVersionCatalog(workspaceRoot, serverDirectory) {
       shared: definition?.shared ?? false,
       tracked: Boolean(definition),
       resourceId,
-      resourceUrl: getSpigotResourceUrl(resourceId) || supportMetadata?.resourceUrl || metadata.website,
+      resourceUrl:
+        definition?.resourceUrl || getSpigotResourceUrl(resourceId) || supportMetadata?.resourceUrl || metadata.website,
       website: metadata.website,
       ...(localBuildMatch ? { build: Number(localBuildMatch[1]) } : {}),
-      ...(supportMetadata?.versionSource ? { versionSource: supportMetadata.versionSource } : {}),
+      ...(versionSource ? { versionSource } : {}),
     });
   }
 

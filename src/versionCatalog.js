@@ -82,6 +82,22 @@ function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function parseZripsListingVersion(content, source, label) {
+  const pattern = new RegExp(
+    `file=${escapeRegex(source.filePrefix)}([0-9]+(?:\\.[0-9]+)+)\\.jar`,
+    "gi",
+  );
+  const versions = [...content.matchAll(pattern)].map((match) => match[1]);
+  if (versions.length === 0) {
+    throw new Error(`${label} returned no downloadable version.`);
+  }
+  return {
+    version: versions.reduce((latest, candidate) =>
+      compareVersions(candidate, latest) > 0 ? candidate : latest,
+    ),
+  };
+}
+
 function formatPluginRelease(version, build) {
   return build == null ? String(version) : `${version} build ${build}`;
 }
@@ -323,19 +339,23 @@ export function createVersionService(config) {
   let timer = null;
   let inFlight = null;
   let persistenceQueue = Promise.resolve();
-  let spigetRequestSequence = 0;
+  let upstreamRequestSequence = 0;
   const catalogPath = path.resolve(config.workspaceRoot, config.versions.catalogPath);
   const statePath = path.resolve(
     config.workspaceRoot,
     config.versions.statePath || "logs/upstream-versions.json",
   );
 
-  function getSpigetLatestUrl(resourceId) {
-    const url = new URL(`${SPIGET_API_ROOT}/resources/${resourceId}/versions/latest`);
-    // Spiget's CDN can retain versions/latest responses well beyond its advertised TTL.
-    spigetRequestSequence += 1;
-    url.searchParams.set("cacheBust", `${Date.now()}-${spigetRequestSequence}`);
+  function getCacheBustedUrl(value) {
+    const url = new URL(value);
+    upstreamRequestSequence += 1;
+    url.searchParams.set("cacheBust", `${Date.now()}-${upstreamRequestSequence}`);
     return url.toString();
+  }
+
+  function getSpigetLatestUrl(resourceId) {
+    // Spiget and Zrips listings can remain cached after a plugin release.
+    return getCacheBustedUrl(`${SPIGET_API_ROOT}/resources/${resourceId}/versions/latest`);
   }
 
   function createEmptyState(catalog = null) {
@@ -535,6 +555,12 @@ export function createVersionService(config) {
   }
 
   async function checkPlugin(plugin) {
+    const source = plugin.versionSource;
+    if (source?.type === "zrips-listing") {
+      const content = await fetchText(getCacheBustedUrl(source.url), config.versions.requestTimeoutMs);
+      return parseZripsListingVersion(content, source, plugin.label);
+    }
+
     if (plugin.resourceId) {
       const latest = await fetchJson(
         getSpigetLatestUrl(plugin.resourceId),
@@ -546,7 +572,6 @@ export function createVersionService(config) {
       return { version: String(latest.name) };
     }
 
-    const source = plugin.versionSource;
     if (source?.type === "luckperms-metadata") {
       const metadata = await fetchJson(source.url, config.versions.requestTimeoutMs);
       if (!metadata?.version) {
@@ -574,9 +599,9 @@ export function createVersionService(config) {
 
   async function checkCompanion(companion) {
     const source = companion.versionSource;
-    const content = await fetchText(source.url, config.versions.requestTimeoutMs);
 
     if (source.type === "github-pom") {
+      const content = await fetchText(source.url, config.versions.requestTimeoutMs);
       const pattern = new RegExp(
         `<artifactId>\\s*${escapeRegex(source.artifactId)}\\s*</artifactId>\\s*<version>\\s*([^<]+?)\\s*</version>`,
         "i",
@@ -589,15 +614,8 @@ export function createVersionService(config) {
     }
 
     if (source.type === "zrips-listing") {
-      const pattern = new RegExp(
-        `file=${escapeRegex(source.filePrefix)}([0-9]+(?:\\.[0-9]+)+)\\.jar`,
-        "i",
-      );
-      const match = content.match(pattern);
-      if (!match) {
-        throw new Error(`${companion.label} returned no downloadable version.`);
-      }
-      return { version: match[1] };
+      const content = await fetchText(getCacheBustedUrl(source.url), config.versions.requestTimeoutMs);
+      return parseZripsListingVersion(content, source, companion.label);
     }
 
     throw new Error(`${companion.label} has unsupported version source ${source.type}.`);

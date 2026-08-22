@@ -44,6 +44,12 @@ export const PLUGIN_DEFINITIONS = [
     targetDirectory: "ResidencePlugin",
     dataDirectory: "ResidencePlugin/data",
     resourceId: 11480,
+    resourceUrl: "https://zrips.net/Residence/",
+    versionSource: {
+      type: "zrips-listing",
+      url: "https://zrips.net/Residence/",
+      filePrefix: "Residence",
+    },
     requiredGeneratedFiles: ["config.yml", "flags.yml", "groups.yml", "Language/English.yml"],
   },
   {
