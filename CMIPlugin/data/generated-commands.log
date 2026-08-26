@@ -121,7 +121,7 @@
 /cmi ipbanlist - Ban ip list
 /cmi item [itemdata/hand] (-slot:[number]) (unstack) (-s) - Give item to yourself; Aliases: i
 /cmi itemcmdata [set/delete/list/add] (playerName) (float,true,false,string) (-s) - Check or modify items custom model data
-/cmi itemframe (invisible/fixed/invulnerable/all) - Manage item frames
+/cmi itemframe (invisible/fixed/invulnerable/all) (playerName) - Manage item frames
 /cmi iteminfo (playerName) - Show item information
 /cmi itemlore (-p:[playerName]) [linenumber/*] [remove/insert/ new lore line] - Change items lore; Aliases: !ilore
 /cmi itemname (-p:[playerName]) [remove/your new item name] - Rename items; Aliases: !iname, rename

@@ -175,13 +175,13 @@ Global:
     - SomeWorldNames
   RandomTeleportation:
     Worlds:
-      world_nether:
+      world:
         Enabled: true
         MaxCoord: 1000
         MinCoord: 500
         CenterX: 0
         CenterZ: 0
-      world:
+      world_nether:
         Enabled: true
         MaxCoord: 1000
         MinCoord: 500

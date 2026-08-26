@@ -427,49 +427,49 @@ info:
     zombified_piglin: Zombified piglin
   # Avoid adding color codes to the enchant name
   EnchantNames:
+    looting: Looting
+    sharpness: Sharpness
+    fortune: Fortune
+    density: Density
+    punch: Punch
+    frost_walker: Frost_Walker
     swift_sneak: Swift_Sneak
-    aqua_affinity: Aqua_Affinity
+    flame: Flame
     thorns: Thorns
     channeling: Channeling
-    fortune: Fortune
-    loyalty: Loyalty
-    flame: Flame
-    efficiency: Efficiency
-    mending: Mending
-    looting: Looting
     riptide: Riptide
-    smite: Smite
-    infinity: Infinity
-    projectile_protection: Projectile_Protection
-    wind_burst: Wind_Burst
-    vanishing_curse: Vanishing_Curse
-    impaling: Impaling
-    multishot: Multishot
-    sweeping_edge: Sweeping_Edge
-    knockback: Knockback
-    protection: Protection
     lunge: Lunge
-    lure: Lure
-    quick_charge: Quick_Charge
-    binding_curse: Binding_Curse
-    density: Density
     luck_of_the_sea: Luck_Of_The_Sea
-    silk_touch: Silk_Touch
-    fire_aspect: Fire_Aspect
-    fire_protection: Fire_Protection
-    sharpness: Sharpness
-    respiration: Respiration
-    unbreaking: Unbreaking
-    blast_protection: Blast_Protection
-    punch: Punch
-    soul_speed: Soul_Speed
-    depth_strider: Depth_Strider
-    feather_falling: Feather_Falling
-    breach: Breach
+    multishot: Multishot
     piercing: Piercing
+    lure: Lure
+    efficiency: Efficiency
+    sweeping_edge: Sweeping_Edge
+    blast_protection: Blast_Protection
+    smite: Smite
+    mending: Mending
+    vanishing_curse: Vanishing_Curse
+    fire_protection: Fire_Protection
+    silk_touch: Silk_Touch
+    breach: Breach
+    knockback: Knockback
+    projectile_protection: Projectile_Protection
+    binding_curse: Binding_Curse
+    quick_charge: Quick_Charge
+    wind_burst: Wind_Burst
     power: Power
+    feather_falling: Feather_Falling
+    soul_speed: Soul_Speed
     bane_of_arthropods: Bane_Of_Arthropods
-    frost_walker: Frost_Walker
+    unbreaking: Unbreaking
+    fire_aspect: Fire_Aspect
+    loyalty: Loyalty
+    depth_strider: Depth_Strider
+    infinity: Infinity
+    protection: Protection
+    respiration: Respiration
+    aqua_affinity: Aqua_Affinity
+    impaling: Impaling
   PotionEffectAliases:
     blindness:
     - Blindness

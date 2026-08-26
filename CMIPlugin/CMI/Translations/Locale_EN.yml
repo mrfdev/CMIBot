@@ -2031,7 +2031,7 @@ command:
   itemframe:
     help:
       info: Manage item frames
-      args: (invisible/fixed/invulnerable/all)
+      args: (invisible/fixed/invulnerable/all) (playerName)
     info:
       feedback: '{gcs}[count] {gcp}item frames are invisible around you'
   iteminfo:
