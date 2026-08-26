@@ -269,7 +269,7 @@ npm run smoke:java25
 npm run smoke:java26
 ```
 
-The scripts use the exact JDK paths from the compatibility manifest by default. `JAVA_HOME` or `JAVA_25_HOME`/`JAVA_26_HOME` can select another matching JDK installation; `JAVA_BIN`, `JAVAC_BIN`, and `JAR_BIN` can override individual tools. Feature mismatches fail before build or startup, and the exporter remains Java 25 bytecode even when tested on Java 26.
+The scripts prefer the JDK home paths from the compatibility manifest. If a patch-specific directory disappears after a JDK update, macOS falls back to `/usr/libexec/java_home -v <feature>` and uses the installed JDK from that feature line. `JAVA_HOME` or `JAVA_25_HOME`/`JAVA_26_HOME` can select another matching JDK installation; `JAVA_BIN`, `JAVAC_BIN`, and `JAR_BIN` can override individual tools. Feature mismatches fail before build or startup, and the exporter remains Java 25 bytecode even when tested on Java 26.
 
 `npm run check` performs syntax plus offline compatibility drift validation. `npm run check:paper` additionally contacts Paper's official Fill API and fails if the pinned build is no longer the latest stable 26.2 build.
 
@@ -351,8 +351,8 @@ AUDIT_LOG_MAX_FILES=5
 Requirements:
 
 - Node.js 20 or newer
-- JDK 25.0.4 at `/Library/Java/JavaVirtualMachines/jdk-25.0.4.jdk/Contents/Home` for Paper and Java 25 exporter bytecode
-- JDK 26.0.2.1 at `/Library/Java/JavaVirtualMachines/jdk-26.0.2.1.jdk/Contents/Home` for the optional forward-runtime smoke test
+- Java 25 for Paper and Java 25 exporter bytecode
+- Java 26 for the optional forward-runtime smoke test
 - `unzip` for reading plugin metadata from jars
 
 Install and start:

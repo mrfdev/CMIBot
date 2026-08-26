@@ -4,6 +4,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
+const macOsJavaHomeCommand = "/usr/libexec/java_home";
 
 async function pathExists(candidate) {
   try {
@@ -11,6 +12,22 @@ async function pathExists(candidate) {
     return true;
   } catch {
     return false;
+  }
+}
+
+async function resolveMacOsJavaHome(feature, command) {
+  if (!(await pathExists(command))) {
+    return "";
+  }
+
+  try {
+    const { stdout } = await execFileAsync(command, ["-v", String(feature)], {
+      encoding: "utf8",
+      maxBuffer: 1024 * 1024,
+    });
+    return stdout.trim();
+  } catch {
+    return "";
   }
 }
 
@@ -30,6 +47,7 @@ export async function resolveJavaTool(
     tool = "java",
     javaHome = "",
     environment = process.env,
+    javaHomeCommand = macOsJavaHomeCommand,
   } = {},
 ) {
   const explicitTool = environment[`${tool.toUpperCase()}_BIN`] || (tool === "java" ? environment.JAVA_BIN : "");
@@ -50,10 +68,22 @@ export async function resolveJavaTool(
   }
 
   const binary = path.join(configuredHome, "bin", tool);
-  if (!(await pathExists(binary))) {
-    throw new Error(`Java ${feature} ${tool} was not found at ${binary}`);
+  if (await pathExists(binary)) {
+    return binary;
   }
-  return binary;
+
+  const discoveredHome = await resolveMacOsJavaHome(feature, javaHomeCommand);
+  if (discoveredHome) {
+    const discoveredBinary = path.join(discoveredHome, "bin", tool);
+    if (await pathExists(discoveredBinary)) {
+      return discoveredBinary;
+    }
+  }
+
+  throw new Error(
+    `Java ${feature} ${tool} was not found at ${binary}; no installed Java ${feature} ${tool} ` +
+      `was resolved through ${javaHomeCommand}`,
+  );
 }
 
 export async function readJavaFeature(javaTool) {
