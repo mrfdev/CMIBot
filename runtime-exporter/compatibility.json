@@ -11,5 +11,5 @@
   "paperScriptSourceSha256": "572131b124b7561e43f7fbed32e45156ec35f97224819bb9ccf7872aa5a37720",
   "javaTarget": 25,
   "jdk25Home": "/Library/Java/JavaVirtualMachines/jdk-25.0.4.jdk/Contents/Home",
-  "jdk26Home": "/Library/Java/JavaVirtualMachines/jdk-26.0.2.jdk/Contents/Home"
+  "jdk26Home": "/Library/Java/JavaVirtualMachines/jdk-26.0.2.1.jdk/Contents/Home"
 }

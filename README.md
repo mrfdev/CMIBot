@@ -352,7 +352,7 @@ Requirements:
 
 - Node.js 20 or newer
 - JDK 25.0.4 at `/Library/Java/JavaVirtualMachines/jdk-25.0.4.jdk/Contents/Home` for Paper and Java 25 exporter bytecode
-- JDK 26.0.2 at `/Library/Java/JavaVirtualMachines/jdk-26.0.2.jdk/Contents/Home` for the optional forward-runtime smoke test
+- JDK 26.0.2.1 at `/Library/Java/JavaVirtualMachines/jdk-26.0.2.1.jdk/Contents/Home` for the optional forward-runtime smoke test
 - `unzip` for reading plugin metadata from jars
 
 Install and start:
