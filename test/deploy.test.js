@@ -10,6 +10,11 @@ import { hasHealthyServiceLog } from "../scripts/deploy-health.mjs";
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const deployModule = path.join(repositoryRoot, "scripts", "deploy.mjs");
+
+async function runDeploy(args, options) {
+  return execFileAsync(process.execPath, [deployModule, ...args], options);
+}
 
 async function runGit(cwd, args) {
   const { stdout } = await execFileAsync("/usr/bin/git", args, { cwd, encoding: "utf8" });
@@ -102,6 +107,7 @@ async function createDeploymentBoundaries(temporaryRoot, sourceRoot) {
   return {
     environment: {
       ...process.env,
+      PATH: "/usr/bin:/bin",
       CMIBOT_GIT: "/usr/bin/git",
       CMIBOT_HEALTH_INTERVAL_MS: "10",
       CMIBOT_HEALTH_TIMEOUT_MS: "1000",
@@ -137,7 +143,7 @@ test("deploy switches to a verified release while preserving shared environment 
   try {
     const { sourceRoot, commit } = await createSourceRepository(temporaryRoot);
     const { environment } = await createDeploymentBoundaries(temporaryRoot, sourceRoot);
-    const result = await execFileAsync(path.join(repositoryRoot, "scripts/deploy"), [], {
+    const result = await runDeploy([], {
       cwd: sourceRoot,
       encoding: "utf8",
       env: environment,
@@ -159,7 +165,7 @@ test("a failed health check restores and restarts the previous release", async (
   try {
     const { sourceRoot, commit: firstCommit } = await createSourceRepository(temporaryRoot);
     const { environment, healthModePath } = await createDeploymentBoundaries(temporaryRoot, sourceRoot);
-    await execFileAsync(path.join(repositoryRoot, "scripts/deploy"), [], {
+    await runDeploy([], {
       cwd: sourceRoot,
       encoding: "utf8",
       env: environment,
@@ -171,7 +177,7 @@ test("a failed health check restores and restarts the previous release", async (
     await fs.writeFile(healthModePath, "fail-once\n", "utf8");
 
     await assert.rejects(
-      execFileAsync(path.join(repositoryRoot, "scripts/deploy"), [], {
+      runDeploy([], {
         cwd: sourceRoot,
         encoding: "utf8",
         env: { ...environment, CMIBOT_HEALTH_TIMEOUT_MS: "50" },
@@ -196,7 +202,7 @@ test("deploy --rollback health-checks the previous release and keeps the newer r
   try {
     const { sourceRoot, commit: firstCommit } = await createSourceRepository(temporaryRoot);
     const { environment } = await createDeploymentBoundaries(temporaryRoot, sourceRoot);
-    await execFileAsync(path.join(repositoryRoot, "scripts/deploy"), [], {
+    await runDeploy([], {
       cwd: sourceRoot,
       encoding: "utf8",
       env: environment,
@@ -206,13 +212,13 @@ test("deploy --rollback health-checks the previous release and keeps the newer r
     await runGit(sourceRoot, ["add", "src/index.js"]);
     await runGit(sourceRoot, ["commit", "-m", "Second fixture"]);
     const secondCommit = await runGit(sourceRoot, ["rev-parse", "HEAD"]);
-    await execFileAsync(path.join(repositoryRoot, "scripts/deploy"), [], {
+    await runDeploy([], {
       cwd: sourceRoot,
       encoding: "utf8",
       env: environment,
     });
 
-    const result = await execFileAsync(path.join(repositoryRoot, "scripts/deploy"), ["--rollback"], {
+    const result = await runDeploy(["--rollback"], {
       cwd: sourceRoot,
       encoding: "utf8",
       env: environment,
@@ -234,7 +240,7 @@ test("failed staged verification leaves the active release untouched", async () 
   try {
     const { sourceRoot, commit: firstCommit } = await createSourceRepository(temporaryRoot);
     const { environment } = await createDeploymentBoundaries(temporaryRoot, sourceRoot);
-    await execFileAsync(path.join(repositoryRoot, "scripts/deploy"), [], {
+    await runDeploy([], {
       cwd: sourceRoot,
       encoding: "utf8",
       env: environment,
@@ -245,7 +251,7 @@ test("failed staged verification leaves the active release untouched", async () 
     await runGit(sourceRoot, ["commit", "-m", "Unverified fixture"]);
 
     await assert.rejects(
-      execFileAsync(path.join(repositoryRoot, "scripts/deploy"), [], {
+      runDeploy([], {
         cwd: sourceRoot,
         encoding: "utf8",
         env: { ...environment, CMIBOT_TEST_NPM_FAIL_CHECK: "1" },

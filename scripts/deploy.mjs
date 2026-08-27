@@ -113,7 +113,7 @@ async function logSize(logPath) {
   }
 }
 
-async function waitForHealthyService(logPath, startingSize) {
+async function waitForHealthyService(logPath, startingSize, environment = process.env) {
   const timeout = configuredMilliseconds("CMIBOT_HEALTH_TIMEOUT_MS", 60_000);
   const interval = configuredMilliseconds("CMIBOT_HEALTH_INTERVAL_MS", 500);
   const deadline = Date.now() + timeout;
@@ -122,7 +122,7 @@ async function waitForHealthyService(logPath, startingSize) {
     try {
       await execFileAsync(path.join(scriptDirectory, "status"), [], {
         encoding: "utf8",
-        env: process.env,
+        env: environment,
       });
       const freshLog = await readLogSince(logPath, startingSize);
       if (hasHealthyServiceLog(freshLog)) {
@@ -139,10 +139,10 @@ async function waitForHealthyService(logPath, startingSize) {
   throw new Error(`LookupBot did not become healthy within ${timeout}ms.`);
 }
 
-async function restartAndWaitForHealth(sourceRoot, serviceLogPath) {
+async function restartAndWaitForHealth(sourceRoot, serviceLogPath, environment) {
   const startingSize = await logSize(serviceLogPath);
-  await run(path.join(scriptDirectory, "restart"), [], { cwd: sourceRoot, env: process.env });
-  await waitForHealthyService(serviceLogPath, startingSize);
+  await run(path.join(scriptDirectory, "restart"), [], { cwd: sourceRoot, env: environment });
+  await waitForHealthyService(serviceLogPath, startingSize, environment);
 }
 
 async function acquireDeploymentLock(lockPath) {
@@ -156,8 +156,8 @@ async function acquireDeploymentLock(lockPath) {
   }
 }
 
-function createNpmEnvironment(npm, node) {
-  const executableDirectories = [path.dirname(npm), path.dirname(node)];
+function createOperationEnvironment(...executables) {
+  const executableDirectories = executables.map((executable) => path.dirname(executable));
   const existingDirectories = (process.env.PATH || "")
     .split(path.delimiter)
     .filter(Boolean);
@@ -167,7 +167,7 @@ function createNpmEnvironment(npm, node) {
   };
 }
 
-async function stageRelease({ commit, deployRoot, git, node, npm, releasePath, sourceRoot, tar }) {
+async function stageRelease({ commit, deployRoot, environment, git, npm, releasePath, sourceRoot, tar }) {
   if (await pathExists(releasePath)) {
     return;
   }
@@ -181,9 +181,8 @@ async function stageRelease({ commit, deployRoot, git, node, npm, releasePath, s
     await run(git, ["archive", "--format=tar", `--output=${archivePath}`, commit], { cwd: sourceRoot });
     await run(tar, ["-xf", archivePath, "-C", stagingPath], { cwd: sourceRoot });
     await fs.rm(archivePath, { force: true });
-    const npmEnvironment = createNpmEnvironment(npm, node);
-    await run(npm, ["ci"], { cwd: stagingPath, env: npmEnvironment });
-    await run(npm, ["run", "check:bot"], { cwd: stagingPath, env: npmEnvironment });
+    await run(npm, ["ci"], { cwd: stagingPath, env: environment });
+    await run(npm, ["run", "check:bot"], { cwd: stagingPath, env: environment });
     await fs.symlink(path.join(sourceRoot, ".env"), path.join(stagingPath, ".env"), "file");
     await fs.symlink(path.join(sourceRoot, "logs"), path.join(stagingPath, "logs"), "dir");
     await fs.rename(stagingPath, releasePath);
@@ -200,6 +199,7 @@ async function deploy() {
   const node = process.env.CMIBOT_NODE || process.execPath;
   const npm = process.env.CMIBOT_NPM || "/opt/homebrew/bin/npm";
   const tar = process.env.CMIBOT_TAR || "/usr/bin/tar";
+  const operationEnvironment = createOperationEnvironment(node, npm);
   const deployRoot = process.env.CMIBOT_DEPLOY_ROOT || path.join(sourceRoot, ".deploy");
   const releasesRoot = path.join(deployRoot, "releases");
   const lockPath = path.join(deployRoot, "deploy.lock");
@@ -226,7 +226,16 @@ async function deploy() {
   try {
     const releasePath = path.join(releasesRoot, commit);
     try {
-      await stageRelease({ commit, deployRoot, git, node, npm, releasePath, sourceRoot, tar });
+      await stageRelease({
+        commit,
+        deployRoot,
+        environment: operationEnvironment,
+        git,
+        npm,
+        releasePath,
+        sourceRoot,
+        tar,
+      });
     } catch (error) {
       throw new Error(`Release verification failed before activation; current release was not changed. ${error.message}`);
     }
@@ -239,8 +248,11 @@ async function deploy() {
     await atomicSymlink(currentLink, nextTarget);
 
     try {
-      await run(path.join(scriptDirectory, "restart"), [], { cwd: sourceRoot, env: process.env });
-      await waitForHealthyService(serviceLogPath, initialLogSize);
+      await run(path.join(scriptDirectory, "restart"), [], {
+        cwd: sourceRoot,
+        env: operationEnvironment,
+      });
+      await waitForHealthyService(serviceLogPath, initialLogSize, operationEnvironment);
       if (previousTarget && previousTarget !== nextTarget) {
         await atomicSymlink(previousLink, previousTarget);
       }
@@ -248,13 +260,16 @@ async function deploy() {
     } catch (deploymentError) {
       if (!previousTarget) {
         await fs.rm(currentLink, { force: true });
-        await run(path.join(scriptDirectory, "stop"), [], { cwd: sourceRoot, env: process.env }).catch(() => {});
+        await run(path.join(scriptDirectory, "stop"), [], {
+          cwd: sourceRoot,
+          env: operationEnvironment,
+        }).catch(() => {});
         throw new Error(`${deploymentError.message} No previous release was available; the service was stopped.`);
       }
 
       await atomicSymlink(currentLink, previousTarget);
       try {
-        await restartAndWaitForHealth(sourceRoot, serviceLogPath);
+        await restartAndWaitForHealth(sourceRoot, serviceLogPath, operationEnvironment);
       } catch (rollbackError) {
         throw new Error(
           `${deploymentError.message} The previous release was reselected, but rollback health verification failed: ${rollbackError.message}`,
@@ -269,6 +284,8 @@ async function deploy() {
 
 async function rollback() {
   const sourceRoot = projectRoot();
+  const node = process.env.CMIBOT_NODE || process.execPath;
+  const operationEnvironment = createOperationEnvironment(node);
   const deployRoot = process.env.CMIBOT_DEPLOY_ROOT || path.join(sourceRoot, ".deploy");
   const releasesRoot = path.join(deployRoot, "releases");
   const currentLink = path.join(deployRoot, "current");
@@ -292,11 +309,11 @@ async function rollback() {
 
     await atomicSymlink(currentLink, previousTarget);
     try {
-      await restartAndWaitForHealth(sourceRoot, serviceLogPath);
+      await restartAndWaitForHealth(sourceRoot, serviceLogPath, operationEnvironment);
     } catch (rollbackError) {
       await atomicSymlink(currentLink, currentTarget);
       try {
-        await restartAndWaitForHealth(sourceRoot, serviceLogPath);
+        await restartAndWaitForHealth(sourceRoot, serviceLogPath, operationEnvironment);
       } catch (recoveryError) {
         throw new Error(
           `Rollback failed: ${rollbackError.message} The original release was reselected, but recovery health verification also failed: ${recoveryError.message}`,
