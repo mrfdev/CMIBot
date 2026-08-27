@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildCommandData } from "../src/discord/commands.js";
 import {
+  AUTOCOMPLETE_CHOICE_LIMIT,
+  buildAutocompleteIndex,
+  selectAutocompleteChoices,
+} from "../src/discord/autocomplete.js";
+import {
   formatIndexedCategoriesMessage,
   formatIndexedFilesMessage,
   isSafeIndexedRelativePath,
@@ -90,6 +95,25 @@ test("slash command schema keeps aliases, limits, and safe config filters", () =
 
   const configOptions = new Map(subcommands.get("config").options.map((option) => [option.name, option]));
   assert.ok(configOptions.has("file"));
+  for (const searchSubcommand of [
+    "config",
+    "language",
+    "lang",
+    "placeholder",
+    "material",
+    "command",
+    "cmd",
+    "permission",
+    "perm",
+    "faq",
+    "tabcomplete",
+  ]) {
+    const keyword = subcommands
+      .get(searchSubcommand)
+      .options.find((option) => option.name === "keyword");
+    assert.equal(keyword.autocomplete, true);
+  }
+  assert.equal(configOptions.get("file").autocomplete, true);
   assert.equal(configOptions.get("limit").max_value, 15);
 
   const materialOptions = new Map(subcommands.get("material").options.map((option) => [option.name, option]));
@@ -114,6 +138,55 @@ test("slash command schema keeps aliases, limits, and safe config filters", () =
     subcommands.get("files").options[0].choices.map((choice) => choice.value),
     ["material"],
   );
+});
+
+test("autocomplete offers bounded safe index metadata without inspecting entry values", () => {
+  const entries = [
+    {
+      relativePath: "CMIPlugin/CMI/config.yml",
+      key: "TeleportEnabled",
+      yamlPath: "Commands.Teleport.Enabled",
+      value: "private-value-must-not-appear",
+      searchText: "private-value-must-not-appear",
+    },
+    {
+      relativePath: "CMIPlugin/CMI/Settings/Chat.yml",
+      key: "ChatFormat",
+      yamlPath: "Chat.GeneralFormat",
+      value: "another-private-value",
+      searchText: "another-private-value",
+    },
+    {
+      relativePath: "CMIPlugin/private/secret.key",
+      key: "@everyone",
+      yamlPath: "Unsafe.Secret",
+      value: "never-show-this",
+      searchText: "never-show-this",
+    },
+    ...Array.from({ length: 40 }, (_, index) => ({
+      relativePath: "CMIPlugin/CMI/config.yml",
+      key: `TeleportOption${index}`,
+      yamlPath: `Commands.Teleport.Option${index}`,
+      value: "ignored",
+      searchText: "ignored",
+    })),
+  ];
+  const index = buildAutocompleteIndex(entries, {
+    allowedRoots: ["CMIPlugin"],
+    maximumKeywordLength: 80,
+  });
+  const keywordChoices = selectAutocompleteChoices(index, "keyword", "teleport");
+  const fileChoices = selectAutocompleteChoices(index, "file", "chat");
+  const serialized = JSON.stringify({ keywordChoices, fileChoices });
+
+  assert.equal(keywordChoices.length, AUTOCOMPLETE_CHOICE_LIMIT);
+  assert.match(keywordChoices[0].value, /teleport/i);
+  assert.deepEqual(fileChoices, [{
+    name: "CMIPlugin/CMI/Settings/Chat.yml",
+    value: "CMIPlugin/CMI/Settings/Chat.yml",
+  }]);
+  assert.doesNotMatch(serialized, /private-value|another-private-value|never-show|secret\.key|@everyone/i);
+  assert.ok(keywordChoices.every((choice) => choice.name.length <= 100 && choice.value.length <= 100));
 });
 
 test("indexed-file browsing allows only cached plugin-relative non-sensitive paths", () => {

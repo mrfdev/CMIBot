@@ -203,6 +203,14 @@
       "pattern": "^[0-9]+$",
       "default": "4"
     },
+    "SEARCH_RESULT_CACHE_MAX_ENTRIES": {
+      "type": "string",
+      "description": "Maximum repeated-search results retained in the in-memory LRU cache; zero disables it.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "256"
+    },
     "SOURCE_LINKS_ENABLED": {
       "type": "string",
       "description": "Link lookup results to the exact deployed source revision.",

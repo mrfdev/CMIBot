@@ -10,11 +10,13 @@ The repository is still named `CMIBot`, but `/lookup` is the only registered sla
 - Exact, whole-word, and broad searches
 - Configurable plugin-scoped aliases and synonym expansion
 - Safe indexed-file filtering for config searches
+- Context-aware Discord autocomplete for indexed keywords, tokens, and safe config filenames
 - Private, fixed-scope browsing of cached filenames and categories without filesystem reads
 - English locale searches with shared CMILib data
 - Curated command, permission, placeholder, FAQ, material, and tab-complete indexes where available
 - Automatic runtime extraction of commands, permissions, and placeholders from initialized plugin jars
 - In-memory caches with bounded parallel warming and transactional full, plugin, and profile reloads
+- Bounded repeated-search LRU caching with aggregate hit/miss metrics and reload invalidation
 - Clean first-install plugin data generated from a disposable Paper server
 - Local version inventory plus scheduled Paper and Spigot resource checks
 - Paper 26.2 stable/API drift checks plus Java 25 and Java 26 smoke commands
@@ -92,6 +94,7 @@ CMILib config and English locale files are shared with every plugin context.
 - `related:true` adds nearby YAML entries to config and language results.
 - `summary:true` requests an AI summary only when OpenAI support and the configured AI role are enabled.
 - Configured aliases are expanded automatically only inside the active plugin context. Direct matches for the original term remain first.
+- Discord suggests up to 25 context-specific values while `keyword:` or the config `file:` option is focused. Suggestions are derived only from safe cached key metadata for the active plugin profile.
 
 ### Examples
 
@@ -264,6 +267,8 @@ Keep new Discord presentation or routing behavior in the matching focused module
 
 When a valid lookup has no useful result, Discord and the local lookup command can offer up to three conservative “Did you mean?” alternatives. Suggestions are calculated locally from keys and YAML key paths in the already-selected plugin, profile, and optional file filter. They never use source filenames, arbitrary values, external AI, or data outside that search scope, and they do not automatically run another search.
 
+Discord autocomplete uses a separate, generation-aware metadata index. It proposes only keys, YAML paths, known tokens, and safe plugin-relative config filenames from the active channel context. It never reads entry values or comments, records partial text in audit logs, or returns choices to a member, channel, or guild that fails the normal lookup access checks.
+
 ## Version Checks
 
 `/lookup latest` privately shows the clean snapshot version for the active plugin, CMILib, and Paper. `/lookup latest public:true` posts a compact public response containing only the latest upstream versions for the active plugin and CMILib, followed by an upgrade recommendation. It never includes the local clean snapshot, Paper, internal generation timestamps, or other tracked resources.
@@ -319,6 +324,8 @@ The scripts prefer the JDK home paths from the compatibility manifest. If a patc
 ## Cache Behavior
 
 All indexed YAML plus curated and jar-generated log data is loaded into RAM during startup. Profile loaders share the bounded `CACHE_LOAD_CONCURRENCY` pool; shared CMILib profiles finish before dependent plugin profiles begin. `/lookup reload` without options globally rebuilds every plugin cache, reloads the version catalog, and refreshes upstream version checks. `plugin:` narrows the cache reload to one context, and `profile:` narrows it to one profile. A profile without `plugin:` uses the current channel context. Selective reloads intentionally leave version data and unrelated cache snapshots unchanged.
+
+Repeated identical searches reuse a least-recently-used result cache bounded by `SEARCH_RESULT_CACHE_MAX_ENTRIES` (default 256, zero disables it). Plugin context, profile, normalized query, file filter, mode, and retained-result limit are part of the key. Any successful full or selective cache reload invalidates all retained results; a failed or discarded reload leaves them untouched. Health and metrics expose aggregate size, hit, miss, and eviction counts only, never cache keys or query text.
 
 CMILib is cached once through the `CMILIB_*_INCLUDE_GLOBS` profiles. Plugin contexts retain only their own entries, then compose the matching shared CMILib config, language, and placeholder entries into searches at read time. This preserves the same `/lookup` results and per-context stats without retaining another copy of every CMILib entry for every Zrips plugin.
 
@@ -377,6 +384,7 @@ Aggregate alerts are disabled unless `DISCORD_ADMIN_ALERT_CHANNEL_ID` names a te
 - Discord mentions are disabled on all bot responses.
 - `file:` only resolves against files already indexed in the active plugin profile.
 - `/lookup files` never reads from a user-supplied path or returns file contents.
+- Autocomplete fails closed for unauthorized contexts and derives choices only from safe cached metadata, never values, comments, partial-query logs, or arbitrary filesystem reads.
 - Pagination IDs are random and contain no query, user, route, or path data; sessions are bounded, expire automatically, and are invalidated by cache reloads.
 - Pinned source links require a full deployed commit and a safe path beneath the active plugin or shared root; short revisions, mutable branches, private hosts, traversal, and credential-like targets produce no link.
 - A sliding-window limit follows each user across every subcommand, so switching commands cannot bypass throttling.

@@ -27,6 +27,15 @@ test("health output reports readiness without infrastructure identifiers", () =>
           lastReloadedAt: new Date("2026-08-27T09:55:00.000Z"),
         };
       },
+      getResultCacheSummary() {
+        return {
+          entries: 8,
+          maxEntries: 256,
+          hits: 12,
+          misses: 4,
+          evictions: 0,
+        };
+      },
     },
     versionService: {
       getSnapshot() {
@@ -81,6 +90,7 @@ test("health output reports readiness without infrastructure identifiers", () =>
   assert.match(message, /Release: `0\.1\.0 \(abcdef123456\)`/);
   assert.match(message, /Discord: `connected \(42 ms gateway latency\)`/);
   assert.match(message, /Search cache: `ready, 100 entries from 4 files`/);
+  assert.match(message, /Repeated-search LRU: `8\/256 entries, 12 hits, 4 misses, 0 evictions`/);
   assert.match(message, /Upstream checks: `healthy`/);
   assert.match(message, /Commands: `4 observed, p95 50 ms, 1 errors`/);
   assert.match(message, /Upstream resilience: `retries: 2, circuits opened: 1, requests skipped: 3`/);

@@ -385,6 +385,129 @@ test("authorized health output is private and uses live service state", async ()
   }
 });
 
+test("authorized autocomplete is context-aware, generation-cached, and unaudited", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-autocomplete-"));
+  const config = makeConfig(workspaceRoot);
+  config.security.queryMaxLength = 80;
+  config.sharedDebugRoots = [];
+  config.plugins.cmi = {
+    id: "cmi",
+    label: "CMI",
+    debugRoots: ["CMIPlugin"],
+    profiles: { config: {} },
+    commandAvailability: { config: "ready" },
+  };
+  let generation = 1;
+  let entryName = "TeleportEnabled";
+  let entryLoads = 0;
+  const searchCache = {
+    getGeneration: () => generation,
+    getEntries() {
+      entryLoads += 1;
+      return [{
+        relativePath: "CMIPlugin/CMI/config.yml",
+        key: entryName,
+        yamlPath: `Commands.${entryName}`,
+      }];
+    },
+  };
+  const handler = createTestInteractionHandler(config, searchCache, {});
+
+  function makeAutocomplete(focusedValue) {
+    const responses = [];
+    return {
+      responses,
+      interaction: {
+        isAutocomplete: () => true,
+        isChatInputCommand: () => false,
+        commandName: "lookup",
+        guildId: "expected-guild",
+        channelId: "channel-1",
+        member: { roles: { cache: [{ id: "support-role" }] } },
+        options: {
+          getSubcommand: () => "config",
+          getFocused: () => ({ name: "keyword", value: focusedValue }),
+        },
+        async respond(choices) {
+          responses.push(choices);
+        },
+      },
+    };
+  }
+
+  try {
+    const first = makeAutocomplete("tele");
+    await handler(first.interaction);
+    assert.match(first.responses[0][0].value, /TeleportEnabled/);
+
+    const sameGeneration = makeAutocomplete("chat");
+    await handler(sameGeneration.interaction);
+    assert.deepEqual(sameGeneration.responses[0], []);
+    assert.equal(entryLoads, 1);
+
+    generation = 2;
+    entryName = "ChatFormat";
+    const reloaded = makeAutocomplete("chat");
+    await handler(reloaded.interaction);
+    assert.ok(reloaded.responses[0].some((choice) => /ChatFormat/.test(choice.value)));
+    assert.equal(entryLoads, 2);
+
+    await assert.rejects(
+      () => fs.access(path.join(workspaceRoot, "logs/test-interactions.jsonl")),
+      { code: "ENOENT" },
+    );
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("autocomplete fails closed before reading indexes for unauthorized members", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-autocomplete-denied-"));
+  const config = makeConfig(workspaceRoot);
+  config.plugins.cmi = {
+    id: "cmi",
+    label: "CMI",
+    debugRoots: ["CMIPlugin"],
+    profiles: { config: {} },
+    commandAvailability: { config: "ready" },
+  };
+  let cacheRead = false;
+  const handler = createTestInteractionHandler(
+    config,
+    {
+      getEntries() {
+        cacheRead = true;
+        throw new Error("unauthorized autocomplete must not read the cache");
+      },
+    },
+    {},
+  );
+  const responses = [];
+  const interaction = {
+    isAutocomplete: () => true,
+    isChatInputCommand: () => false,
+    commandName: "lookup",
+    guildId: "expected-guild",
+    channelId: "channel-1",
+    member: { roles: { cache: [] } },
+    options: {
+      getSubcommand: () => "config",
+      getFocused: () => ({ name: "keyword", value: "tele" }),
+    },
+    async respond(choices) {
+      responses.push(choices);
+    },
+  };
+
+  try {
+    await handler(interaction);
+    assert.deepEqual(responses, [[]]);
+    assert.equal(cacheRead, false);
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
 test("pagination buttons revalidate the owning user, role, channel, context, and cache", async () => {
   const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-pagination-role-"));
   const pagination = createResultPagination(

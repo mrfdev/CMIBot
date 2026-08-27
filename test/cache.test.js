@@ -348,3 +348,69 @@ test("a selective profile reload atomically replaces only the requested profile"
   assert.deepEqual(cache.getEntries("alpha", "language"), oldAlphaLanguage);
   assert.deepEqual(cache.getEntries("beta", "config"), oldBetaConfig);
 });
+
+test("repeated searches use a bounded LRU and successful reloads invalidate it", async () => {
+  const config = makeConfig();
+  config.search = {
+    cacheLoadConcurrency: 2,
+    resultCacheMaxEntries: 2,
+  };
+  let loadGeneration = "old";
+  let failReload = false;
+  let searchCalls = 0;
+  const cache = createSearchCache(config, {
+    async loadEntriesForProfile(profile) {
+      if (failReload && profile.name === "language") {
+        throw new Error("reload failed");
+      }
+      return [makeEntry(loadGeneration, profile.name)];
+    },
+    async buildLanguageCategoryStats() {
+      return [];
+    },
+    lexicalSearchWithStats(query, entries) {
+      searchCalls += 1;
+      return {
+        matches: [{ entry: entries[0], score: query.length }],
+        totalMatches: 1,
+        matchedFiles: [entries[0].relativePath],
+        synonymApplied: false,
+        queryVariantCount: 1,
+      };
+    },
+  });
+
+  await cache.warm();
+  const search = (query) => cache.search("example", "config", query, { limit: 20 });
+
+  assert.equal(search("alpha").cacheStatus, "miss");
+  assert.equal(search("  ALPHA  ").cacheStatus, "hit");
+  assert.equal(search("bravo").cacheStatus, "miss");
+  assert.equal(search("alpha").cacheStatus, "hit");
+  assert.equal(search("charlie").cacheEvicted, true);
+  assert.equal(search("bravo").cacheStatus, "miss");
+  assert.equal(searchCalls, 4);
+  assert.deepEqual(cache.getResultCacheSummary(), {
+    entries: 2,
+    maxEntries: 2,
+    hits: 2,
+    misses: 4,
+    evictions: 2,
+    invalidations: 1,
+    invalidatedEntries: 0,
+  });
+
+  failReload = true;
+  await assert.rejects(() => cache.reloadAll(), /reload failed/);
+  assert.equal(search("bravo").cacheStatus, "hit");
+  assert.equal(searchCalls, 4);
+
+  failReload = false;
+  loadGeneration = "new";
+  await cache.reloadAll();
+  assert.equal(cache.getResultCacheSummary().entries, 0);
+  assert.equal(cache.getResultCacheSummary().invalidatedEntries, 2);
+  assert.equal(search("bravo").cacheStatus, "miss");
+  assert.equal(searchCalls, 5);
+  assert.equal(search("bravo").result.matches[0].entry.relativePath, "new/config.yml");
+});

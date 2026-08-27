@@ -476,6 +476,10 @@ const environmentSections = [
         type: "integer",
         defaultValue: "4",
       }),
+      variable("SEARCH_RESULT_CACHE_MAX_ENTRIES", "Maximum repeated-search results retained in the in-memory LRU cache; zero disables it.", {
+        type: "integer",
+        defaultValue: "256",
+      }),
       variable("SOURCE_LINKS_ENABLED", "Link lookup results to the exact deployed source revision.", {
         type: "boolean",
         defaultValue: "true",

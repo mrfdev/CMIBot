@@ -5,11 +5,16 @@ import { createLazyAiResolver, isAiEnabled } from "./aiLoader.js";
 import { writeAuditLog } from "./auditLog.js";
 import { registerCommands } from "./discord/commands.js";
 import {
+  buildAutocompleteIndex,
+  selectAutocompleteChoices,
+} from "./discord/autocomplete.js";
+import {
   NO_MENTIONS,
   PRIMARY_COMMAND_NAME,
   SUPPORTED_COMMAND_NAMES,
 } from "./discord/constants.js";
 import {
+  getCommandAvailability,
   hasRole,
   resolveCanonicalSubcommand,
   resolveChannelContext,
@@ -72,7 +77,74 @@ export function createInteractionHandler(config, searchCache, versionService, de
   const testOverrides = new Map();
   const requestMetadata = new WeakMap();
   const pagination = dependencies.pagination ?? createResultPagination(config.search);
+  const autocompleteIndexes = new Map();
+  let autocompleteGeneration = -1;
   let reloadInProgress = false;
+
+  function getAutocompleteIndex(context, profileName) {
+    const generation = searchCache.getGeneration?.() ?? 0;
+    if (generation !== autocompleteGeneration) {
+      autocompleteIndexes.clear();
+      autocompleteGeneration = generation;
+    }
+
+    const cacheKey = `${context.plugin.id}:${profileName}`;
+    let index = autocompleteIndexes.get(cacheKey);
+    if (!index) {
+      const entries = searchCache.getEntries(context.plugin.id, profileName);
+      const allowedRoots = [
+        ...(context.plugin.debugRoots ?? []),
+        ...(config.sharedDebugRoots ?? []).flatMap((root) => root.directories ?? []),
+      ];
+      index = buildAutocompleteIndex(entries, {
+        allowedRoots,
+        maximumKeywordLength: config.security.queryMaxLength,
+      });
+      autocompleteIndexes.set(cacheKey, index);
+    }
+    return index;
+  }
+
+  async function handleAutocompleteInteraction(interaction) {
+    let choices = [];
+    try {
+      const allowedRequest =
+        SUPPORTED_COMMAND_NAMES.has(interaction.commandName) &&
+        interaction.guildId === config.discord.guildId &&
+        config.discord.allowedChannelIds.includes(interaction.channelId) &&
+        hasRole(interaction.member, { roleIds: config.discord.allowedRoleIds });
+
+      if (allowedRequest) {
+        const subcommand = interaction.options.getSubcommand();
+        const canonicalSubcommand = resolveCanonicalSubcommand(subcommand);
+        const context = resolveChannelContext(interaction.channelId, config, testOverrides);
+        const focused = interaction.options.getFocused(true);
+        const optionName = focused?.name;
+        const optionIsSupported =
+          optionName === "keyword" ||
+          (optionName === "file" && canonicalSubcommand === "config");
+
+        if (
+          context.plugin &&
+          optionIsSupported &&
+          context.plugin.profiles?.[canonicalSubcommand] &&
+          getCommandAvailability(context.plugin, canonicalSubcommand) === "ready"
+        ) {
+          const index = getAutocompleteIndex(context, canonicalSubcommand);
+          choices = selectAutocompleteChoices(index, optionName, focused.value);
+        }
+      }
+    } catch {
+      logger.warn("discord.autocomplete_unavailable", { resolved: false });
+      choices = [];
+    }
+
+    try {
+      await interaction.respond(choices);
+    } catch {
+      logger.warn("discord.autocomplete_response_failed", { responded: false });
+    }
+  }
 
   function logEvent(interaction, payload) {
     const request = requestMetadata.get(interaction);
@@ -113,6 +185,11 @@ export function createInteractionHandler(config, searchCache, versionService, de
   }
 
   async function handleInteraction(interaction) {
+    if (interaction.isAutocomplete?.()) {
+      await handleAutocompleteInteraction(interaction);
+      return;
+    }
+
     if (pagination.isPaginationButton(interaction)) {
       const context = resolveChannelContext(interaction.channelId, config, testOverrides);
       const result = pagination.resolveButton(interaction.customId, {
@@ -895,6 +972,11 @@ export function createInteractionHandler(config, searchCache, versionService, de
   }
 
   async function handleInteractionWithTelemetry(interaction) {
+    if (interaction.isAutocomplete?.()) {
+      await handleInteraction(interaction);
+      return;
+    }
+
     if (pagination.isPaginationButton(interaction)) {
       await handleInteraction(interaction);
       return;

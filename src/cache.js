@@ -1,5 +1,7 @@
 import { loadEntriesForProfile } from "./profileIndex.js";
 import { buildLanguageCategoryStats } from "./langStats.js";
+import { createBoundedLruCache } from "./lruCache.js";
+import { lexicalSearchWithStats } from "./search.js";
 
 const SHARED_CMILIB_ROOT = "CMILibPlugin/";
 const SHARED_CMILIB_CACHE_PREFIX = "shared:cmilib:";
@@ -149,6 +151,23 @@ function normalizeConcurrency(value) {
   return Number.isSafeInteger(parsed) && parsed > 0 ? Math.min(parsed, 16) : 4;
 }
 
+function normalizeResultCacheMaximum(value) {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? Math.min(parsed, 4_096) : 256;
+}
+
+function normalizeResultCacheText(value) {
+  return String(value ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function copySearchResult(result) {
+  return {
+    ...result,
+    matches: [...result.matches],
+    matchedFiles: [...result.matchedFiles],
+  };
+}
+
 export function createTaskLimiter(maxConcurrency = 4) {
   const concurrency = normalizeConcurrency(maxConcurrency);
   const queue = [];
@@ -239,7 +258,18 @@ export function formatCacheSummary(summary, { verb = "Loaded", suffix = "." } = 
 export function createSearchCache(config, dependencies = {}) {
   const loadProfileEntries = dependencies.loadEntriesForProfile ?? loadEntriesForProfile;
   const loadLanguageCategories = dependencies.buildLanguageCategoryStats ?? buildLanguageCategoryStats;
+  const runLexicalSearch = dependencies.lexicalSearchWithStats ?? lexicalSearchWithStats;
   const loadConcurrency = normalizeConcurrency(config.search?.cacheLoadConcurrency);
+  const resultCache = createBoundedLruCache(
+    normalizeResultCacheMaximum(config.search?.resultCacheMaxEntries),
+  );
+  const resultCacheStats = {
+    hits: 0,
+    misses: 0,
+    evictions: 0,
+    invalidations: 0,
+    invalidatedEntries: 0,
+  };
   let cache = new Map();
   let pluginSummaries = new Map();
   let sharedCmilibSummary = null;
@@ -373,6 +403,8 @@ export function createSearchCache(config, dependencies = {}) {
         sharedCmilibSummary = nextSharedCmilibSummary;
         lastReloadedAt = nextReloadedAt;
         generation += 1;
+        resultCacheStats.invalidatedEntries += resultCache.clear();
+        resultCacheStats.invalidations += 1;
         settled = true;
         return summary;
       },
@@ -519,6 +551,16 @@ export function createSearchCache(config, dependencies = {}) {
     return transaction.commit();
   }
 
+  function getEntries(pluginId, profileName) {
+    const snapshot = cache.get(getCacheKey(pluginId, profileName));
+    if (!snapshot) {
+      throw new Error(`Search cache is not loaded for plugin "${pluginId}" profile "${profileName}".`);
+    }
+
+    const sharedSnapshot = getSharedSnapshot(cache, snapshot.sharedProfileName);
+    return sharedSnapshot?.entries.length ? [...snapshot.entries, ...sharedSnapshot.entries] : snapshot.entries;
+  }
+
   return {
     async warm() {
       return reload();
@@ -530,14 +572,64 @@ export function createSearchCache(config, dependencies = {}) {
       return reload(scope);
     },
     prepareReload,
-    getEntries(pluginId, profileName) {
-      const snapshot = cache.get(getCacheKey(pluginId, profileName));
-      if (!snapshot) {
-        throw new Error(`Search cache is not loaded for plugin "${pluginId}" profile "${profileName}".`);
+    getEntries,
+    search(pluginId, profileName, query, {
+      entries,
+      fileFilter = "",
+      limit = 20,
+      mode = "exact",
+      synonyms = {},
+    } = {}) {
+      const searchableEntries = entries ?? getEntries(pluginId, profileName);
+      if (!Array.isArray(searchableEntries)) {
+        throw new TypeError("Search entries must be an array.");
       }
 
-      const sharedSnapshot = getSharedSnapshot(cache, snapshot.sharedProfileName);
-      return sharedSnapshot?.entries.length ? [...snapshot.entries, ...sharedSnapshot.entries] : snapshot.entries;
+      const boundedLimit = Math.max(1, Math.min(250, Number(limit) || 20));
+      const cacheKey = JSON.stringify([
+        pluginId,
+        profileName,
+        normalizeResultCacheText(query),
+        normalizeResultCacheText(fileFilter),
+        boundedLimit,
+        mode,
+      ]);
+
+      if (resultCache.maxSize > 0) {
+        const cached = resultCache.get(cacheKey);
+        if (cached.hit) {
+          resultCacheStats.hits += 1;
+          return {
+            result: copySearchResult(cached.value),
+            cacheStatus: "hit",
+            cacheEvicted: false,
+          };
+        }
+        resultCacheStats.misses += 1;
+      }
+
+      const result = runLexicalSearch(query, searchableEntries, {
+        limit: boundedLimit,
+        mode,
+        synonyms,
+      });
+      const stored = resultCache.set(cacheKey, copySearchResult(result));
+      if (stored.evicted) {
+        resultCacheStats.evictions += 1;
+      }
+
+      return {
+        result: copySearchResult(result),
+        cacheStatus: stored.stored ? "miss" : "disabled",
+        cacheEvicted: stored.evicted,
+      };
+    },
+    getResultCacheSummary() {
+      return {
+        entries: resultCache.size,
+        maxEntries: resultCache.maxSize,
+        ...resultCacheStats,
+      };
     },
     getSnapshot(pluginId, profileName) {
       const snapshot = cache.get(getCacheKey(pluginId, profileName)) ?? null;

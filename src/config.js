@@ -850,6 +850,10 @@ export function loadConfig() {
         1,
         Math.min(16, parseInteger(process.env.CACHE_LOAD_CONCURRENCY, 4)),
       ),
+      resultCacheMaxEntries: Math.max(
+        0,
+        Math.min(4_096, parseInteger(process.env.SEARCH_RESULT_CACHE_MAX_ENTRIES, 256)),
+      ),
       sourceLinksEnabled: parseBoolean(process.env.SOURCE_LINKS_ENABLED, true),
       sourceRepositoryUrl:
         process.env.SOURCE_REPOSITORY_URL?.trim() || "https://github.com/mrfdev/CMIBot",

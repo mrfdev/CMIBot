@@ -45,6 +45,7 @@ Identifiers are intentionally blank in generated examples.
 | `DISPLAY_PATH_PREFIX` | string | no | public | `~/plugins` | Prefix shown before repository-relative lookup paths. |
 | `DEFAULT_RESULT_LIMIT` | integer | no | public | `3` | Default number of lookup results. |
 | `CACHE_LOAD_CONCURRENCY` | integer | no | public | `4` | Maximum number of cache profiles loaded concurrently. |
+| `SEARCH_RESULT_CACHE_MAX_ENTRIES` | integer | no | public | `256` | Maximum repeated-search results retained in the in-memory LRU cache; zero disables it. |
 | `SOURCE_LINKS_ENABLED` | boolean | no | public | `true` | Link lookup results to the exact deployed source revision. |
 | `SOURCE_REPOSITORY_URL` | url | no | public | `https://github.com/mrfdev/CMIBot` | Public HTTPS GitHub repository used for pinned source links. |
 | `PAGINATION_TTL_MINUTES` | integer | no | public | `10` | Minutes before interactive result controls expire. |

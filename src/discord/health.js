@@ -65,6 +65,7 @@ export function formatHealthMessage({
   now = Date.now(),
 }) {
   const cacheSummary = searchCache.getGlobalSummary();
+  const resultCacheSummary = searchCache.getResultCacheSummary?.();
   const versionSnapshot = versionService.getSnapshot();
   const discordState = getDiscordConnectionState(client);
   const cacheReady = Boolean(
@@ -109,6 +110,12 @@ export function formatHealthMessage({
         `Upstream resilience: \`retries: ${metricsSnapshot.upstream.checks.retries}, circuits opened: ${metricsSnapshot.upstream.checks.circuitOpenings}, requests skipped: ${metricsSnapshot.upstream.checks.circuitRejections}\``,
       );
     }
+  }
+
+  if (resultCacheSummary) {
+    lines.push(
+      `Repeated-search LRU: \`${resultCacheSummary.entries}/${resultCacheSummary.maxEntries} entries, ${resultCacheSummary.hits} hits, ${resultCacheSummary.misses} misses, ${resultCacheSummary.evictions} evictions\``,
+    );
   }
 
   if (serviceLogSnapshot) {

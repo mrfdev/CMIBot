@@ -113,6 +113,7 @@ export function createMetricsRegistry({
   const aiOperations = { rerank: 0, summary: 0 };
   const aiTokens = { input: 0, output: 0, total: 0 };
   const searchResults = { returned: 0, candidates: 0 };
+  const searchCache = { hits: 0, misses: 0, evictions: 0 };
   const upstreamChecks = {
     resources: 0,
     failures: 0,
@@ -142,6 +143,7 @@ export function createMetricsRegistry({
       searches: {
         ...searches.snapshot(),
         results: { ...searchResults },
+        cache: { ...searchCache },
       },
       reloads: {
         ...reloads.snapshot(),
@@ -172,6 +174,9 @@ export function createMetricsRegistry({
       commandErrors: snapshot.commands.outcomes.error,
       searchCount: snapshot.searches.count,
       searchP95Ms: snapshot.searches.p95Ms,
+      searchCacheHits: snapshot.searches.cache.hits,
+      searchCacheMisses: snapshot.searches.cache.misses,
+      searchCacheEvictions: snapshot.searches.cache.evictions,
       reloadCount: snapshot.reloads.count,
       reloadP95Ms: snapshot.reloads.p95Ms,
       aiRequestCount: snapshot.ai.count,
@@ -191,10 +196,25 @@ export function createMetricsRegistry({
     recordCommand({ durationMs, outcome } = {}) {
       commands.record(durationMs, outcome);
     },
-    recordSearch({ durationMs, outcome, resultCount = 0, candidateCount = 0 } = {}) {
+    recordSearch({
+      durationMs,
+      outcome,
+      resultCount = 0,
+      candidateCount = 0,
+      cacheStatus = "disabled",
+      cacheEvicted = false,
+    } = {}) {
       searches.record(durationMs, outcome);
       searchResults.returned += integerNonNegative(resultCount);
       searchResults.candidates += integerNonNegative(candidateCount);
+      if (cacheStatus === "hit") {
+        searchCache.hits += 1;
+      } else if (cacheStatus === "miss") {
+        searchCache.misses += 1;
+      }
+      if (cacheEvicted === true) {
+        searchCache.evictions += 1;
+      }
     },
     recordReload({ durationMs, outcome, scope = "all" } = {}) {
       reloads.record(durationMs, outcome);

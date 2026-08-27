@@ -209,17 +209,37 @@ export async function handleSearchInteraction({
     const synonyms = config.search.synonymsByPlugin?.[context.plugin.id] ?? {};
     const searchStartedAt = performance.now();
     let searchResult;
+    let cacheStatus = "disabled";
+    let cacheEvicted = false;
     try {
-      searchResult = lexicalSearchWithStats(keyword, entries, {
-        limit: pagination?.getMaxResults?.() ?? config.search.paginationMaxResults ?? 100,
-        mode,
-        synonyms,
-      });
+      const searchLimit = pagination?.getMaxResults?.() ?? config.search.paginationMaxResults ?? 100;
+      const cachedSearch = searchCache.search
+        ? searchCache.search(context.plugin.id, canonicalSubcommand, keyword, {
+            entries,
+            fileFilter: fileFilter.normalizedFilter,
+            limit: searchLimit,
+            mode,
+            synonyms,
+          })
+        : {
+            result: lexicalSearchWithStats(keyword, entries, {
+              limit: searchLimit,
+              mode,
+              synonyms,
+            }),
+            cacheStatus: "disabled",
+            cacheEvicted: false,
+          };
+      searchResult = cachedSearch.result;
+      cacheStatus = cachedSearch.cacheStatus;
+      cacheEvicted = cachedSearch.cacheEvicted;
       metrics?.recordSearch({
         durationMs: performance.now() - searchStartedAt,
         outcome: searchResult.matches.length ? "success" : "empty",
         resultCount: Math.min(searchResult.matches.length, limit),
         candidateCount: searchResult.totalMatches,
+        cacheStatus,
+        cacheEvicted,
       });
     } catch (error) {
       metrics?.recordSearch({

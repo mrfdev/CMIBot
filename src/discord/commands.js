@@ -12,7 +12,11 @@ function addCommonLookupOptions(
 ) {
   let builder = subcommand
     .addStringOption((option) =>
-      option.setName("keyword").setDescription("Keyword, phrase, or token to search for.").setRequired(true),
+      option
+        .setName("keyword")
+        .setDescription("Keyword, phrase, or token to search for.")
+        .setRequired(true)
+        .setAutocomplete(true),
     )
     .addStringOption((option) =>
       option
@@ -36,7 +40,8 @@ function addCommonLookupOptions(
     builder = builder.addStringOption((option) =>
       option
         .setName("file")
-        .setDescription("Optional indexed config file filter, like Chat.yml, config.yml, or a plugin-relative path."),
+        .setDescription("Optional indexed config file filter, like Chat.yml, config.yml, or a plugin-relative path.")
+        .setAutocomplete(true),
     );
   }
 
