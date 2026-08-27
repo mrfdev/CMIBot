@@ -299,6 +299,8 @@ test("help formatting stays context aware after extraction", () => {
   assert.match(message, /`limit: 1-15`/);
   assert.match(message, /summary: true\|false.*disabled/i);
   assert.match(message, /latest changes:true/);
+  assert.match(message, /related: true\|false.*matching references across supported profiles/i);
+  assert.match(message, /cmd balance related:true/);
 });
 
 test("result formatting keeps internal metadata out of public headings", () => {

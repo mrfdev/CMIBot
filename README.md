@@ -4,11 +4,13 @@ LookupBot is a channel-aware Discord support bot for Zrips plugins. The same `/l
 
 The repository is still named `CMIBot`, but `/lookup` is the only registered slash command.
 
+See [CHANGELOG.md](CHANGELOG.md) for dated summaries of shipped changes.
+
 ## Current Features
 
 - Channel-ID-based plugin routing
-- Exact, whole-word, and broad searches
-- Configurable plugin-scoped aliases and synonym expansion
+- Exact, whole-word, and broad searches with local “Did you mean?” suggestions
+- Configurable plugin-scoped aliases, synonym expansion, and opt-in deterministic related references
 - Safe indexed-file filtering for config searches
 - Context-aware Discord autocomplete for indexed keywords, tokens, and safe config filenames
 - Private, fixed-scope browsing of cached filenames and categories without filesystem reads
@@ -18,7 +20,7 @@ The repository is still named `CMIBot`, but `/lookup` is the only registered sla
 - In-memory caches with bounded parallel warming and transactional full, plugin, and profile reloads
 - Bounded repeated-search LRU caching with aggregate hit/miss metrics and reload invalidation
 - Clean first-install plugin data generated from a disposable Paper server
-- Local version inventory plus scheduled Paper and Spigot resource checks
+- Local version inventory, scheduled upstream checks, and private opt-in version differences with bounded release notes
 - Paper 26.2 stable/API drift checks plus Java 25 and Java 26 smoke commands
 - One canonical CMILib cache composed into every supporting plugin context
 - Fail-closed startup validation for configuration, routes, indexes, cache summaries, and version-catalog drift
@@ -496,6 +498,8 @@ Fill in the private SSH destination and absolute remote paths in `.cmibot-remote
 ```bash
 ./scripts/remote status
 ./scripts/remote restart
+./scripts/remote configure-alert-channel
+./scripts/remote configure-test-channel
 ./scripts/remote update
 ./scripts/remote logs --lines 100
 ./scripts/remote logs --follow
@@ -504,6 +508,18 @@ Fill in the private SSH destination and absolute remote paths in `.cmibot-remote
 ```
 
 The wrapper reads its destination only from the owner-readable local configuration, uses non-interactive SSH authentication, and accepts only the documented operations and options. `update` runs the fail-closed source updater remotely with a minimal executable path derived from the configured Node location; it does not restart or activate a release. It is an operator tool and is never exposed through Discord. Do not put host aliases, usernames, private paths, credentials, or other infrastructure identifiers in tracked files or public tickets.
+
+The two `configure-*` operations read exactly one Discord channel ID from standard input and never accept it as a command-line argument. `configure-alert-channel` replaces the private admin-alert destination. `configure-test-channel` adds a channel to both the allowed-channel and test-channel lists, while refusing a channel already assigned to a plugin route. Both operations validate the existing private configuration, replace it atomically with owner-only permissions, and omit the identifier from output and remote command arguments. They do not restart the bot, so use the normal guarded restart or deployment afterward to load the new setting.
+
+For interactive input without putting the identifier in shell history, use a temporary hidden variable:
+
+```bash
+read -rs private_channel_id
+printf '%s\n' "$private_channel_id" | ./scripts/remote configure-alert-channel
+unset private_channel_id
+```
+
+Use the same pattern with `configure-test-channel` when adding a private test route.
 
 Deploy the currently committed, clean Git revision with:
 

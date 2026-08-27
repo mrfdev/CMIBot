@@ -111,9 +111,9 @@ export function formatHelpMessage(config, member, context, commandName) {
     );
   }
 
-  if (getCommandAvailability(plugin, "config") === "ready" || getCommandAvailability(plugin, "language") === "ready") {
-    lines.push("- `related: true|false` adds nearby YAML entries for `config`, `language`, and `lang`");
-  }
+  lines.push(
+    "- `related: true|false` adds deterministic matching references across supported profiles; config and language keep nearby YAML entries first",
+  );
 
   lines.push(
     aiEnabled
@@ -134,7 +134,7 @@ export function formatHelpMessage(config, member, context, commandName) {
     lines.push(`- \`${prefix} language home\``);
     lines.push(`- \`${prefix} placeholder balance\``);
     lines.push(`- \`${prefix} material shulker\``);
-    lines.push(`- \`${prefix} cmd balance\``);
+    lines.push(`- \`${prefix} cmd balance related:true\``);
     lines.push(`- \`${prefix} perm cmi.command.balance\``);
     lines.push(`- \`${prefix} faq refund\``);
   } else if (plugin.id === "jobs") {
