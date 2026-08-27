@@ -204,6 +204,11 @@ export function buildCommandTree(commandName, config) {
     )
     .addSubcommand((subcommand) =>
       subcommand
+        .setName("alerts-test")
+        .setDescription("Send a clearly marked test to the private admin alert channel."),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName("debug")
         .setDescription("Show the current channel context and optionally override it in test channels.")
         .addStringOption((option) =>

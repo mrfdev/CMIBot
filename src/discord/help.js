@@ -66,6 +66,7 @@ export function formatHelpMessage(config, member, context, commandName) {
   lines.push(`- \`${prefix} latest public:true\` publicly shows only the latest plugin and CMILib releases`);
   lines.push(`- \`${prefix} latest scope:all\` shows every tracked resource and CMI companion`);
   if (canReload) {
+    lines.push(`- \`${prefix} alerts-test\` sends a clearly marked test to the private admin alert channel`);
     lines.push(`- \`${prefix} health\` shows private service health and data freshness`);
     lines.push(`- \`${prefix} debug\` shows the current channel context and runtime diagnostics`);
     lines.push(`- \`${prefix} reload\` refreshes the cache for every plugin context`);
@@ -191,15 +192,15 @@ export function formatHelpMessage(config, member, context, commandName) {
   if (!canLookup) {
     lines.push(
       "",
-      "Notice: search commands and stats are limited to configured support role IDs. `/lookup health`, `/lookup debug`, and `/lookup reload` are admin-only.",
+      "Notice: search commands and stats are limited to configured support role IDs. `/lookup alerts-test`, `/lookup health`, `/lookup debug`, and `/lookup reload` are admin-only.",
     );
   } else if (aiEnabled && !canReload && !canUseAi) {
     lines.push(
       "",
-      "Notice: you can use search commands here, but `/lookup health`, `/lookup debug`, `/lookup reload`, and AI-backed options like `summary:true` are restricted.",
+      "Notice: you can use search commands here, but `/lookup alerts-test`, `/lookup health`, `/lookup debug`, `/lookup reload`, and AI-backed options like `summary:true` are restricted.",
     );
   } else if (!canReload) {
-    lines.push("", "Notice: you can use search commands here, but `/lookup health`, `/lookup debug`, and `/lookup reload` are admin-only.");
+    lines.push("", "Notice: you can use search commands here, but `/lookup alerts-test`, `/lookup health`, `/lookup debug`, and `/lookup reload` are admin-only.");
   } else {
     lines.push("", `Notice: ${currentCommand} is available here.`);
   }

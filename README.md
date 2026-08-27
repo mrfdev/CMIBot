@@ -68,6 +68,7 @@ CMILib config and English locale files are shared with every plugin context.
 /lookup latest public:true
 /lookup latest scope:all
 /lookup health                # admin only
+/lookup alerts-test           # admin only; sends a clearly marked private test alert
 /lookup debug                 # admin only
 /lookup reload                # full reload by default, admin only
 /lookup reload plugin:current
@@ -345,7 +346,7 @@ Reload reports are private. If the global per-plugin breakdown exceeds one Disco
 
 ## Admin Data Alerts
 
-Aggregate alerts are disabled unless `DISCORD_ADMIN_ALERT_CHANNEL_ID` names a text channel in the configured guild. When enabled, the bot checks for stale clean data, overdue or failed upstream checks, retained last-known results, and tracked updates. Unchanged alerts are deduplicated until the reminder interval, and recovery is announced once. Alert text and logs omit resource identifiers, paths, hostnames, channel IDs, and raw errors.
+Aggregate alerts are disabled unless `DISCORD_ADMIN_ALERT_CHANNEL_ID` names a text channel in the configured guild. When enabled, the bot checks for stale clean data, overdue or failed upstream checks, retained last-known results, and tracked updates. Update alerts name the public tracked resources and show their clean-snapshot-to-upstream version transitions. Unchanged alerts are deduplicated until the reminder interval, and recovery is announced once. Alert text and logs omit resource IDs, URLs, paths, hostnames, channel IDs, and raw errors. Admins can use `/lookup alerts-test` to send a clearly marked delivery test that also summarizes the current data state without changing incident or recovery deduplication.
 
 ## Health Output
 

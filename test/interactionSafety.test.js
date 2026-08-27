@@ -225,6 +225,102 @@ test("health output is denied without an admin role", async () => {
   }
 });
 
+test("alert tests are denied without an admin role", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-alert-test-role-"));
+  const replies = [];
+
+  try {
+    const handler = createTestInteractionHandler(makeConfig(workspaceRoot), {}, {}, {
+      attentionMonitor: {
+        async sendTestAlert() {
+          throw new Error("unauthorized alert test must not run");
+        },
+      },
+    });
+    const interaction = {
+      isChatInputCommand: () => true,
+      isRepliable: () => true,
+      commandName: "lookup",
+      guildId: "expected-guild",
+      channelId: "channel-1",
+      user: { id: "user-1", tag: "tester" },
+      member: { roles: { cache: [] } },
+      options: { getSubcommand: () => "alerts-test" },
+      replied: false,
+      deferred: false,
+      async reply(payload) {
+        this.replied = true;
+        replies.push(payload);
+      },
+    };
+
+    await handler(interaction);
+
+    assert.equal(replies.length, 1);
+    assert.match(replies[0].content, /Only the configured admin role/i);
+    assert.ok(replies[0].flags);
+    const auditText = await fs.readFile(path.join(workspaceRoot, "logs/test-interactions.jsonl"), "utf8");
+    const auditEntry = JSON.parse(auditText.trim());
+    assert.equal(auditEntry.outcome, "denied");
+    assert.equal(auditEntry.reason, "alerts-test-role");
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("an admin can send a private alert test without exposing its destination", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-alert-test-admin-"));
+  const responses = [];
+  const deferrals = [];
+  let sendCount = 0;
+
+  try {
+    const handler = createTestInteractionHandler(makeConfig(workspaceRoot), {}, {}, {
+      attentionMonitor: {
+        async sendTestAlert() {
+          sendCount += 1;
+          return { status: "sent" };
+        },
+      },
+    });
+    const interaction = {
+      isChatInputCommand: () => true,
+      isRepliable: () => true,
+      commandName: "lookup",
+      guildId: "expected-guild",
+      channelId: "channel-1",
+      user: { id: "admin-1", tag: "admin" },
+      member: { roles: { cache: [{ id: "admin-role" }] } },
+      options: { getSubcommand: () => "alerts-test" },
+      replied: false,
+      deferred: false,
+      async deferReply(payload) {
+        this.deferred = true;
+        deferrals.push(payload);
+      },
+      async editReply(payload) {
+        this.replied = true;
+        responses.push(payload);
+      },
+    };
+
+    await handler(interaction);
+
+    assert.equal(sendCount, 1);
+    assert.equal(deferrals.length, 1);
+    assert.ok(deferrals[0].flags);
+    assert.match(responses[0].content, /Test alert delivered/i);
+    assert.deepEqual(responses[0].allowedMentions, { parse: [] });
+    assert.doesNotMatch(responses[0].content, /channel-1|admin-1/);
+    const auditText = await fs.readFile(path.join(workspaceRoot, "logs/test-interactions.jsonl"), "utf8");
+    const auditEntry = JSON.parse(auditText.trim());
+    assert.equal(auditEntry.outcome, "success");
+    assert.equal(auditEntry.subcommand, "alerts-test");
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
 test("authorized health output is private and uses live service state", async () => {
   const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-health-admin-"));
   const replies = [];

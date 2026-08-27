@@ -1,6 +1,8 @@
 import { serviceLogger } from "./logger.js";
 import { getVersionAttentionSummary } from "./versionCatalog.js";
 
+const MAX_UPDATE_DETAILS = 6;
+
 function toTimestamp(value) {
   const timestamp = new Date(value).getTime();
   return Number.isFinite(timestamp) ? timestamp : null;
@@ -10,6 +12,91 @@ function discordTimestamp(timestamp) {
   return `<t:${Math.floor(timestamp / 1000)}:R>`;
 }
 
+function sanitizeAlertText(value, fallback, maxLength = 80) {
+  const normalized = String(value ?? "")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength)
+    .replaceAll("@", "＠")
+    .replace(/[`*_~|<>[\]\\]/g, "");
+  return normalized || fallback;
+}
+
+function formatTrackedRelease(resource) {
+  const version = sanitizeAlertText(resource?.version, "unknown", 48);
+  const build = resource?.build == null ? Number.NaN : Number(resource.build);
+  return Number.isSafeInteger(build) && build >= 0 ? `${version} build ${build}` : version;
+}
+
+function resolveUpdateDetail(snapshot, key) {
+  if (key === "paper") {
+    return {
+      label: sanitizeAlertText(snapshot.catalog?.paper?.label, "Paper", 48),
+      current: formatTrackedRelease(snapshot.catalog?.paper),
+      latest: formatTrackedRelease(snapshot.paper),
+    };
+  }
+
+  const separator = key.indexOf(":");
+  const type = separator < 0 ? "" : key.slice(0, separator);
+  const resourceId = separator < 0 ? "" : key.slice(separator + 1);
+  if (type === "plugin") {
+    const resource = snapshot.catalog?.plugins?.find((entry) => entry.id === resourceId);
+    const upstream = snapshot.plugins?.get(resourceId);
+    return {
+      label: sanitizeAlertText(resource?.label, "Tracked plugin", 48),
+      current: formatTrackedRelease(resource),
+      latest: formatTrackedRelease(upstream),
+    };
+  }
+  if (type === "companion") {
+    const resource = snapshot.catalog?.companions?.find((entry) => entry.id === resourceId);
+    const upstream = snapshot.companions?.get(resourceId);
+    return {
+      label: sanitizeAlertText(resource?.label, "Tracked companion", 48),
+      current: formatTrackedRelease(resource),
+      latest: formatTrackedRelease(upstream),
+    };
+  }
+  return null;
+}
+
+function formatAttentionLines(attention) {
+  const lines = [];
+  if (attention.cleanDataStale) {
+    lines.push("- The clean lookup snapshot is missing or older than its configured freshness limit.");
+  }
+  if (attention.upstreamOverdue) {
+    lines.push("- The scheduled upstream version check is overdue.");
+  }
+  if (attention.upstreamFailureCount > 0) {
+    lines.push(`- ${attention.upstreamFailureCount} upstream check(s) are unavailable or failed.`);
+  }
+  if (attention.retainedCount > 0 || attention.staleResourceCount > 0) {
+    lines.push(
+      `- ${Math.max(attention.retainedCount, attention.staleResourceCount)} last-known result(s) are being retained.`,
+    );
+  }
+  if (attention.updateCount > 0) {
+    const updateDetails = Array.isArray(attention.updateDetails) ? attention.updateDetails : [];
+    lines.push(`- ${attention.updateCount} tracked update(s) are available:`);
+    for (const update of updateDetails.slice(0, MAX_UPDATE_DETAILS)) {
+      lines.push(`  - **${update.label}:** \`${update.current}\` → \`${update.latest}\``);
+    }
+    if (attention.updateCount > updateDetails.length) {
+      lines.push(
+        `  - ${attention.updateCount - updateDetails.length} additional update(s) omitted; run \`/lookup latest scope:all\` for the full list.`,
+      );
+    }
+  }
+  return lines;
+}
+
+function privacyFooter(now) {
+  return `Checked ${discordTimestamp(now)}. Public tracked labels and release versions are shown; resource IDs, URLs, paths, hostnames, channel IDs, and raw errors are omitted.`;
+}
+
 export function evaluateAttention(snapshot, options = {}) {
   const now = Number(options.now ?? Date.now());
   const cleanDataMaxAgeMs = Math.max(1, Number(options.cleanDataMaxAgeMs) || 48 * 60 * 60 * 1000);
@@ -17,6 +104,10 @@ export function evaluateAttention(snapshot, options = {}) {
   const generatedAt = toTimestamp(snapshot?.catalog?.generatedAt);
   const checkedAt = toTimestamp(snapshot?.checkedAt);
   const versionAttention = getVersionAttentionSummary(snapshot);
+  const allUpdateDetails = versionAttention.updateKeys
+    .map((key) => resolveUpdateDetail(snapshot, key))
+    .filter(Boolean);
+  const updateDetails = allUpdateDetails.slice(0, MAX_UPDATE_DETAILS);
   const checkEnabled = Boolean(snapshot?.checkEnabled);
   const cleanDataStale = generatedAt === null || now - generatedAt > cleanDataMaxAgeMs;
   const upstreamOverdue = checkEnabled && (checkedAt === null || now - checkedAt > upstreamMaxAgeMs);
@@ -42,6 +133,7 @@ export function evaluateAttention(snapshot, options = {}) {
     retainedCount,
     staleResourceCount,
     updateCount,
+    updateDetails,
     generatedAt,
     checkedAt,
     fingerprint: JSON.stringify({
@@ -51,6 +143,7 @@ export function evaluateAttention(snapshot, options = {}) {
       retainedCount,
       staleResourceCount,
       updateCount,
+      updates: allUpdateDetails,
     }),
   };
 }
@@ -64,27 +157,22 @@ export function formatAttentionMessage(attention, { recovery = false, now = Date
     ].join("\n");
   }
 
-  const lines = ["⚠️ **LookupBot data attention needed**"];
-  if (attention.cleanDataStale) {
-    lines.push("- The clean lookup snapshot is missing or older than its configured freshness limit.");
+  const lines = ["⚠️ **LookupBot data attention needed**", ...formatAttentionLines(attention)];
+  lines.push(privacyFooter(now));
+  return lines.join("\n");
+}
+
+export function formatAttentionTestMessage(attention, { now = Date.now() } = {}) {
+  const lines = [
+    "🧪 **LookupBot admin alert test**",
+    "Delivery to this private channel is working. This is a manual test, not a new incident.",
+  ];
+  if (attention.needsAttention) {
+    lines.push("", "**Current data state:**", ...formatAttentionLines(attention));
+  } else {
+    lines.push("", "- Current data checks are healthy.");
   }
-  if (attention.upstreamOverdue) {
-    lines.push("- The scheduled upstream version check is overdue.");
-  }
-  if (attention.upstreamFailureCount > 0) {
-    lines.push(`- ${attention.upstreamFailureCount} upstream check(s) are unavailable or failed.`);
-  }
-  if (attention.retainedCount > 0 || attention.staleResourceCount > 0) {
-    lines.push(
-      `- ${Math.max(attention.retainedCount, attention.staleResourceCount)} last-known result(s) are being retained.`,
-    );
-  }
-  if (attention.updateCount > 0) {
-    lines.push(`- ${attention.updateCount} tracked update(s) are available.`);
-  }
-  lines.push(
-    `Checked ${discordTimestamp(now)}. This alert intentionally omits identifiers, paths, hostnames, and raw errors.`,
-  );
+  lines.push(privacyFooter(now));
   return lines.join("\n");
 }
 
@@ -169,6 +257,30 @@ export function createAttentionMonitor(config, versionService, dependencies = {}
     return { status: "healthy", attention };
   }
 
+  async function sendTestAlert() {
+    if (!channelId) {
+      return { status: "disabled" };
+    }
+
+    const checkedAt = Number(now());
+    const attention = evaluateAttention(versionService.getSnapshot(), {
+      now: checkedAt,
+      cleanDataMaxAgeMs,
+      upstreamMaxAgeMs,
+    });
+    try {
+      await sendMessage(formatAttentionTestMessage(attention, { now: checkedAt }));
+      logger.info("attention.test_sent", {
+        needsAttention: attention.needsAttention,
+        updateCount: attention.updateCount,
+      });
+      return { status: "sent", attention };
+    } catch (error) {
+      logger.warn("attention.test_failed", { errorName: error?.name || "Error" });
+      return { status: "error" };
+    }
+  }
+
   function checkNow() {
     if (inFlight) {
       return inFlight;
@@ -186,6 +298,7 @@ export function createAttentionMonitor(config, versionService, dependencies = {}
 
   return {
     checkNow,
+    sendTestAlert,
     start() {
       if (!channelId || timer) {
         return;

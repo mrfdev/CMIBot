@@ -309,6 +309,71 @@ export function createInteractionHandler(config, searchCache, versionService, de
       return;
     }
 
+    if (canonicalSubcommand === "alerts-test") {
+      if (!hasRole(interaction.member, { roleIds: config.discord.adminRoleIds })) {
+        await logEvent(interaction, {
+          subcommand,
+          outcome: "denied",
+          reason: "alerts-test-role",
+          detectedContext: context.pluginId || "unknown",
+        });
+        await interaction.reply({
+          content: "Only the configured admin role can use the alert test command.",
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+        return;
+      }
+
+      const testCooldown = cooldowns.check(
+        "global",
+        "admin:alerts-test",
+        config.security.debugCooldownSeconds ?? 30,
+      );
+      if (!testCooldown.allowed) {
+        await logRateLimitEvent(interaction, "admin:alerts-test", {
+          subcommand,
+          outcome: "rejected",
+          reason: `alerts-test-cooldown:${testCooldown.retryAfterSeconds}`,
+          detectedContext: context.pluginId || "unknown",
+        });
+        await interaction.reply({
+          content: `An alert test was just requested. Try again in ${testCooldown.retryAfterSeconds}s.`,
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+        return;
+      }
+
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      let result;
+      try {
+        result =
+          typeof dependencies.attentionMonitor?.sendTestAlert === "function"
+            ? await dependencies.attentionMonitor.sendTestAlert()
+            : { status: "unavailable" };
+      } catch (error) {
+        logger.warn("attention.test_command_failed", { errorName: error?.name || "Error" });
+        result = { status: "error" };
+      }
+
+      await logEvent(interaction, {
+        subcommand,
+        outcome:
+          result.status === "sent" ? "success" : result.status === "disabled" ? "rejected" : "error",
+        reason: result.status === "sent" ? undefined : `alerts-test-${result.status}`,
+        detectedContext: context.pluginId || "unknown",
+      });
+      const content =
+        result.status === "sent"
+          ? "Test alert delivered to the configured private admin alert channel."
+          : result.status === "disabled"
+            ? "Admin alerts are not configured, so no test message was sent."
+            : "The test alert could not be delivered. Check the configured channel and the bot's permissions.";
+      await interaction.editReply({ content, allowedMentions: NO_MENTIONS });
+      return;
+    }
+
     if (canonicalSubcommand === "help") {
       await logEvent(interaction, {
         subcommand,

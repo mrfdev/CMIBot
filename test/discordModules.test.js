@@ -84,6 +84,7 @@ test("slash command schema keeps aliases, limits, and safe config filters", () =
   assert.ok(subcommands.has("permission"));
   assert.ok(subcommands.has("perm"));
   assert.ok(subcommands.has("health"));
+  assert.ok(subcommands.has("alerts-test"));
   assert.ok(subcommands.has("files"));
   assert.ok(subcommands.has("categories"));
 

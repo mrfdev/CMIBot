@@ -4,6 +4,7 @@ import {
   createAttentionMonitor,
   evaluateAttention,
   formatAttentionMessage,
+  formatAttentionTestMessage,
 } from "../src/attentionMonitor.js";
 
 function makeSnapshot(now) {
@@ -24,7 +25,7 @@ function makeSnapshot(now) {
   };
 }
 
-test("attention evaluation and messages expose aggregate state only", () => {
+test("attention messages expose only safe public update labels and versions", () => {
   const now = Date.parse("2026-08-27T12:00:00.000Z");
   const snapshot = makeSnapshot(now - 72 * 60 * 60 * 1000);
   snapshot.checkEnabled = true;
@@ -32,9 +33,15 @@ test("attention evaluation and messages expose aggregate state only", () => {
   snapshot.errorCount = 2;
   snapshot.retainedCount = 1;
   snapshot.catalog.plugins = [
-    { id: "private-resource-name", version: "1.0.0", resourceId: 123 },
+    {
+      id: "private-resource-key",
+      label: "Public Plugin @everyone *name*",
+      version: "0.9.0",
+      resourceId: 123,
+      resourceUrl: "https://private.example.test/resource/123",
+    },
   ];
-  snapshot.plugins.set("private-resource-name", {
+  snapshot.plugins.set("private-resource-key", {
     version: "1.0.0",
     stale: true,
   });
@@ -51,8 +58,82 @@ test("attention evaluation and messages expose aggregate state only", () => {
   assert.equal(attention.upstreamOverdue, true);
   assert.equal(attention.upstreamFailureCount, 2);
   assert.equal(attention.retainedCount, 1);
+  assert.equal(attention.updateCount, 1);
   assert.match(message, /2 upstream check\(s\)/);
-  assert.doesNotMatch(message, /private-resource-name|123|\/Users\/|token|secret/i);
+  assert.match(message, /Public Plugin ＠everyone name/);
+  assert.match(message, /`0\.9\.0` → `1\.0\.0`/);
+  assert.doesNotMatch(
+    message,
+    /private-resource-key|private\.example|resource\/123|@everyone|\/Users\/|token|secret/i,
+  );
+});
+
+test("attention messages identify each available tracked update", () => {
+  const now = Date.parse("2026-08-27T12:00:00.000Z");
+  const snapshot = makeSnapshot(now);
+  snapshot.checkEnabled = true;
+  snapshot.checkedAt = new Date(now).toISOString();
+  snapshot.catalog.plugins = [
+    { id: "cmi", label: "CMI", version: "1.0.0", resourceId: 1 },
+  ];
+  snapshot.catalog.companions = [
+    {
+      id: "bridge",
+      label: "CMI Bridge",
+      version: "2.0.0",
+      versionSource: { type: "test" },
+    },
+  ];
+  snapshot.paper = { version: "26.2", build: 87 };
+  snapshot.plugins.set("cmi", { version: "1.1.0" });
+  snapshot.companions.set("bridge", { version: "2.1.0" });
+
+  const attention = evaluateAttention(snapshot, { now });
+  const message = formatAttentionMessage(attention, { now });
+
+  assert.equal(attention.updateCount, 2);
+  assert.deepEqual(attention.updateDetails, [
+    { label: "CMI Bridge", current: "2.0.0", latest: "2.1.0" },
+    { label: "CMI", current: "1.0.0", latest: "1.1.0" },
+  ]);
+  assert.match(message, /2 tracked update\(s\) are available/);
+  assert.match(message, /CMI Bridge.*`2\.0\.0` → `2\.1\.0`/);
+  assert.match(message, /CMI.*`1\.0\.0` → `1\.1\.0`/);
+});
+
+test("manual alert tests are clearly marked and preserve the live incident state", async () => {
+  const now = Date.parse("2026-08-27T12:00:00.000Z");
+  const snapshot = makeSnapshot(now);
+  const messages = [];
+  const records = [];
+  const monitor = createAttentionMonitor(
+    {
+      discord: { adminAlertChannelId: "private-channel" },
+      versions: { checkIntervalMs: 1 },
+    },
+    { getSnapshot: () => snapshot },
+    {
+      now: () => now,
+      sendMessage: async (message) => messages.push(message),
+      logger: {
+        info(event, fields) {
+          records.push({ event, fields });
+        },
+        warn(event, fields) {
+          records.push({ event, fields });
+        },
+      },
+    },
+  );
+
+  const testResult = await monitor.sendTestAlert();
+  assert.equal(testResult.status, "sent");
+  assert.match(messages[0], /admin alert test/i);
+  assert.match(messages[0], /manual test, not a new incident/i);
+  assert.match(formatAttentionTestMessage(testResult.attention, { now }), /data checks are healthy/i);
+  assert.equal((await monitor.checkNow()).status, "healthy");
+  assert.equal(messages.length, 1);
+  assert.deepEqual(records.map((record) => record.event), ["attention.test_sent"]);
 });
 
 test("attention monitor deduplicates alerts and sends one recovery", async () => {
@@ -98,6 +179,68 @@ test("attention monitor deduplicates alerts and sends one recovery", async () =>
     records.map((record) => record.event),
     ["attention.alert_sent", "attention.recovery_sent"],
   );
+});
+
+test("a different update set sends a fresh alert even when the count is unchanged", async () => {
+  const now = Date.parse("2026-08-27T12:00:00.000Z");
+  const messages = [];
+  const snapshot = makeSnapshot(now);
+  snapshot.checkEnabled = true;
+  snapshot.checkedAt = new Date(now).toISOString();
+  snapshot.paper = { version: "26.2", build: 87 };
+  snapshot.catalog.plugins = [
+    { id: "first", label: "First Plugin", version: "1.0.0", resourceId: 1 },
+  ];
+  snapshot.plugins.set("first", { version: "2.0.0" });
+
+  const monitor = createAttentionMonitor(
+    {
+      discord: { adminAlertChannelId: "private-channel" },
+      versions: { checkIntervalMs: 1 },
+    },
+    { getSnapshot: () => snapshot },
+    {
+      now: () => now,
+      sendMessage: async (message) => messages.push(message),
+      logger: { info() {}, warn() {} },
+    },
+  );
+
+  assert.equal((await monitor.checkNow()).status, "alerted");
+  snapshot.catalog.plugins = [
+    { id: "second", label: "Second Plugin", version: "1.0.0", resourceId: 2 },
+  ];
+  snapshot.plugins = new Map([["second", { version: "2.0.0" }]]);
+  assert.equal((await monitor.checkNow()).status, "alerted");
+  assert.equal(messages.length, 2);
+  assert.match(messages[0], /First Plugin/);
+  assert.match(messages[1], /Second Plugin/);
+});
+
+test("large update sets stay within one Discord message and direct admins to the full list", () => {
+  const now = Date.parse("2026-08-27T12:00:00.000Z");
+  const snapshot = makeSnapshot(now);
+  snapshot.checkEnabled = true;
+  snapshot.checkedAt = new Date(now).toISOString();
+  snapshot.paper = { version: "26.2", build: 87 };
+  snapshot.catalog.plugins = Array.from({ length: 8 }, (_, index) => ({
+    id: `plugin-${index}`,
+    label: `Tracked Plugin ${index}`,
+    version: "1.0.0",
+    resourceId: index + 1,
+  }));
+  snapshot.plugins = new Map(
+    snapshot.catalog.plugins.map((plugin) => [plugin.id, { version: "2.0.0" }]),
+  );
+
+  const attention = evaluateAttention(snapshot, { now });
+  const message = formatAttentionMessage(attention, { now });
+
+  assert.equal(attention.updateCount, 8);
+  assert.equal(attention.updateDetails.length, 6);
+  assert.match(message, /2 additional update\(s\) omitted/);
+  assert.match(message, /\/lookup latest scope:all/);
+  assert.ok(message.length <= 2_000);
 });
 
 test("attention monitor is disabled without a dedicated private channel", async () => {
