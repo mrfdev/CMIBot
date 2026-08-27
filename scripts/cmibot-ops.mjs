@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import { execFile, spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { constants } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -9,6 +11,9 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const label = "com.mrfdev.cmibot";
+const ADMIN_ALERT_CHANNEL_KEY = "DISCORD_ADMIN_ALERT_CHANNEL_ID";
+const MAX_PRIVATE_INPUT_BYTES = 128;
+const MAX_ENV_FILE_BYTES = 1024 * 1024;
 
 function launchdDomain() {
   const uid = process.env.CMIBOT_UID || String(process.getuid());
@@ -213,6 +218,107 @@ async function restartService() {
   console.log("LookupBot restarted.");
 }
 
+async function readPrivateLine() {
+  process.stdin.setEncoding("utf8");
+  let input = "";
+
+  for await (const chunk of process.stdin) {
+    input += chunk;
+    if (Buffer.byteLength(input, "utf8") > MAX_PRIVATE_INPUT_BYTES) {
+      throw new Error("Private configuration input is invalid.");
+    }
+  }
+
+  const value = input.replace(/\r?\n$/, "");
+  if (value.includes("\n") || value.includes("\r")) {
+    throw new Error("Private configuration input is invalid.");
+  }
+  return value;
+}
+
+async function readPrivateEnvironmentFile(environmentPath) {
+  let handle;
+  try {
+    handle = await fs.open(environmentPath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+  } catch {
+    throw new Error("The private environment file is unavailable.");
+  }
+
+  try {
+    const stats = await handle.stat();
+    if (!stats.isFile()) {
+      throw new Error("The private environment file must be a regular file.");
+    }
+    if (typeof process.getuid === "function" && stats.uid !== process.getuid()) {
+      throw new Error("The private environment file must be owned by the service user.");
+    }
+    if (stats.size > MAX_ENV_FILE_BYTES) {
+      throw new Error("The private environment file is unexpectedly large.");
+    }
+    return await handle.readFile("utf8");
+  } finally {
+    await handle.close().catch(() => {});
+  }
+}
+
+function replaceEnvironmentAssignment(contents, key, value) {
+  const newline = contents.includes("\r\n") ? "\r\n" : "\n";
+  const lines = contents.split(/\r?\n/);
+  if (lines.at(-1) === "") {
+    lines.pop();
+  }
+
+  const assignmentPattern = new RegExp(`^\\s*(?:export\\s+)?${key}\\s*=`);
+  const matchingIndexes = lines
+    .map((line, index) => (assignmentPattern.test(line) ? index : -1))
+    .filter((index) => index !== -1);
+  if (matchingIndexes.length > 1) {
+    throw new Error("The private environment file contains a duplicate alert destination setting.");
+  }
+
+  const assignment = `${key}=${value}`;
+  if (matchingIndexes.length === 1) {
+    lines[matchingIndexes[0]] = assignment;
+  } else {
+    lines.push(assignment);
+  }
+  return `${lines.join(newline)}${newline}`;
+}
+
+async function writePrivateEnvironmentFile(environmentPath, contents) {
+  const temporaryPath = `${environmentPath}.tmp-${process.pid}-${randomUUID()}`;
+  let handle;
+  try {
+    handle = await fs.open(
+      temporaryPath,
+      constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0),
+      0o600,
+    );
+    await handle.writeFile(contents, "utf8");
+    await handle.sync();
+    await handle.close();
+    handle = null;
+    await fs.rename(temporaryPath, environmentPath);
+    await fs.chmod(environmentPath, 0o600);
+  } finally {
+    await handle?.close().catch(() => {});
+    await fs.rm(temporaryPath, { force: true }).catch(() => {});
+  }
+}
+
+async function configureAlertChannel() {
+  const value = await readPrivateLine();
+  if (!/^\d{17,20}$/.test(value)) {
+    throw new Error("Private configuration input is invalid.");
+  }
+
+  const environmentPath = path.join(projectRoot(), ".env");
+  const current = await readPrivateEnvironmentFile(environmentPath);
+  const updated = replaceEnvironmentAssignment(current, ADMIN_ALERT_CHANNEL_KEY, value);
+  await writePrivateEnvironmentFile(environmentPath, updated);
+  console.log("LookupBot admin alert destination configured privately.");
+}
+
 function parseLogArguments(args) {
   let follow = false;
   let lines = 100;
@@ -295,12 +401,16 @@ async function main() {
     await stopService();
   } else if (command === "restart") {
     await restartService();
+  } else if (command === "configure-alert-channel") {
+    await configureAlertChannel();
   } else if (command === "logs") {
     await displayLogs(process.argv.slice(3));
   } else if (command === "install") {
     await installServiceDefinition();
   } else {
-    console.error("Usage: cmibot-ops.mjs <install|logs|restart|start|status|stop>");
+    console.error(
+      "Usage: cmibot-ops.mjs <configure-alert-channel|install|logs|restart|start|status|stop>",
+    );
     process.exitCode = 64;
   }
 }

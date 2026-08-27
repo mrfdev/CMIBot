@@ -40,7 +40,7 @@ function validateLogArguments(args) {
 }
 
 function parseOperation(command, args) {
-  if (command === "status" || command === "restart") {
+  if (command === "status" || command === "restart" || command === "configure-alert-channel") {
     assertNoArguments(command, args);
     return { script: "operations", args: [command] };
   }
@@ -62,7 +62,9 @@ function parseOperation(command, args) {
     return { script: "deploy", args };
   }
 
-  throw new UsageError("Usage: remote <deploy [--rollback]|logs [--lines N] [--follow]|restart|status|update>");
+  throw new UsageError(
+    "Usage: remote <configure-alert-channel|deploy [--rollback]|logs [--lines N] [--follow]|restart|status|update>",
+  );
 }
 
 function validateHost(value) {

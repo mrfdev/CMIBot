@@ -17,9 +17,28 @@ const defaultConfiguration = {
 };
 const sshPrefix = ["-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", defaultConfiguration.host];
 
-async function createFixture(temporaryRoot, { configuration = defaultConfiguration, exitCode = 0 } = {}) {
+function execFileWithInput(file, args, options, input) {
+  return new Promise((resolve, reject) => {
+    const child = execFile(file, args, options, (error, stdout, stderr) => {
+      if (error) {
+        error.stdout = stdout;
+        error.stderr = stderr;
+        reject(error);
+        return;
+      }
+      resolve({ stdout, stderr });
+    });
+    child.stdin.end(input);
+  });
+}
+
+async function createFixture(
+  temporaryRoot,
+  { configuration = defaultConfiguration, exitCode = 0, captureStdin = false } = {},
+) {
   const sshPath = path.join(temporaryRoot, "ssh");
   const argumentsPath = path.join(temporaryRoot, "ssh-arguments.txt");
+  const stdinPath = path.join(temporaryRoot, "ssh-stdin.txt");
   const configurationPath = path.join(temporaryRoot, "remote.json");
   await fs.writeFile(configurationPath, `${JSON.stringify(configuration, null, 2)}\n`, { mode: 0o600 });
   await fs.writeFile(
@@ -31,6 +50,7 @@ async function createFixture(temporaryRoot, { configuration = defaultConfigurati
       "for test_argument in \"$@\"; do",
       "  printf '%s\\n' \"$test_argument\" >> \"$CMIBOT_TEST_SSH_ARGUMENTS\"",
       "done",
+      ...(captureStdin ? ["cat > \"$CMIBOT_TEST_SSH_STDIN\""] : []),
       "printf '%s\\n' 'remote output'",
       `exit ${exitCode}`,
       "",
@@ -41,11 +61,13 @@ async function createFixture(temporaryRoot, { configuration = defaultConfigurati
   return {
     argumentsPath,
     configurationPath,
+    stdinPath,
     environment: {
       ...process.env,
       CMIBOT_REMOTE_CONFIG: configurationPath,
       CMIBOT_SSH: sshPath,
       CMIBOT_TEST_SSH_ARGUMENTS: argumentsPath,
+      CMIBOT_TEST_SSH_STDIN: stdinPath,
     },
   };
 }
@@ -73,6 +95,34 @@ test("remote status uses the private configuration without splitting the remote 
       ...sshPrefix,
       "'/runtime/node' '/srv/lookupbot/scripts/cmibot-ops.mjs' 'status'",
     ]);
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("remote configure-alert-channel forwards private input only through stdin", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-remote-"));
+  const testChannelId = "3".repeat(18);
+  try {
+    const fixture = await createFixture(temporaryRoot, { captureStdin: true });
+    const result = await execFileWithInput(
+      remoteScript,
+      ["configure-alert-channel"],
+      {
+        cwd: repositoryRoot,
+        encoding: "utf8",
+        env: fixture.environment,
+      },
+      `${testChannelId}\n`,
+    );
+
+    assert.deepEqual(await readArguments(fixture.argumentsPath), [
+      ...sshPrefix,
+      "'/runtime/node' '/srv/lookupbot/scripts/cmibot-ops.mjs' 'configure-alert-channel'",
+    ]);
+    assert.equal(await fs.readFile(fixture.stdinPath, "utf8"), `${testChannelId}\n`);
+    assert.doesNotMatch(`${result.stdout}${result.stderr}`, new RegExp(testChannelId));
+    assert.doesNotMatch((await fs.readFile(fixture.argumentsPath, "utf8")), new RegExp(testChannelId));
   } finally {
     await fs.rm(temporaryRoot, { recursive: true, force: true });
   }

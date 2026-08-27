@@ -10,6 +10,21 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
+function execFileWithInput(file, args, options, input) {
+  return new Promise((resolve, reject) => {
+    const child = execFile(file, args, options, (error, stdout, stderr) => {
+      if (error) {
+        error.stdout = stdout;
+        error.stderr = stderr;
+        reject(error);
+        return;
+      }
+      resolve({ stdout, stderr });
+    });
+    child.stdin.end(input);
+  });
+}
+
 async function createLaunchctlFixture(
   temporaryRoot,
   { running = false, loaded = running, startDelayChecks = 0, stopDelayChecks = 0 } = {},
@@ -124,12 +139,16 @@ async function createLaunchctlFixture(
   };
 }
 
-async function runOperation(command, environment, args = []) {
-  return execFileAsync(path.join(repositoryRoot, `scripts/${command}`), args, {
+async function runOperation(command, environment, args = [], options = {}) {
+  const executionOptions = {
     cwd: repositoryRoot,
     encoding: "utf8",
     env: environment,
-  });
+  };
+  if (options.input !== undefined) {
+    return execFileWithInput(path.join(repositoryRoot, `scripts/${command}`), args, executionOptions, options.input);
+  }
+  return execFileAsync(path.join(repositoryRoot, `scripts/${command}`), args, executionOptions);
 }
 
 test("status reports the running launchd job and its PID", async () => {
@@ -258,6 +277,101 @@ test("install renders a private local service definition without printing its pa
     assert.doesNotMatch(installed, /__[A-Z0-9_]+__/);
     assert.match(installed, /<string>\/dev\/null<\/string>/);
     assert.equal(mode, 0o600);
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("configure-alert-channel atomically updates and hardens the private environment file", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-operations-"));
+  const testChannelId = "1".repeat(18);
+
+  try {
+    const environmentPath = path.join(temporaryRoot, ".env");
+    await fs.writeFile(
+      environmentPath,
+      `DISCORD_TOKEN=keep-private\nDISCORD_ADMIN_ALERT_CHANNEL_ID=old-value\nOTHER_SETTING=yes\n`,
+      { mode: 0o644 },
+    );
+
+    const result = await runOperation(
+      "cmibot-ops.mjs",
+      { ...process.env, CMIBOT_PROJECT_ROOT: temporaryRoot },
+      ["configure-alert-channel"],
+      { input: `${testChannelId}\n` },
+    );
+    const updated = await fs.readFile(environmentPath, "utf8");
+    const mode = (await fs.stat(environmentPath)).mode & 0o777;
+
+    assert.equal(result.stdout, "LookupBot admin alert destination configured privately.\n");
+    assert.doesNotMatch(`${result.stdout}${result.stderr}`, new RegExp(testChannelId));
+    assert.equal(
+      updated,
+      `DISCORD_TOKEN=keep-private\nDISCORD_ADMIN_ALERT_CHANNEL_ID=${testChannelId}\nOTHER_SETTING=yes\n`,
+    );
+    assert.equal(mode, 0o600);
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("configure-alert-channel rejects invalid input without changing the private environment file", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-operations-"));
+
+  try {
+    const environmentPath = path.join(temporaryRoot, ".env");
+    const original = "DISCORD_TOKEN=keep-private\n";
+    await fs.writeFile(environmentPath, original, { mode: 0o600 });
+
+    await assert.rejects(
+      runOperation(
+        "cmibot-ops.mjs",
+        { ...process.env, CMIBOT_PROJECT_ROOT: temporaryRoot },
+        ["configure-alert-channel"],
+        { input: "not-a-channel\n" },
+      ),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.match(error.stderr, /Private configuration input is invalid/);
+        assert.doesNotMatch(error.stderr, /not-a-channel/);
+        return true;
+      },
+    );
+    assert.equal(await fs.readFile(environmentPath, "utf8"), original);
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("configure-alert-channel rejects duplicate assignments without exposing either value", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-operations-"));
+  const testChannelId = "2".repeat(18);
+
+  try {
+    const environmentPath = path.join(temporaryRoot, ".env");
+    const original = [
+      "DISCORD_ADMIN_ALERT_CHANNEL_ID=first-private-value",
+      "export DISCORD_ADMIN_ALERT_CHANNEL_ID=second-private-value",
+      "",
+    ].join("\n");
+    await fs.writeFile(environmentPath, original, { mode: 0o600 });
+
+    await assert.rejects(
+      runOperation(
+        "cmibot-ops.mjs",
+        { ...process.env, CMIBOT_PROJECT_ROOT: temporaryRoot },
+        ["configure-alert-channel"],
+        { input: `${testChannelId}\n` },
+      ),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.match(error.stderr, /duplicate alert destination setting/);
+        assert.doesNotMatch(error.stderr, /private-value/);
+        assert.doesNotMatch(error.stderr, new RegExp(testChannelId));
+        return true;
+      },
+    );
+    assert.equal(await fs.readFile(environmentPath, "utf8"), original);
   } finally {
     await fs.rm(temporaryRoot, { recursive: true, force: true });
   }
