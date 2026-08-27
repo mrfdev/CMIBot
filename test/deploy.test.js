@@ -6,6 +6,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { hasHealthyServiceLog } from "../scripts/deploy-health.mjs";
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -82,7 +83,7 @@ async function createDeploymentBoundaries(temporaryRoot, sourceRoot) {
       "    if [ -f \"$CMIBOT_TEST_HEALTH_MODE\" ] && [ \"$(cat \"$CMIBOT_TEST_HEALTH_MODE\")\" = \"fail-once\" ]; then",
       "      printf '%s\\n' 'healthy' > \"$CMIBOT_TEST_HEALTH_MODE\"",
       "    else",
-      "      printf '%s\\n' 'LookupBot connected as deployment-test.' >> \"$CMIBOT_TEST_HEALTH_LOG\"",
+      "      printf '%s\\n' '{\"timestamp\":\"2026-08-27T10:00:00.000Z\",\"level\":\"info\",\"event\":\"discord.connected\",\"ready\":true}' >> \"$CMIBOT_TEST_HEALTH_LOG\"",
       "    fi",
       "    exit 0",
       "    ;;",
@@ -116,6 +117,17 @@ async function createDeploymentBoundaries(temporaryRoot, sourceRoot) {
     healthModePath,
   };
 }
+
+test("deployment health accepts structured records and legacy rollback output", () => {
+  assert.equal(
+    hasHealthyServiceLog(
+      '{"timestamp":"2026-08-27T10:00:00.000Z","level":"info","event":"discord.connected","ready":true}\n',
+    ),
+    true,
+  );
+  assert.equal(hasHealthyServiceLog("LookupBot connected as legacy-release.\n"), true);
+  assert.equal(hasHealthyServiceLog('{"event":"discord.connected","ready":false}\n'), false);
+});
 
 test("deploy switches to a verified release while preserving shared environment and logs", async () => {
   const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-deploy-"));

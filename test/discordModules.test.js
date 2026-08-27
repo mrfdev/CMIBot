@@ -15,6 +15,7 @@ import {
   truncateDiscordMessage,
 } from "../src/discord/results.js";
 import { handleSearchInteraction } from "../src/discord/searchInteraction.js";
+import { resolveReloadScope } from "../src/discord/safety.js";
 import { extractEntriesFromText } from "../src/yamlIndex.js";
 
 function makePlugin(id = "cmi", label = "CMI") {
@@ -75,6 +76,7 @@ test("slash command schema keeps aliases, limits, and safe config filters", () =
   assert.ok(subcommands.has("cmd"));
   assert.ok(subcommands.has("permission"));
   assert.ok(subcommands.has("perm"));
+  assert.ok(subcommands.has("health"));
 
   const configOptions = new Map(subcommands.get("config").options.map((option) => [option.name, option]));
   assert.ok(configOptions.has("file"));
@@ -87,6 +89,34 @@ test("slash command schema keeps aliases, limits, and safe config filters", () =
   assert.deepEqual(
     debugContexts.map((choice) => choice.value),
     ["auto", "cmi", "jobs"],
+  );
+
+  const reloadOptions = new Map(subcommands.get("reload").options.map((option) => [option.name, option]));
+  assert.deepEqual(
+    reloadOptions.get("plugin").choices.map((choice) => choice.value),
+    ["current", "cmi", "jobs"],
+  );
+  assert.deepEqual(
+    reloadOptions.get("profile").choices.map((choice) => choice.value),
+    ["material"],
+  );
+});
+
+test("reload scope defaults to all and profile-only selection uses the current context", () => {
+  const config = makeConfig();
+
+  assert.deepEqual(resolveReloadScope(config, "cmi"), {});
+  assert.deepEqual(resolveReloadScope(config, "cmi", "current", ""), {
+    pluginId: "cmi",
+    profileName: "",
+  });
+  assert.deepEqual(resolveReloadScope(config, "jobs", "", "material"), {
+    pluginId: "jobs",
+    profileName: "material",
+  });
+  assert.throws(
+    () => resolveReloadScope(config, "jobs", "jobs", "config"),
+    /does not provide the requested profile/i,
   );
 });
 

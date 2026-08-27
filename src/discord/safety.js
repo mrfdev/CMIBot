@@ -1,4 +1,5 @@
 import { MessageFlags } from "discord.js";
+import { serviceLogger } from "../logger.js";
 import { NO_MENTIONS } from "./constants.js";
 
 const UNEXPECTED_ERROR_MESSAGE =
@@ -8,7 +9,7 @@ function getErrorMessage(error) {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function createSafeInteractionListener(handleInteraction, handleError) {
+export function createSafeInteractionListener(handleInteraction, handleError, logger = serviceLogger) {
   return function handleInteractionSafely(interaction) {
     return Promise.resolve()
       .then(() => handleInteraction(interaction))
@@ -16,13 +17,42 @@ export function createSafeInteractionListener(handleInteraction, handleError) {
         try {
           await handleError(interaction, error);
         } catch (recoveryError) {
-          console.error("[LookupBot] Interaction error recovery also failed.", recoveryError);
+          logger.error("discord.command.recovery_failed", { error: recoveryError });
         }
       });
   };
 }
 
-export async function reloadServicesAtomically(searchCache, versionService) {
+export function resolveReloadScope(config, currentPluginId, pluginOption = "", profileOption = "") {
+  if (!pluginOption && !profileOption) {
+    return {};
+  }
+
+  const pluginId = !pluginOption || pluginOption === "current" ? currentPluginId : pluginOption;
+  const plugin = config.plugins[pluginId];
+  if (!plugin) {
+    throw new Error("The requested plugin reload scope is not configured.");
+  }
+  if (profileOption && !plugin.profiles?.[profileOption]) {
+    throw new Error(`${plugin.label} does not provide the requested profile.`);
+  }
+
+  return {
+    pluginId,
+    profileName: profileOption,
+  };
+}
+
+export async function reloadServicesAtomically(searchCache, versionService, scope = {}) {
+  if (scope.pluginId) {
+    const cacheTransaction = await searchCache.prepareReload(scope);
+    return {
+      summary: cacheTransaction.commit(),
+      versionSnapshot: versionService.getSnapshot(),
+      scope: cacheTransaction.scope,
+    };
+  }
+
   const [cacheResult, versionResult] = await Promise.allSettled([
     searchCache.prepareReload(),
     versionService.prepareReload(),
@@ -48,19 +78,22 @@ export async function reloadServicesAtomically(searchCache, versionService) {
 
   const summary = cacheResult.value.commit();
   const versionSnapshot = versionResult.value.commit();
-  return { summary, versionSnapshot };
+  return { summary, versionSnapshot, scope: cacheResult.value.scope ?? { type: "all" } };
 }
 
-export async function reportUnexpectedInteractionError(interaction, error, logEvent) {
+export async function reportUnexpectedInteractionError(
+  interaction,
+  error,
+  logEvent,
+  { logger = serviceLogger, requestId = "untracked" } = {},
+) {
   const errorMessage = getErrorMessage(error);
   const commandName = interaction.commandName || "unknown-command";
-  const channelId = interaction.channelId || "unknown-channel";
-  const userId = interaction.user?.id || "unknown-user";
-
-  console.error(
-    `[LookupBot] Unexpected interaction error for /${commandName} in channel ${channelId} from user ${userId}.`,
+  logger.error("discord.command.unexpected_error", {
+    requestId,
+    commandName,
     error,
-  );
+  });
 
   try {
     await logEvent(interaction, {
@@ -69,7 +102,11 @@ export async function reportUnexpectedInteractionError(interaction, error, logEv
       reason: errorMessage.slice(0, 1000),
     });
   } catch (auditError) {
-    console.error("[LookupBot] Failed to audit an unexpected interaction error.", auditError);
+    logger.error("discord.command.audit_failed", {
+      requestId,
+      commandName,
+      error: auditError,
+    });
   }
 
   if (typeof interaction.isRepliable === "function" && !interaction.isRepliable()) {
@@ -100,9 +137,10 @@ export async function reportUnexpectedInteractionError(interaction, error, logEv
       allowedMentions: NO_MENTIONS,
     });
   } catch (responseError) {
-    console.error(
-      `[LookupBot] Could not send the fallback response for /${commandName} in channel ${channelId}.`,
-      responseError,
-    );
+    logger.error("discord.command.fallback_failed", {
+      requestId,
+      commandName,
+      error: responseError,
+    });
   }
 }

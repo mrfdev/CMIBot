@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
+import { performance } from "node:perf_hooks";
 import { MessageFlags } from "discord.js";
 import { createLazyAiResolver, isAiEnabled } from "./aiLoader.js";
 import { writeAuditLog } from "./auditLog.js";
-import { formatCacheSummary } from "./cache.js";
 import { registerCommands } from "./discord/commands.js";
 import {
   NO_MENTIONS,
@@ -15,6 +16,7 @@ import {
 } from "./discord/context.js";
 import { formatDebugMessage } from "./discord/debug.js";
 import { formatHelpMessage } from "./discord/help.js";
+import { formatHealthMessage } from "./discord/health.js";
 import {
   formatLangStatsOnlyMessage,
   formatReloadMessage,
@@ -27,33 +29,47 @@ import {
   createSafeInteractionListener,
   reloadServicesAtomically,
   reportUnexpectedInteractionError,
+  resolveReloadScope,
 } from "./discord/safety.js";
 import {
   createCooldownManager,
   createSlidingWindowRateLimiter,
 } from "./security.js";
+import { sanitizeLogText, serviceLogger } from "./logger.js";
 import {
   formatLatestVersionMessages,
   formatPublicLatestVersions,
-  formatVersionServiceSummary,
 } from "./versionCatalog.js";
 
 export { registerCommands } from "./discord/commands.js";
 export { formatHelpMessage } from "./discord/help.js";
 export { splitDiscordMessages } from "./discord/results.js";
-export { createSafeInteractionListener, reloadServicesAtomically } from "./discord/safety.js";
+export {
+  createSafeInteractionListener,
+  reloadServicesAtomically,
+  resolveReloadScope,
+} from "./discord/safety.js";
 
 export function createInteractionHandler(config, searchCache, versionService, dependencies = {}) {
+  const logger = dependencies.logger ?? serviceLogger;
+  const createRequestId = dependencies.createRequestId ?? randomUUID;
+  const monotonicNow = dependencies.monotonicNow ?? (() => performance.now());
   const aiEnabled = isAiEnabled(config.openai);
   const resolveAiReranker = createLazyAiResolver(config.openai, {
     loadAiModule: dependencies.loadAiModule,
+    logger,
   });
   const cooldowns = createCooldownManager();
   const rateLimiter = createSlidingWindowRateLimiter();
   const testOverrides = new Map();
+  const requestMetadata = new WeakMap();
   let reloadInProgress = false;
 
   function logEvent(interaction, payload) {
+    const request = requestMetadata.get(interaction);
+    if (request && payload.outcome) {
+      request.outcome = payload.outcome;
+    }
     return writeAuditLog(
       config.workspaceRoot,
       config.security.auditLogPath,
@@ -64,7 +80,10 @@ export function createInteractionHandler(config, searchCache, versionService, de
         userId: interaction.user.id,
         userTag: interaction.user.tag,
         commandName: interaction.commandName,
+        requestId: request?.requestId ?? "untracked",
+        elapsedMs: request ? Math.max(0, Math.round(monotonicNow() - request.startedAt)) : 0,
         ...payload,
+        ...(payload.reason ? { reason: sanitizeLogText(payload.reason) } : {}),
       },
       {
         maxBytes: config.security.auditLogMaxBytes,
@@ -202,6 +221,44 @@ export function createInteractionHandler(config, searchCache, versionService, de
       return;
     }
 
+    if (canonicalSubcommand === "health") {
+      if (!hasRole(interaction.member, { roleIds: config.discord.adminRoleIds })) {
+        await logEvent(interaction, {
+          subcommand,
+          outcome: "denied",
+          reason: "health-role",
+          detectedContext: context.pluginId || "unknown",
+        });
+        await interaction.reply({
+          content: "Only the configured admin role can use the health command.",
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+        return;
+      }
+
+      await logEvent(interaction, {
+        subcommand,
+        outcome: "success",
+        detectedContext: context.pluginId || "unknown",
+      });
+      await interaction.reply({
+        content: truncateDiscordMessage(
+          formatHealthMessage({
+            config,
+            searchCache,
+            versionService,
+            client: dependencies.client ?? interaction.client,
+            runtimeInfo: dependencies.runtimeInfo,
+            startupState: dependencies.startupState,
+          }),
+        ),
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
     if (canonicalSubcommand === "help") {
       await logEvent(interaction, {
         subcommand,
@@ -249,7 +306,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
           detectedContext: context.pluginId,
         });
         await interaction.reply({
-          content: "A global cache reload is already in progress. Please wait for it to finish.",
+          content: "A cache reload is already in progress. Please wait for it to finish.",
           flags: MessageFlags.Ephemeral,
           allowedMentions: NO_MENTIONS,
         });
@@ -269,7 +326,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
           detectedContext: context.pluginId,
         });
         await interaction.reply({
-          content: `The global cache was reloaded recently. Try again in ${reloadCooldown.retryAfterSeconds}s.`,
+          content: `The cache was reloaded recently. Try again in ${reloadCooldown.retryAfterSeconds}s.`,
           flags: MessageFlags.Ephemeral,
           allowedMentions: NO_MENTIONS,
         });
@@ -278,37 +335,85 @@ export function createInteractionHandler(config, searchCache, versionService, de
 
       reloadInProgress = true;
       try {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
-        let reloadResult;
+        let reloadScope;
         try {
-          reloadResult = await reloadServicesAtomically(searchCache, versionService);
+          reloadScope = resolveReloadScope(
+            config,
+            context.pluginId,
+            interaction.options.getString?.("plugin") ?? "",
+            interaction.options.getString?.("profile") ?? "",
+          );
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Unknown error";
+          const message = error instanceof Error ? error.message : "The requested reload scope is invalid.";
           await logEvent(interaction, {
             subcommand,
-            outcome: "error",
-            reason: message,
+            outcome: "rejected",
+            reason: "invalid-reload-scope",
+            detectedContext: context.pluginId,
           });
-          await interaction.editReply({
-            content: `The bot failed to prepare a complete reload, so the existing cache and version snapshots remain active: ${message}`,
+          await interaction.reply({
+            content: message,
+            flags: MessageFlags.Ephemeral,
             allowedMentions: NO_MENTIONS,
           });
           return;
         }
 
-        const { summary, versionSnapshot } = reloadResult;
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+        let reloadResult;
+        try {
+          reloadResult = await reloadServicesAtomically(searchCache, versionService, reloadScope);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Unknown error";
+          const requestId = requestMetadata.get(interaction)?.requestId ?? "untracked";
+          await logEvent(interaction, {
+            subcommand,
+            outcome: "error",
+            reason: message,
+          });
+          logger.error("cache.reload.failed", {
+            requestId,
+            scope: reloadScope.pluginId ? (reloadScope.profileName ? "profile" : "plugin") : "all",
+            pluginId: reloadScope.pluginId ?? "all",
+            profileName: reloadScope.profileName || "all",
+            error,
+          });
+          await interaction.editReply({
+            content: `The reload failed safely, so the existing cache and version snapshots remain active. Request ID: \`${requestId}\`.`,
+            allowedMentions: NO_MENTIONS,
+          });
+          return;
+        }
+
+        const { summary, versionSnapshot, scope } = reloadResult;
         await logEvent(interaction, {
           subcommand,
           outcome: "success",
+          reloadScope: scope.type,
+          pluginId: scope.pluginId ?? "all",
+          profileName: scope.profileName || "all",
           totalEntries: summary.totalEntries,
           totalFiles: summary.totalFiles,
         });
-        console.log(
-          `[LookupBot] Cache reloaded by ${interaction.user.tag} in channel ${interaction.channelId}.\n${formatCacheSummary(summary, { verb: "Reloaded" })}\n${formatVersionServiceSummary(versionSnapshot)}`,
-        );
+        logger.info("cache.reload.completed", {
+          requestId: requestMetadata.get(interaction)?.requestId,
+          scope: scope.type,
+          pluginId: scope.pluginId ?? "all",
+          profileName: scope.profileName || "all",
+          totalEntries: summary.totalEntries,
+          totalFiles: summary.totalFiles,
+          versionChecksRefreshed: scope.type === "all",
+          versionCheckErrors: versionSnapshot.errorCount ?? 0,
+        });
+        const scopeMessage =
+          scope.type === "all"
+            ? "Version catalog and upstream checks refreshed."
+            : scope.type === "profile"
+              ? `Only the ${config.plugins[scope.pluginId].label} ${scope.profileName} profile was refreshed; version data was left unchanged.`
+              : `Only the ${config.plugins[scope.pluginId].label} context was refreshed; version data was left unchanged.`;
         const reloadMessages = splitDiscordMessages(
-          `${formatReloadMessage(summary)}\nVersion catalog and upstream checks refreshed.`,
+          `${formatReloadMessage(summary)}\n${scopeMessage}`,
         );
         await interaction.editReply({
           content: reloadMessages[0],
@@ -567,7 +672,59 @@ export function createInteractionHandler(config, searchCache, versionService, de
     });
   }
 
-  return createSafeInteractionListener(handleInteraction, (interaction, error) =>
-    reportUnexpectedInteractionError(interaction, error, logEvent),
+  function getSubcommandSafely(interaction) {
+    try {
+      return interaction.options?.getSubcommand?.(false) || "unknown";
+    } catch {
+      return "unknown";
+    }
+  }
+
+  async function handleInteractionWithTelemetry(interaction) {
+    if (!interaction.isChatInputCommand() || !SUPPORTED_COMMAND_NAMES.has(interaction.commandName)) {
+      return;
+    }
+
+    const metadata = {
+      requestId: createRequestId(),
+      startedAt: monotonicNow(),
+      subcommand: getSubcommandSafely(interaction),
+      outcome: "completed",
+    };
+    requestMetadata.set(interaction, metadata);
+    logger.info("discord.command.started", {
+      requestId: metadata.requestId,
+      commandName: interaction.commandName,
+      subcommand: metadata.subcommand,
+    });
+
+    try {
+      if (typeof logger.withContext === "function") {
+        await logger.withContext({ requestId: metadata.requestId }, () => handleInteraction(interaction));
+      } else {
+        await handleInteraction(interaction);
+      }
+    } catch (error) {
+      metadata.outcome = "unexpected-error";
+      throw error;
+    } finally {
+      logger.info("discord.command.completed", {
+        requestId: metadata.requestId,
+        commandName: interaction.commandName,
+        subcommand: metadata.subcommand,
+        outcome: metadata.outcome,
+        durationMs: Math.max(0, Math.round(monotonicNow() - metadata.startedAt)),
+      });
+    }
+  }
+
+  return createSafeInteractionListener(
+    handleInteractionWithTelemetry,
+    (interaction, error) =>
+      reportUnexpectedInteractionError(interaction, error, logEvent, {
+        logger,
+        requestId: requestMetadata.get(interaction)?.requestId,
+      }),
+    logger,
   );
 }

@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { serviceLogger } from "./logger.js";
 
 const DEFAULT_MAX_BYTES = 10 * 1024 * 1024;
 const DEFAULT_MAX_FILES = 5;
@@ -84,8 +85,7 @@ export async function writeAuditLog(workspaceRoot, relativePath, payload, option
       await fs.mkdir(path.dirname(absolutePath), { recursive: true });
       await fs.appendFile(absolutePath, line, "utf8");
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.warn(`[LookupBot] Failed to write audit log: ${message}`);
+      serviceLogger.warn("audit.write_failed", { error });
     }
   });
 }

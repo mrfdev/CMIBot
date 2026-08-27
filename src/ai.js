@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { serviceLogger } from "./logger.js";
 
 function extractFirstJsonObject(value) {
   const start = value.indexOf("{");
@@ -80,8 +81,7 @@ export class AiReranker {
 
       return [...ranked, ...itemById.values()];
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.warn(`[LookupBot] OpenAI rerank failed: ${message}`);
+      serviceLogger.warn("ai.rerank_failed", { error });
       return candidateItems;
     }
   }
@@ -125,8 +125,7 @@ export class AiReranker {
       const summary = response.output_text?.trim() || "";
       return summary || null;
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.warn(`[LookupBot] OpenAI summary failed: ${message}`);
+      serviceLogger.warn("ai.summary_failed", { error });
       return null;
     }
   }

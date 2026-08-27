@@ -64,6 +64,16 @@ export function buildCommandTree(commandName, config) {
       value: plugin.id,
     })),
   ];
+  const reloadPluginChoices = [
+    { name: "current context", value: "current" },
+    ...Object.values(config.plugins).map((plugin) => ({
+      name: plugin.label.toLowerCase(),
+      value: plugin.id,
+    })),
+  ];
+  const reloadProfileChoices = [
+    ...new Set(Object.values(config.plugins).flatMap((plugin) => Object.keys(plugin.profiles))),
+  ].map((profileName) => ({ name: profileName, value: profileName }));
 
   return new SlashCommandBuilder()
     .setName(commandName)
@@ -173,6 +183,9 @@ export function buildCommandTree(commandName, config) {
         ),
     )
     .addSubcommand((subcommand) =>
+      subcommand.setName("health").setDescription("Show private service health and data freshness diagnostics."),
+    )
+    .addSubcommand((subcommand) =>
       subcommand
         .setName("debug")
         .setDescription("Show the current channel context and optionally override it in test channels.")
@@ -184,7 +197,21 @@ export function buildCommandTree(commandName, config) {
         ),
     )
     .addSubcommand((subcommand) =>
-      subcommand.setName("reload").setDescription("Reload the in-memory search cache for every plugin context."),
+      subcommand
+        .setName("reload")
+        .setDescription("Reload all data, one plugin context, or one profile.")
+        .addStringOption((option) =>
+          option
+            .setName("plugin")
+            .setDescription("Optional plugin scope. Omit both options to reload everything.")
+            .addChoices(...reloadPluginChoices),
+        )
+        .addStringOption((option) =>
+          option
+            .setName("profile")
+            .setDescription("Optional profile scope. Uses the current context when plugin is omitted.")
+            .addChoices(...reloadProfileChoices),
+        ),
     )
     .toJSON();
 }

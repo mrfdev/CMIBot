@@ -12,13 +12,14 @@ The repository is still named `CMIBot`, but `/lookup` is the only registered sla
 - English locale searches with shared CMILib data
 - Curated command, permission, placeholder, FAQ, material, and tab-complete indexes where available
 - Automatic runtime extraction of commands, permissions, and placeholders from initialized plugin jars
-- In-memory caches with global admin-only reloads
+- In-memory caches with transactional full, plugin, and profile reloads
 - Clean first-install plugin data generated from a disposable Paper server
 - Local version inventory plus scheduled Paper and Spigot resource checks
 - Paper 26.2 stable/API drift checks plus Java 25 and Java 26 smoke commands
 - One canonical CMILib cache composed into every supporting plugin context
-- Layered user/channel/global rate limits, input validation, disabled mentions, role-ID access checks, and JSONL audit logs
-- Context-aware help, stats, language stats, latest versions, and debug output
+- Fail-closed startup validation for configuration, routes, indexes, cache summaries, and version-catalog drift
+- Layered user/channel/global rate limits, input validation, disabled mentions, role-ID access checks, JSONL audit logs, and privacy-aware structured service logs
+- Context-aware help, stats, language stats, latest versions, health, and debug output
 
 ## Plugin Contexts
 
@@ -33,7 +34,7 @@ The repository is still named `CMIBot`, but `/lookup` is the only registered sla
 | TradeMe | config, language, generated placeholder, generated command, generated permission |
 | BottledExp | config, language, generated command, generated permission |
 
-All contexts also support `help`, `stats`, `langstats`, and `latest`. The global `debug` and `reload` commands are admin-only. Unsupported search features are hidden from the context-specific available list and are reported clearly if called directly.
+All contexts also support `help`, `stats`, `langstats`, and `latest`. The global `health`, `debug`, and `reload` commands are admin-only. Unsupported search features are hidden from the context-specific available list and are reported clearly if called directly.
 
 CMILib config and English locale files are shared with every plugin context.
 
@@ -57,8 +58,11 @@ CMILib config and English locale files are shared with every plugin context.
 /lookup latest
 /lookup latest public:true
 /lookup latest scope:all
+/lookup health                # admin only
 /lookup debug                 # admin only
-/lookup reload
+/lookup reload                # full reload by default, admin only
+/lookup reload plugin:current
+/lookup reload plugin:cmi profile:config
 ```
 
 `language|lang`, `command|cmd`, and `permission|perm` are equivalent long and short forms.
@@ -275,7 +279,7 @@ The scripts prefer the JDK home paths from the compatibility manifest. If a patc
 
 ## Cache Behavior
 
-All indexed YAML plus curated and jar-generated log data is loaded into RAM during startup. `/lookup reload` globally rebuilds every plugin cache, reloads the version catalog, and refreshes upstream version checks.
+All indexed YAML plus curated and jar-generated log data is loaded into RAM during startup. `/lookup reload` without options globally rebuilds every plugin cache, reloads the version catalog, and refreshes upstream version checks. `plugin:` narrows the cache reload to one context, and `profile:` narrows it to one profile. A profile without `plugin:` uses the current channel context. Selective reloads intentionally leave version data and unrelated cache snapshots unchanged.
 
 CMILib is cached once through the `CMILIB_*_INCLUDE_GLOBS` profiles. Plugin contexts retain only their own entries, then compose the matching shared CMILib config, language, and placeholder entries into searches at read time. This preserves the same `/lookup` results and per-context stats without retaining another copy of every CMILib entry for every Zrips plugin.
 
@@ -283,17 +287,25 @@ The startup, reload, and debug global totals describe entries actually retained 
 
 Reload is transactional. The next search cache and version snapshot are prepared separately from live state while lookups continue using the previous snapshots. Both are committed together only after every profile and the version catalog finish successfully; otherwise the prepared data is discarded and the complete previous state remains active.
 
+Startup is also fail closed. Duplicate channel routes, path traversal in configured globs or state paths, unsupported loaders or version sources, missing required index data, malformed or duplicate index entries, incomplete cache summaries, and mismatched version-catalog contexts stop the process before Discord login. Known optional data sources must be marked explicitly rather than becoming silently empty.
+
 Use reload after adding, replacing, renaming, or removing indexed files:
 
 ```text
 /lookup reload
+/lookup reload plugin:current
+/lookup reload profile:language
 ```
 
 The command is restricted to `ADMIN_ROLE_IDS`. Regular searches continue to use the old in-memory snapshot until reload or restart completes.
 
 Reload reports are private. If the global per-plugin breakdown exceeds one Discord message, the bot continues it in additional ephemeral follow-ups instead of trimming contexts from the end.
 
-`/lookup stats` reports only the current plugin context. Startup and `/lookup reload` report every context, followed by a separate `Shared CMILib data` section.
+`/lookup stats` reports only the current plugin context. Startup and a full `/lookup reload` report every context, followed by a separate `Shared CMILib data` section. Selective reloads report only the requested plugin or profile.
+
+## Health Output
+
+`/lookup health` is admin-only and ephemeral. It reports the release, uptime, Discord readiness, cache readiness and freshness, clean-data generation time, upstream version-check state, and startup-validation state. It intentionally omits channel and role IDs, routes, hostnames, usernames, and filesystem paths.
 
 ## Debug Output
 
@@ -313,7 +325,7 @@ Reload reports are private. If the global per-plugin breakdown exceeds one Disco
 ## Security
 
 - Access is matched by immutable Discord role IDs, never role names.
-- Debug, reload, and test-context changes are admin-only.
+- Health, debug, reload, and test-context changes are admin-only.
 - When enabled, AI features use their own role-ID list and hard enable switch; disabled installations do not require AI credentials or roles.
 - Queries have configurable length, filler-word, and character validation.
 - Short valid terms such as `rt`, `rtp`, `tp`, and placeholders can be allowlisted.
@@ -326,6 +338,7 @@ Reload reports are private. If the global per-plugin breakdown exceeds one Disco
 - Rate-limit state is memory-bounded and expired buckets are pruned automatically.
 - Repeated rate-limit audit events are coalesced to prevent JSONL log flooding.
 - Usage is written as JSON lines to `logs/cmibot-usage.jsonl`. Before the active log would exceed `AUDIT_LOG_MAX_SIZE_MB`, it rotates to numbered archives and retains at most `AUDIT_LOG_MAX_FILES` archives.
+- Service output is one JSON object per line. Discord commands receive random request IDs, completion records include elapsed milliseconds, and service error serialization omits stacks, sensitive fields, absolute paths, common credential forms, and Discord snowflakes.
 - Every interaction runs behind a top-level rejection boundary. Unexpected command and fallback-response errors are logged without terminating the bot.
 - Discord client and shard errors have explicit listeners so an emitted runtime error cannot become an unhandled `error` event.
 
@@ -412,7 +425,7 @@ Deploy the currently committed, clean Git revision with:
 ./scripts/deploy
 ```
 
-Deployment data is generated under ignored `.deploy/`. The deployer acquires an exclusive lock, exports only the committed Git revision to a new release, links the host-specific `.env` and persistent `logs/` directory instead of copying them, runs `npm ci` and `npm run check:bot`, and only then atomically switches `.deploy/current`. After launchd restarts the bot, deployment succeeds only when the job is running and a fresh `LookupBot connected as ...` line appears in the service log. A failed health check automatically restores, restarts, and verifies the preceding release.
+Deployment data is generated under ignored `.deploy/`. The deployer acquires an exclusive lock, exports only the committed Git revision to a new release, links the host-specific `.env` and persistent `logs/` directory instead of copying them, runs `npm ci` and `npm run check:bot`, and only then atomically switches `.deploy/current`. After launchd restarts the bot, deployment succeeds only when the job is running and a fresh structured `discord.connected` health record appears in the service log. Legacy connection lines remain accepted so rollback can verify an older release. A failed health check automatically restores, restarts, and verifies the preceding release.
 
 The last two verified releases can be swapped explicitly with:
 

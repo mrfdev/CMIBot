@@ -1,5 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { serviceLogger } from "./logger.js";
+import { validateVersionCatalog } from "./startupValidation.js";
 
 const SPIGET_API_ROOT = "https://api.spiget.org/v2";
 const PAPER_API_ROOT = "https://fill.papermc.io/v3/projects/paper";
@@ -327,7 +329,8 @@ export function formatVersionServiceSummary(snapshot) {
   return `Loaded clean-server versions for ${inventory}; ${checkedCount} upstream version checks succeeded${snapshot.errorCount ? ` and ${snapshot.errorCount} failed` : ""}${retainedCount ? `; ${retainedCount} last-known result${retainedCount === 1 ? "" : "s"} retained` : ""}.`;
 }
 
-export function createVersionService(config) {
+export function createVersionService(config, dependencies = {}) {
+  const logger = dependencies.logger ?? serviceLogger;
   let activeState = {
     catalog: null,
     paper: null,
@@ -476,8 +479,7 @@ export function createVersionService(config) {
       return state;
     } catch (error) {
       if (error.code !== "ENOENT") {
-        const message = error instanceof Error ? error.message : String(error);
-        console.warn(`[LookupBot] Ignoring invalid persisted upstream version state: ${message}`);
+        logger.warn("versions.persisted_state_ignored", { error });
       }
       return createEmptyState(catalog);
     }
@@ -502,8 +504,7 @@ export function createVersionService(config) {
         }
       })
       .catch((error) => {
-        const message = error instanceof Error ? error.message : String(error);
-        console.warn(`[LookupBot] Failed to persist upstream version state: ${message}`);
+        logger.warn("versions.persist_failed", { error });
       });
     return persistenceQueue;
   }
@@ -523,13 +524,14 @@ export function createVersionService(config) {
 
   async function readLocalCatalog() {
     const parsed = JSON.parse(await fs.readFile(catalogPath, "utf8"));
-    if (parsed.schemaVersion !== 1 || !parsed.paper || !Array.isArray(parsed.plugins)) {
-      throw new Error(`Unsupported version catalog format in ${catalogPath}`);
-    }
-    return {
+    const catalog = {
       ...parsed,
-      companions: Array.isArray(parsed.companions) ? parsed.companions : [],
+      companions: parsed.companions ?? [],
     };
+    return validateVersionCatalog(catalog, config, {
+      requireGeneratedAt: false,
+      requireConfiguredContexts: Boolean(config.plugins),
+    });
   }
 
   async function checkPaper() {
@@ -765,10 +767,14 @@ export function createVersionService(config) {
       timer = setInterval(() => {
         void refreshUpstream()
           .then((refreshedSnapshot) => {
-            console.log(`[LookupBot] ${formatVersionServiceSummary(refreshedSnapshot)}`);
+            logger.info("versions.scheduled_refresh_completed", {
+              checkedAt: refreshedSnapshot.checkedAt,
+              errorCount: refreshedSnapshot.errorCount,
+              retainedCount: refreshedSnapshot.retainedCount,
+            });
           })
           .catch((error) => {
-            console.error(`[LookupBot] Scheduled version check failed: ${error.message}`);
+            logger.error("versions.scheduled_refresh_failed", { error });
           });
       }, config.versions.checkIntervalMs);
       timer.unref();

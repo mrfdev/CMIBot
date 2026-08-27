@@ -9,6 +9,19 @@ import {
   reloadServicesAtomically,
 } from "../src/discordBot.js";
 
+const SILENT_LOGGER = {
+  info() {},
+  warn() {},
+  error() {},
+};
+
+function createTestInteractionHandler(config, searchCache, versionService, dependencies = {}) {
+  return createInteractionHandler(config, searchCache, versionService, {
+    logger: SILENT_LOGGER,
+    ...dependencies,
+  });
+}
+
 function makeConfig(workspaceRoot) {
   return {
     workspaceRoot,
@@ -83,7 +96,7 @@ test("an unexpected reply failure is audited and contained", async (t) => {
   const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-interaction-"));
 
   try {
-    const handler = createInteractionHandler(makeConfig(workspaceRoot), {}, {});
+    const handler = createTestInteractionHandler(makeConfig(workspaceRoot), {}, {});
     const fixture = makeRejectedInteraction();
 
     await assert.doesNotReject(() => handler(fixture.interaction));
@@ -107,7 +120,7 @@ test("a rejected fallback response cannot escape the interaction boundary", asyn
   const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-interaction-"));
 
   try {
-    const handler = createInteractionHandler(makeConfig(workspaceRoot), {}, {});
+    const handler = createTestInteractionHandler(makeConfig(workspaceRoot), {}, {});
     const fixture = makeRejectedInteraction({ rejectFallback: true });
 
     await assert.doesNotReject(() => handler(fixture.interaction));
@@ -136,7 +149,7 @@ test("debug output is denied without an admin role", async () => {
   const replies = [];
 
   try {
-    const handler = createInteractionHandler(makeConfig(workspaceRoot), {}, {});
+    const handler = createTestInteractionHandler(makeConfig(workspaceRoot), {}, {});
     const interaction = {
       isChatInputCommand: () => true,
       isRepliable: () => true,
@@ -176,11 +189,110 @@ test("debug output is denied without an admin role", async () => {
   }
 });
 
+test("health output is denied without an admin role", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-health-role-"));
+  const replies = [];
+
+  try {
+    const handler = createTestInteractionHandler(makeConfig(workspaceRoot), {}, {});
+    const interaction = {
+      isChatInputCommand: () => true,
+      isRepliable: () => true,
+      commandName: "lookup",
+      guildId: "expected-guild",
+      channelId: "channel-1",
+      user: { id: "user-1", tag: "tester" },
+      member: { roles: { cache: [] } },
+      options: { getSubcommand: () => "health" },
+      replied: false,
+      deferred: false,
+      async reply(payload) {
+        this.replied = true;
+        replies.push(payload);
+      },
+    };
+
+    await handler(interaction);
+
+    assert.equal(replies.length, 1);
+    assert.match(replies[0].content, /Only the configured admin role/i);
+    const auditText = await fs.readFile(path.join(workspaceRoot, "logs/test-interactions.jsonl"), "utf8");
+    const auditEntry = JSON.parse(auditText.trim());
+    assert.equal(auditEntry.reason, "health-role");
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("authorized health output is private and uses live service state", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-health-admin-"));
+  const replies = [];
+  const config = makeConfig(workspaceRoot);
+
+  try {
+    const handler = createTestInteractionHandler(
+      config,
+      {
+        getGlobalSummary() {
+          return {
+            totalEntries: 12,
+            totalFiles: 3,
+            pluginSummaries: [{ pluginId: "cmi" }],
+            lastReloadedAt: new Date(),
+          };
+        },
+      },
+      {
+        getSnapshot() {
+          return {
+            catalog: { generatedAt: new Date().toISOString(), plugins: [{ id: "cmi" }] },
+            checkEnabled: false,
+            checkedAt: null,
+            errorCount: 0,
+            retainedCount: 0,
+          };
+        },
+      },
+      {
+        client: { isReady: () => true, ws: { ping: 10 } },
+        runtimeInfo: { release: "1.0.0 (abcdef123456)", startedAt: new Date(Date.now() - 1_000) },
+        startupState: { ready: true },
+      },
+    );
+    const interaction = {
+      isChatInputCommand: () => true,
+      isRepliable: () => true,
+      commandName: "lookup",
+      guildId: "expected-guild",
+      channelId: "channel-1",
+      user: { id: "admin-1", tag: "admin" },
+      member: { roles: { cache: [{ id: "admin-role" }] } },
+      options: { getSubcommand: () => "health" },
+      replied: false,
+      deferred: false,
+      async reply(payload) {
+        this.replied = true;
+        replies.push(payload);
+      },
+    };
+
+    await handler(interaction);
+
+    assert.equal(replies.length, 1);
+    assert.match(replies[0].content, /Lookup Health/);
+    assert.match(replies[0].content, /Search cache: `ready, 12 entries from 3 files`/);
+    assert.ok(replies[0].flags);
+    assert.doesNotMatch(replies[0].content, /channel-1|admin-1/);
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
 test("the per-user window follows a user across different subcommands", async () => {
   const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-user-window-"));
   const config = makeConfig(workspaceRoot);
   config.security.commandUserRateLimit = 1;
-  const handler = createInteractionHandler(config, {}, {});
+  const handler = createTestInteractionHandler(config, {}, {});
 
   function makeInteraction(subcommand) {
     const replies = [];
@@ -251,7 +363,7 @@ test("authorized commands share a channel-wide request window", async () => {
       };
     },
   };
-  const handler = createInteractionHandler(config, searchCache, {});
+  const handler = createTestInteractionHandler(config, searchCache, {});
 
   function makeStatsInteraction(userId) {
     const responses = [];
@@ -306,6 +418,80 @@ test("authorized commands share a channel-wide request window", async () => {
   }
 });
 
+test("commands emit a request ID and completion timing", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-request-logging-"));
+  const records = [];
+  let tick = 100;
+  const logger = {
+    info(event, fields) {
+      records.push({ level: "info", event, ...fields });
+    },
+    warn(event, fields) {
+      records.push({ level: "warn", event, ...fields });
+    },
+    error(event, fields) {
+      records.push({ level: "error", event, ...fields });
+    },
+  };
+
+  try {
+    const handler = createTestInteractionHandler(
+      makeConfig(workspaceRoot),
+      {
+        getPluginSummary() {
+          return {
+            pluginId: "cmi",
+            pluginLabel: "CMI",
+            totalEntries: 1,
+            totalFiles: 1,
+            profileSummaries: [],
+          };
+        },
+      },
+      {},
+      {
+        logger,
+        createRequestId: () => "request-fixed",
+        monotonicNow: () => ++tick,
+      },
+    );
+    const interaction = {
+      isChatInputCommand: () => true,
+      isRepliable: () => true,
+      commandName: "lookup",
+      guildId: "expected-guild",
+      channelId: "channel-1",
+      user: { id: "support-1", tag: "support" },
+      member: { roles: { cache: [{ id: "support-role" }] } },
+      options: { getSubcommand: () => "stats" },
+      replied: false,
+      deferred: false,
+      async deferReply() {
+        this.deferred = true;
+      },
+      async editReply() {
+        this.replied = true;
+      },
+    };
+
+    await handler(interaction);
+
+    const started = records.find((record) => record.event === "discord.command.started");
+    const completed = records.find((record) => record.event === "discord.command.completed");
+    assert.equal(started.requestId, "request-fixed");
+    assert.equal(completed.requestId, "request-fixed");
+    assert.equal(completed.outcome, "success");
+    assert.ok(completed.durationMs > 0);
+
+    const auditText = await fs.readFile(path.join(workspaceRoot, "logs/test-interactions.jsonl"), "utf8");
+    const auditEntry = JSON.parse(auditText.trim());
+    assert.equal(auditEntry.requestId, "request-fixed");
+    assert.ok(auditEntry.elapsedMs > 0);
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
 test("only one global reload can prepare data at a time", async () => {
   const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-reload-guard-"));
   const config = makeConfig(workspaceRoot);
@@ -336,7 +522,7 @@ test("only one global reload can prepare data at a time", async () => {
       };
     },
   };
-  const handler = createInteractionHandler(config, searchCache, versionService);
+  const handler = createTestInteractionHandler(config, searchCache, versionService);
 
   function makeReloadInteraction(userId) {
     const responses = [];
@@ -399,6 +585,88 @@ test("only one global reload can prepare data at a time", async () => {
   }
 });
 
+test("an admin can reload one profile without refreshing version data", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-selective-reload-"));
+  const config = makeConfig(workspaceRoot);
+  config.plugins.cmi.profiles = { config: {} };
+  const responses = [];
+  let receivedScope;
+  let versionPreparations = 0;
+  const searchCache = {
+    async prepareReload(scope) {
+      receivedScope = scope;
+      return {
+        scope: { type: "profile", ...scope },
+        commit() {
+          return {
+            totalEntries: 2,
+            totalFiles: 1,
+            pluginSummaries: [
+              {
+                pluginId: "cmi",
+                pluginLabel: "CMI",
+                totalEntries: 2,
+                totalFiles: 1,
+                profileSummaries: [
+                  { profileName: "config", entryCount: 2, fileCount: 1 },
+                ],
+              },
+            ],
+          };
+        },
+      };
+    },
+  };
+  const versionService = {
+    prepareReload() {
+      versionPreparations += 1;
+      throw new Error("version reload should not run");
+    },
+    getSnapshot() {
+      return { errorCount: 0 };
+    },
+  };
+
+  try {
+    const handler = createTestInteractionHandler(config, searchCache, versionService);
+    const interaction = {
+      isChatInputCommand: () => true,
+      isRepliable: () => true,
+      commandName: "lookup",
+      guildId: "expected-guild",
+      channelId: "channel-1",
+      user: { id: "admin-1", tag: "admin" },
+      member: { roles: { cache: [{ id: "admin-role" }] } },
+      options: {
+        getSubcommand: () => "reload",
+        getString(name) {
+          return name === "profile" ? "config" : null;
+        },
+      },
+      replied: false,
+      deferred: false,
+      async deferReply() {
+        this.deferred = true;
+      },
+      async editReply(payload) {
+        this.replied = true;
+        responses.push(payload);
+      },
+      async followUp(payload) {
+        responses.push(payload);
+      },
+    };
+
+    await handler(interaction);
+
+    assert.deepEqual(receivedScope, { pluginId: "cmi", profileName: "config" });
+    assert.equal(versionPreparations, 0);
+    assert.match(responses[0].content, /Only the CMI config profile was refreshed/i);
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
 test("cross-service reload discards prepared data when either side fails", async () => {
   let cacheCommits = 0;
   let cacheDiscards = 0;
@@ -427,4 +695,41 @@ test("cross-service reload discards prepared data when either side fails", async
   );
   assert.equal(cacheCommits, 0);
   assert.equal(cacheDiscards, 1);
+});
+
+test("a selective reload leaves the version service untouched", async () => {
+  let receivedScope;
+  let versionPreparations = 0;
+  const searchCache = {
+    async prepareReload(scope) {
+      receivedScope = scope;
+      return {
+        scope: { type: "profile", ...scope },
+        commit() {
+          return { totalEntries: 1, totalFiles: 1 };
+        },
+        discard() {},
+      };
+    },
+  };
+  const versionSnapshot = { catalog: { generatedAt: "unchanged" } };
+  const versionService = {
+    async prepareReload() {
+      versionPreparations += 1;
+      throw new Error("should not run");
+    },
+    getSnapshot() {
+      return versionSnapshot;
+    },
+  };
+
+  const result = await reloadServicesAtomically(searchCache, versionService, {
+    pluginId: "cmi",
+    profileName: "config",
+  });
+
+  assert.deepEqual(receivedScope, { pluginId: "cmi", profileName: "config" });
+  assert.equal(versionPreparations, 0);
+  assert.strictEqual(result.versionSnapshot, versionSnapshot);
+  assert.equal(result.scope.type, "profile");
 });

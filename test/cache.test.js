@@ -32,6 +32,7 @@ function makeEntry(generation, profileName) {
     relativePath: `${generation}/${profileName}.yml`,
     lineNumber: 1,
     yamlPath: `${generation}.${profileName}`,
+    searchText: `${generation} ${profileName}`,
   };
 }
 
@@ -87,6 +88,42 @@ test("prepared cache data stays invisible until its transaction commits", async 
   transaction.commit();
   assert.equal(cache.getEntries("example", "config")[0].relativePath, "new/config.yml");
   assert.equal(cache.getEntries("example", "language")[0].relativePath, "new/language.yml");
+});
+
+test("an empty or malformed index cannot replace active cache data", async () => {
+  let mode = "valid";
+  const cache = createSearchCache(makeConfig(), {
+    async loadEntriesForProfile(profile) {
+      if (mode === "empty" && profile.name === "language") {
+        return [];
+      }
+      if (mode === "malformed" && profile.name === "language") {
+        return [{ ...makeEntry("bad", profile.name), relativePath: "../private-file" }];
+      }
+      return [makeEntry("old", profile.name)];
+    },
+    async buildLanguageCategoryStats() {
+      return [];
+    },
+  });
+
+  await cache.warm();
+  const activeEntries = cache.getEntries("example", "config");
+
+  mode = "empty";
+  await assert.rejects(() => cache.reloadAll(), /index is empty/i);
+  assert.strictEqual(cache.getEntries("example", "config"), activeEntries);
+
+  mode = "malformed";
+  await assert.rejects(
+    () => cache.reloadAll(),
+    (error) => {
+      assert.match(error.message, /malformed entry/i);
+      assert.doesNotMatch(error.message, /private-file/);
+      return true;
+    },
+  );
+  assert.strictEqual(cache.getEntries("example", "config"), activeEntries);
 });
 
 function makeSharedConfig() {
@@ -159,6 +196,7 @@ test("CMILib profiles load once and are composed into every plugin context", asy
           relativePath: source,
           lineNumber: 1,
           yamlPath: `shared.${profile.name}`,
+          searchText: `shared ${profile.name}`,
         };
         sharedEntries.set(profile.name, entry);
         return [entry];
@@ -170,6 +208,7 @@ test("CMILib profiles load once and are composed into every plugin context", asy
           relativePath: source,
           lineNumber: 1,
           yamlPath: `local.${profile.name}`,
+          searchText: `local ${profile.name}`,
         },
       ];
     },
@@ -215,6 +254,7 @@ test("a failed shared CMILib reload leaves local and shared snapshots unchanged"
           relativePath: `${generation}/${profile.include[0]}`,
           lineNumber: 1,
           yamlPath: `${generation}.${profile.name}`,
+          searchText: `${generation} ${profile.name}`,
         },
       ];
     },
@@ -234,4 +274,42 @@ test("a failed shared CMILib reload leaves local and shared snapshots unchanged"
   assert.deepEqual(cache.getEntries("alpha", "config"), oldEntries);
   assert.strictEqual(cache.getGlobalSummary().lastReloadedAt, oldSummary.lastReloadedAt);
   assert.equal(cache.getEntries("alpha", "config")[1].relativePath.startsWith("old/"), true);
+});
+
+test("a selective profile reload atomically replaces only the requested profile", async () => {
+  let generation = "old";
+  const cache = createSearchCache(makeSharedConfig(), {
+    async loadEntriesForProfile(profile) {
+      return [
+        {
+          relativePath: `${generation}/${profile.include[0]}`,
+          lineNumber: 1,
+          yamlPath: `${generation}.${profile.name}`,
+          searchText: `${generation} ${profile.name}`,
+        },
+      ];
+    },
+    async buildLanguageCategoryStats() {
+      return [];
+    },
+  });
+
+  await cache.warm();
+  const oldAlphaLanguage = cache.getEntries("alpha", "language");
+  const oldBetaConfig = cache.getEntries("beta", "config");
+  generation = "new";
+
+  const transaction = await cache.prepareReload({ pluginId: "alpha", profileName: "config" });
+  assert.deepEqual(transaction.scope, {
+    type: "profile",
+    pluginId: "alpha",
+    profileName: "config",
+  });
+  assert.equal(transaction.summary.pluginSummaries[0].profileSummaries.length, 1);
+  assert.equal(cache.getEntries("alpha", "config")[0].relativePath.startsWith("old/"), true);
+
+  transaction.commit();
+  assert.equal(cache.getEntries("alpha", "config")[0].relativePath.startsWith("new/"), true);
+  assert.deepEqual(cache.getEntries("alpha", "language"), oldAlphaLanguage);
+  assert.deepEqual(cache.getEntries("beta", "config"), oldBetaConfig);
 });

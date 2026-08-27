@@ -172,7 +172,7 @@ function formatCommandAvailabilitySummary(plugin) {
   const unavailable = [];
 
   for (const [commandName, availability] of Object.entries(plugin.commandAvailability)) {
-    if (["help", "stats", "langstats", "latest", "debug", "reload"].includes(commandName)) {
+    if (["help", "stats", "langstats", "latest", "health", "debug", "reload"].includes(commandName)) {
       continue;
     }
 

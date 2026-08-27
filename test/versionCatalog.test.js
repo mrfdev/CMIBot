@@ -246,7 +246,7 @@ test("a version catalog reload stays staged until commit", async () => {
     assert.equal(service.getSnapshot().catalog.generatedAt, "new");
 
     await fs.writeFile(catalogPath, "{}", "utf8");
-    await assert.rejects(() => service.prepareReload(), /Unsupported version catalog format/);
+    await assert.rejects(() => service.prepareReload(), /unsupported schema/i);
     assert.equal(service.getSnapshot().catalog.generatedAt, "new");
   } finally {
     service.stop();

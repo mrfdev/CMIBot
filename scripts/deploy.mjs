@@ -5,6 +5,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { hasHealthyServiceLog } from "./deploy-health.mjs";
 
 const execFileAsync = promisify(execFile);
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -124,7 +125,7 @@ async function waitForHealthyService(logPath, startingSize) {
         env: process.env,
       });
       const freshLog = await readLogSince(logPath, startingSize);
-      if (/LookupBot connected as .+\./.test(freshLog)) {
+      if (hasHealthyServiceLog(freshLog)) {
         return;
       }
     } catch (error) {

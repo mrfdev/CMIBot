@@ -4,6 +4,51 @@ import { buildLanguageCategoryStats } from "./langStats.js";
 const SHARED_CMILIB_ROOT = "CMILibPlugin/";
 const SHARED_CMILIB_CACHE_PREFIX = "shared:cmilib:";
 
+function isSafeIndexedRelativePath(value) {
+  if (typeof value !== "string" || !value || /[\u0000-\u001f\u007f]/.test(value)) {
+    return false;
+  }
+
+  const normalized = value.replace(/\\/g, "/");
+  return (
+    !normalized.startsWith("/") &&
+    !/^[a-z]:\//i.test(normalized) &&
+    !normalized.split("/").some((segment) => segment === "..")
+  );
+}
+
+function validateLoadedEntries(entries, scopeLabel, { allowEmpty = false } = {}) {
+  if (!Array.isArray(entries)) {
+    throw new Error(`The ${scopeLabel} index loader returned an invalid result.`);
+  }
+  if (!entries.length && !allowEmpty) {
+    throw new Error(`The ${scopeLabel} index is empty; refusing to replace the active cache.`);
+  }
+
+  const identities = new Set();
+  for (const entry of entries) {
+    if (
+      !entry ||
+      typeof entry !== "object" ||
+      !isSafeIndexedRelativePath(entry.relativePath) ||
+      !Number.isSafeInteger(entry.lineNumber) ||
+      entry.lineNumber < 1 ||
+      typeof entry.yamlPath !== "string" ||
+      !entry.yamlPath.trim() ||
+      typeof entry.searchText !== "string" ||
+      !entry.searchText.trim()
+    ) {
+      throw new Error(`The ${scopeLabel} index contains a malformed entry.`);
+    }
+
+    const identity = `${entry.relativePath}\u0000${entry.lineNumber}\u0000${entry.yamlPath}`;
+    if (identities.has(identity)) {
+      throw new Error(`The ${scopeLabel} index contains a duplicate entry.`);
+    }
+    identities.add(identity);
+  }
+}
+
 function summarizeEntries(entries, predicate = () => true) {
   const filteredEntries = entries.filter(predicate);
   return {
@@ -57,6 +102,13 @@ function getStoredCacheTotals(pluginSummaries, sharedSummary) {
   }
 
   return pluginTotals;
+}
+
+function showComposedCounts(profileSummary) {
+  const summary = { ...profileSummary };
+  delete summary.localEntryCount;
+  delete summary.localFileCount;
+  return summary;
 }
 
 function buildSharedCmilibSummary(sharedCmilib, profileSummaries) {
@@ -158,6 +210,7 @@ export function createSearchCache(config, dependencies = {}) {
 
   async function loadSharedCmilibProfile(profile, targetCache) {
     const entries = await loadProfileEntries(profile, config.workspaceRoot);
+    validateLoadedEntries(entries, `shared:${profile.name}`, { allowEmpty: profile.allowEmpty === true });
     const summary = summarizeEntries(entries);
     const languageCategories =
       profile.name === "language"
@@ -183,6 +236,7 @@ export function createSearchCache(config, dependencies = {}) {
   async function loadProfile(plugin, profile, targetCache) {
     const localProfile = profile.sharedProfileName ? withoutSharedCmilib(profile) : profile;
     const entries = await loadProfileEntries(localProfile, config.workspaceRoot);
+    validateLoadedEntries(entries, `${plugin.id}:${profile.name}`);
     const localSummary = summarizeEntries(entries);
     const sharedSnapshot = getSharedSnapshot(targetCache, profile.sharedProfileName);
     if (profile.sharedProfileName && !sharedSnapshot) {
@@ -230,21 +284,54 @@ export function createSearchCache(config, dependencies = {}) {
       profileSummaries.push(await loadProfile(plugin, profile, targetCache));
     }
 
-    const totalEntries = profileSummaries.reduce((sum, item) => sum + item.entryCount, 0);
-    const totalFiles = profileSummaries.reduce((sum, item) => sum + item.fileCount, 0);
-    const pluginSummary = {
-      pluginId: plugin.id,
-      pluginLabel: plugin.label,
-      totalEntries,
-      totalFiles,
-      profileSummaries,
-    };
+    const pluginSummary = buildPluginSummary(plugin, profileSummaries);
 
     targetPluginSummaries.set(plugin.id, pluginSummary);
     return pluginSummary;
   }
 
-  async function prepareReload() {
+  function buildPluginSummary(plugin, profileSummaries) {
+    return {
+      pluginId: plugin.id,
+      pluginLabel: plugin.label,
+      totalEntries: profileSummaries.reduce((sum, item) => sum + item.entryCount, 0),
+      totalFiles: profileSummaries.reduce((sum, item) => sum + item.fileCount, 0),
+      profileSummaries,
+    };
+  }
+
+  function createReloadTransaction({
+    nextCache,
+    nextPluginSummaries,
+    nextSharedCmilibSummary,
+    nextReloadedAt,
+    summary,
+    scope,
+  }) {
+    let settled = false;
+
+    return {
+      scope,
+      summary,
+      commit() {
+        if (settled) {
+          throw new Error("Search cache reload transaction has already been settled.");
+        }
+
+        cache = nextCache;
+        pluginSummaries = nextPluginSummaries;
+        sharedCmilibSummary = nextSharedCmilibSummary;
+        lastReloadedAt = nextReloadedAt;
+        settled = true;
+        return summary;
+      },
+      discard() {
+        settled = true;
+      },
+    };
+  }
+
+  async function prepareFullReload() {
     const nextCache = new Map();
     const nextPluginSummaries = new Map();
     const loadedPluginSummaries = [];
@@ -273,39 +360,106 @@ export function createSearchCache(config, dependencies = {}) {
       sharedCmilibSummary: nextSharedCmilibSummary,
       lastReloadedAt: nextReloadedAt,
     };
-    let settled = false;
-
-    return {
+    return createReloadTransaction({
+      nextCache,
+      nextPluginSummaries,
+      nextSharedCmilibSummary,
+      nextReloadedAt,
       summary,
-      commit() {
-        if (settled) {
-          throw new Error("Search cache reload transaction has already been settled.");
-        }
-
-        cache = nextCache;
-        pluginSummaries = nextPluginSummaries;
-        sharedCmilibSummary = nextSharedCmilibSummary;
-        lastReloadedAt = nextReloadedAt;
-        settled = true;
-        return summary;
-      },
-      discard() {
-        settled = true;
-      },
-    };
+      scope: { type: "all" },
+    });
   }
 
-  async function reloadAll() {
-    const transaction = await prepareReload();
+  async function prepareSelectiveReload({ pluginId, profileName = "" }) {
+    const plugin = config.plugins[pluginId];
+    if (!plugin) {
+      throw new Error("The requested plugin reload scope is not configured.");
+    }
+    if (profileName && !plugin.profiles[profileName]) {
+      throw new Error(`The ${plugin.label} context does not provide the requested profile.`);
+    }
+    if (!lastReloadedAt) {
+      throw new Error("The search cache must be warmed before a selective reload.");
+    }
+
+    const nextCache = new Map(cache);
+    const nextPluginSummaries = new Map(pluginSummaries);
+    let refreshedPluginSummary;
+
+    if (profileName) {
+      const refreshedProfileSummary = await loadProfile(
+        plugin,
+        plugin.profiles[profileName],
+        nextCache,
+      );
+      const activePluginSummary = pluginSummaries.get(plugin.id);
+      if (!activePluginSummary) {
+        throw new Error("The active plugin cache summary is unavailable.");
+      }
+      const activeProfiles = new Map(
+        activePluginSummary.profileSummaries.map((profile) => [profile.profileName, profile]),
+      );
+      activeProfiles.set(profileName, refreshedProfileSummary);
+      const refreshedProfiles = Object.keys(plugin.profiles).map((name) => {
+        const summary = activeProfiles.get(name);
+        if (!summary) {
+          throw new Error("The active plugin cache is incomplete.");
+        }
+        return summary;
+      });
+      refreshedPluginSummary = buildPluginSummary(plugin, refreshedProfiles);
+      nextPluginSummaries.set(plugin.id, refreshedPluginSummary);
+    } else {
+      refreshedPluginSummary = await loadPlugin(plugin, nextCache, nextPluginSummaries);
+    }
+
+    const nextReloadedAt = new Date();
+    const visibleProfiles = profileName
+      ? refreshedPluginSummary.profileSummaries
+          .filter((profile) => profile.profileName === profileName)
+          .map(showComposedCounts)
+      : refreshedPluginSummary.profileSummaries.map(showComposedCounts);
+    const visiblePluginSummary = buildPluginSummary(plugin, visibleProfiles);
+    const summary = {
+      totalEntries: visiblePluginSummary.totalEntries,
+      totalFiles: visiblePluginSummary.totalFiles,
+      pluginSummaries: [visiblePluginSummary],
+      sharedCmilibSummary: null,
+      lastReloadedAt: nextReloadedAt,
+    };
+
+    return createReloadTransaction({
+      nextCache,
+      nextPluginSummaries,
+      nextSharedCmilibSummary: sharedCmilibSummary,
+      nextReloadedAt,
+      summary,
+      scope: {
+        type: profileName ? "profile" : "plugin",
+        pluginId,
+        profileName,
+      },
+    });
+  }
+
+  async function prepareReload(scope = {}) {
+    return scope.pluginId ? prepareSelectiveReload(scope) : prepareFullReload();
+  }
+
+  async function reload(scope = {}) {
+    const transaction = await prepareReload(scope);
     return transaction.commit();
   }
 
   return {
     async warm() {
-      return reloadAll();
+      return reload();
     },
     async reloadAll() {
-      return reloadAll();
+      return reload();
+    },
+    async reload(scope) {
+      return reload(scope);
     },
     prepareReload,
     getEntries(pluginId, profileName) {

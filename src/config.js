@@ -1,5 +1,26 @@
 import path from "node:path";
 
+const SUPPORTED_PROFILE_SOURCE_TYPES = new Set(["log", "yaml"]);
+const SUPPORTED_LOG_PARSER_TYPES = new Set([
+  "cmdPerms",
+  "commentBlocks",
+  "delimited",
+  "faqMixed",
+  "permissionList",
+  "permissionMixed",
+  "tokenList",
+]);
+const SEARCH_COMMAND_NAMES = new Set([
+  "command",
+  "config",
+  "faq",
+  "language",
+  "material",
+  "permission",
+  "placeholder",
+  "tabcomplete",
+]);
+
 function parseCsv(value) {
   return (value ?? "")
     .split(",")
@@ -32,13 +53,160 @@ function parseBoolean(value, fallback = false) {
   return fallback;
 }
 
-function requireValue(name) {
-  const value = process.env[name]?.trim();
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+function requireConfigValue(value, name) {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`Missing required configuration value: ${name}`);
+  }
+}
+
+function requireArray(value, name) {
+  if (!Array.isArray(value)) {
+    throw new Error(`${name} must be a list.`);
+  }
+}
+
+function assertUniqueStrings(values, name) {
+  requireArray(values, name);
+  const seen = new Set();
+  for (const value of values) {
+    if (typeof value !== "string" || !value.trim()) {
+      throw new Error(`${name} must contain only non-empty strings.`);
+    }
+    if (seen.has(value)) {
+      throw new Error(`${name} contains a duplicate entry.`);
+    }
+    seen.add(value);
+  }
+}
+
+function validateRelativePath(value, name, { allowGlob = false } = {}) {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`${name} must be a non-empty relative path${allowGlob ? " or glob" : ""}.`);
   }
 
-  return value;
+  const candidate = allowGlob ? value.replace(/^!/, "") : value;
+  if (
+    !candidate ||
+    /[\u0000-\u001f\u007f]/.test(candidate) ||
+    candidate.includes("\\") ||
+    path.posix.isAbsolute(candidate) ||
+    path.win32.isAbsolute(candidate) ||
+    candidate.split("/").some((segment) => segment === "..")
+  ) {
+    throw new Error(`${name} must stay within the project workspace.`);
+  }
+}
+
+function validateProfile(profileKey, profile, scopeName, sharedProfiles) {
+  if (!profile || typeof profile !== "object") {
+    throw new Error(`${scopeName} profile ${profileKey} is invalid.`);
+  }
+  if (profile.name !== profileKey) {
+    throw new Error(`${scopeName} profile key and name must match for ${profileKey}.`);
+  }
+  if (!SUPPORTED_PROFILE_SOURCE_TYPES.has(profile.sourceType)) {
+    throw new Error(`${scopeName}:${profileKey} has an unsupported source type.`);
+  }
+  requireArray(profile.include, `${scopeName}:${profileKey} include patterns`);
+  if (!profile.include.length) {
+    throw new Error(`${scopeName}:${profileKey} must define at least one include pattern.`);
+  }
+  requireArray(profile.exclude, `${scopeName}:${profileKey} exclude patterns`);
+  for (const [index, pattern] of profile.include.entries()) {
+    validateRelativePath(pattern, `${scopeName}:${profileKey} include pattern ${index + 1}`, {
+      allowGlob: true,
+    });
+  }
+  for (const [index, pattern] of profile.exclude.entries()) {
+    validateRelativePath(pattern, `${scopeName}:${profileKey} exclude pattern ${index + 1}`, {
+      allowGlob: true,
+    });
+  }
+  if (profile.sourceType === "log" && !SUPPORTED_LOG_PARSER_TYPES.has(profile.parserType)) {
+    throw new Error(`${scopeName}:${profileKey} has an unsupported log parser.`);
+  }
+  if (profile.allowEmpty != null && typeof profile.allowEmpty !== "boolean") {
+    throw new Error(`${scopeName}:${profileKey} has an invalid allowEmpty setting.`);
+  }
+  if (profile.sharedProfileName && !sharedProfiles?.[profile.sharedProfileName]) {
+    throw new Error(`${scopeName}:${profileKey} references an unknown shared profile.`);
+  }
+}
+
+function validatePluginConfiguration(config) {
+  if (!config.plugins || typeof config.plugins !== "object" || !Object.keys(config.plugins).length) {
+    throw new Error("At least one plugin context must be configured.");
+  }
+
+  const sharedProfiles = config.sharedCmilib?.profiles ?? {};
+  for (const [profileKey, profile] of Object.entries(sharedProfiles)) {
+    validateProfile(profileKey, profile, "shared", null);
+  }
+
+  for (const [pluginKey, plugin] of Object.entries(config.plugins)) {
+    if (!plugin || typeof plugin !== "object" || plugin.id !== pluginKey || !plugin.label) {
+      throw new Error(`Plugin context ${pluginKey} has invalid identity metadata.`);
+    }
+    if (!plugin.profiles || typeof plugin.profiles !== "object" || !Object.keys(plugin.profiles).length) {
+      throw new Error(`Plugin context ${pluginKey} must define at least one profile.`);
+    }
+    for (const [profileKey, profile] of Object.entries(plugin.profiles)) {
+      validateProfile(profileKey, profile, pluginKey, sharedProfiles);
+    }
+    for (const [commandName, availability] of Object.entries(plugin.commandAvailability ?? {})) {
+      if (!["ready", "coming_soon", "unsupported"].includes(availability)) {
+        throw new Error(`${pluginKey} has invalid availability for ${commandName}.`);
+      }
+      if (availability === "ready" && SEARCH_COMMAND_NAMES.has(commandName) && !plugin.profiles[commandName]) {
+        throw new Error(`${pluginKey} marks ${commandName} ready without a matching profile.`);
+      }
+    }
+  }
+}
+
+function validateDiscordRoutes(config) {
+  const { discord } = config;
+  assertUniqueStrings(discord.allowedChannelIds, "DISCORD_ALLOWED_CHANNEL_IDS");
+  assertUniqueStrings(discord.testChannelIds, "DISCORD_TEST_CHANNEL_IDS");
+  assertUniqueStrings(discord.allowedRoleIds, "ALLOWED_ROLE_IDS");
+  assertUniqueStrings(discord.adminRoleIds, "ADMIN_ROLE_IDS");
+  assertUniqueStrings(discord.aiRoleIds, "AI_ROLE_IDS");
+
+  if (!discord.pluginChannelIds || typeof discord.pluginChannelIds !== "object") {
+    throw new Error("Discord plugin channel routes must be configured.");
+  }
+
+  const allowedChannels = new Set(discord.allowedChannelIds);
+  const routedChannels = new Set();
+  for (const [pluginId, channelIds] of Object.entries(discord.pluginChannelIds)) {
+    if (!config.plugins[pluginId]) {
+      throw new Error(`Discord routes reference an unknown plugin context: ${pluginId}.`);
+    }
+    assertUniqueStrings(channelIds, `Discord routes for ${pluginId}`);
+    for (const channelId of channelIds) {
+      if (!allowedChannels.has(channelId)) {
+        throw new Error(`A ${pluginId} channel route is missing from the allowed channel list.`);
+      }
+      if (routedChannels.has(channelId)) {
+        throw new Error("A Discord channel is assigned to more than one route.");
+      }
+      routedChannels.add(channelId);
+    }
+  }
+
+  for (const channelId of discord.testChannelIds) {
+    if (!allowedChannels.has(channelId)) {
+      throw new Error("A test channel route is missing from the allowed channel list.");
+    }
+    if (routedChannels.has(channelId)) {
+      throw new Error("A Discord channel is assigned to more than one route.");
+    }
+    routedChannels.add(channelId);
+  }
+
+  if (routedChannels.size !== allowedChannels.size) {
+    throw new Error("Every allowed Discord channel must map to exactly one plugin or test route.");
+  }
 }
 
 function toPosixPath(value) {
@@ -134,6 +302,7 @@ function buildSharedCmilibProfiles() {
     }),
     placeholder: createProfile("placeholder", {
       sourceType: "log",
+      allowEmpty: true,
       entryLabel: "placeholder entries",
       statsFileLabel: "generated placeholder data files",
       parserType: "commentBlocks",
@@ -594,6 +763,7 @@ function buildPluginCommandAvailability(overrides = {}) {
     langstats: "ready",
     stats: "ready",
     latest: "ready",
+    health: "ready",
     debug: "ready",
     reload: "ready",
     ...overrides,
@@ -817,9 +987,14 @@ export function loadConfig() {
 }
 
 export function validateBotConfig(config) {
-  requireValue("DISCORD_TOKEN");
-  requireValue("DISCORD_APPLICATION_ID");
-  requireValue("DISCORD_GUILD_ID");
+  if (!config?.discord || !config.openai || !config.security || !config.versions) {
+    throw new Error("Bot configuration is incomplete.");
+  }
+  requireConfigValue(config.discord.token, "DISCORD_TOKEN");
+  requireConfigValue(config.discord.applicationId, "DISCORD_APPLICATION_ID");
+  requireConfigValue(config.discord.guildId, "DISCORD_GUILD_ID");
+  validatePluginConfiguration(config);
+  validateDiscordRoutes(config);
   if (!config.discord.allowedChannelIds.length) {
     throw new Error("At least one DISCORD_ALLOWED_CHANNEL_IDS entry is required.");
   }
@@ -837,5 +1012,15 @@ export function validateBotConfig(config) {
   }
   if (config.openai.enabled && !config.discord.aiRoleIds.length) {
     throw new Error("Define AI_ROLE_IDS so the bot can guard AI-backed features.");
+  }
+
+  validateRelativePath(config.versions.catalogPath, "VERSION_CATALOG_PATH");
+  validateRelativePath(config.versions.statePath, "VERSION_STATE_PATH");
+  validateRelativePath(config.security.auditLogPath, "AUDIT_LOG_PATH");
+  if (!Number.isSafeInteger(config.versions.checkIntervalMs) || config.versions.checkIntervalMs <= 0) {
+    throw new Error("The version-check interval must be a positive integer.");
+  }
+  if (!Number.isSafeInteger(config.versions.requestTimeoutMs) || config.versions.requestTimeoutMs <= 0) {
+    throw new Error("The version-check timeout must be a positive integer.");
   }
 }
