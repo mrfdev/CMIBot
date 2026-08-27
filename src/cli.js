@@ -3,7 +3,7 @@ import { createLazyAiResolver } from "./aiLoader.js";
 import { createSearchCache, formatCacheSummary } from "./cache.js";
 import { loadConfig } from "./config.js";
 import { formatLanguageCategoryStats } from "./langStats.js";
-import { lexicalSearch, orderMatchesForDisplay } from "./search.js";
+import { lexicalSearch, orderMatchesForDisplay, suggestSearchQueries } from "./search.js";
 import { resolveFileFilter } from "./security.js";
 import { createVersionService, formatLatestVersions } from "./versionCatalog.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
@@ -132,6 +132,10 @@ async function main() {
   if (!matches.length) {
     const entryLabel = profile.entryLabel ?? "entries";
     console.log(`No ${entryLabel} matched "${keyword}" in profile "${subcommand}".`);
+    const suggestions = suggestSearchQueries(keyword, entries, { limit: 3 });
+    if (suggestions.length) {
+      console.log(`Did you mean: ${suggestions.join(", ")}?`);
+    }
     return;
   }
 

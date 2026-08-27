@@ -810,6 +810,14 @@ export function loadConfig() {
     residence: parseCsv(process.env.DISCORD_RESIDENCE_CHANNEL_IDS),
     bottledexp: parseCsv(process.env.DISCORD_BOTTLEDEXP_CHANNEL_IDS),
   };
+  const versionRetryBaseDelayMs = Math.max(
+    0,
+    Math.min(60_000, parseInteger(process.env.VERSION_CHECK_RETRY_BASE_MS, 250)),
+  );
+  const versionRetryMaxDelayMs = Math.max(
+    versionRetryBaseDelayMs,
+    Math.min(60_000, parseInteger(process.env.VERSION_CHECK_RETRY_MAX_MS, 2_000)),
+  );
 
   return {
     workspaceRoot,
@@ -843,6 +851,18 @@ export function loadConfig() {
       checkEnabled: parseBoolean(process.env.VERSION_CHECK_ENABLED, true),
       checkIntervalMs: Math.max(1, parseInteger(process.env.VERSION_CHECK_INTERVAL_HOURS, 12)) * 60 * 60 * 1000,
       requestTimeoutMs: Math.max(1, parseInteger(process.env.VERSION_CHECK_TIMEOUT_SECONDS, 8)) * 1000,
+      retryMaxAttempts: Math.max(1, Math.min(5, parseInteger(process.env.VERSION_CHECK_MAX_ATTEMPTS, 3))),
+      retryBaseDelayMs: versionRetryBaseDelayMs,
+      retryMaxDelayMs: versionRetryMaxDelayMs,
+      circuitFailureThreshold: Math.max(
+        1,
+        Math.min(100, parseInteger(process.env.VERSION_CHECK_CIRCUIT_FAILURE_THRESHOLD, 3)),
+      ),
+      circuitCooldownMs:
+        Math.max(
+          1,
+          Math.min(86_400, parseInteger(process.env.VERSION_CHECK_CIRCUIT_COOLDOWN_SECONDS, 300)),
+        ) * 1000,
       paperVersion: process.env.PAPER_VERSION?.trim() || "26.2",
       paperChannels: parseCsv(process.env.PAPER_VERSION_CHANNELS ?? "STABLE").map((item) => item.toUpperCase()),
     },

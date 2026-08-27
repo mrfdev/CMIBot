@@ -113,7 +113,15 @@ export function createMetricsRegistry({
   const aiOperations = { rerank: 0, summary: 0 };
   const aiTokens = { input: 0, output: 0, total: 0 };
   const searchResults = { returned: 0, candidates: 0 };
-  const upstreamChecks = { resources: 0, failures: 0, retained: 0 };
+  const upstreamChecks = {
+    resources: 0,
+    failures: 0,
+    retained: 0,
+    retries: 0,
+    circuitOpenings: 0,
+    circuitRejections: 0,
+    circuitRecoveries: 0,
+  };
   const errors = Object.fromEntries(ERROR_CATEGORIES.map((name) => [name, 0]));
   let timer = null;
 
@@ -170,6 +178,9 @@ export function createMetricsRegistry({
       aiTokenCount: snapshot.ai.tokens.total,
       upstreamCheckCount: snapshot.upstream.count,
       upstreamFailures: snapshot.upstream.checks.failures,
+      upstreamRetries: snapshot.upstream.checks.retries,
+      upstreamCircuitOpenings: snapshot.upstream.checks.circuitOpenings,
+      upstreamCircuitRejections: snapshot.upstream.checks.circuitRejections,
       errorCount: snapshot.errors.total,
       rssBytes: snapshot.memory.rssBytes,
       heapUsedBytes: snapshot.memory.heapUsedBytes,
@@ -204,6 +215,18 @@ export function createMetricsRegistry({
       upstreamChecks.resources += integerNonNegative(resourceCount);
       upstreamChecks.failures += integerNonNegative(errorCount);
       upstreamChecks.retained += integerNonNegative(retainedCount);
+    },
+    recordUpstreamRetry() {
+      upstreamChecks.retries += 1;
+    },
+    recordUpstreamCircuit({ outcome } = {}) {
+      if (outcome === "opened") {
+        upstreamChecks.circuitOpenings += 1;
+      } else if (outcome === "rejected") {
+        upstreamChecks.circuitRejections += 1;
+      } else if (outcome === "closed") {
+        upstreamChecks.circuitRecoveries += 1;
+      }
     },
     recordError(category = "other") {
       errors[Object.hasOwn(errors, category) ? category : "other"] += 1;

@@ -3,6 +3,11 @@ import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { serviceLogger } from "./logger.js";
 import { validateVersionCatalog } from "./startupValidation.js";
+import {
+  createUpstreamResilience,
+  parseRetryAfter,
+  UpstreamHttpError,
+} from "./upstreamResilience.js";
 
 const SPIGET_API_ROOT = "https://api.spiget.org/v2";
 const PAPER_API_ROOT = "https://fill.papermc.io/v3/projects/paper";
@@ -57,28 +62,6 @@ function formatDiscordTimestamp(value, style = "R") {
 
 function linkedLabel(label, url) {
   return url ? `[${label}](<${url}>)` : label;
-}
-
-async function fetchResponse(url, timeoutMs) {
-  const response = await fetch(url, {
-    headers: {
-      accept: "application/json",
-      "user-agent": "LookupBot/0.1 (+https://github.com/mrfdev/CMIBot)",
-    },
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-  if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}`);
-  }
-  return response;
-}
-
-async function fetchJson(url, timeoutMs) {
-  return (await fetchResponse(url, timeoutMs)).json();
-}
-
-async function fetchText(url, timeoutMs) {
-  return (await fetchResponse(url, timeoutMs)).text();
 }
 
 function escapeRegex(value) {
@@ -333,6 +316,21 @@ export function formatVersionServiceSummary(snapshot) {
 export function createVersionService(config, dependencies = {}) {
   const logger = dependencies.logger ?? serviceLogger;
   const metrics = dependencies.metrics;
+  const now = dependencies.now ?? (() => Date.now());
+  const fetchImplementation =
+    dependencies.fetch ?? ((...arguments_) => globalThis.fetch(...arguments_));
+  const resilience = createUpstreamResilience({
+    maxAttempts: config.versions.retryMaxAttempts,
+    baseDelayMs: config.versions.retryBaseDelayMs,
+    maxDelayMs: config.versions.retryMaxDelayMs,
+    failureThreshold: config.versions.circuitFailureThreshold,
+    cooldownMs: config.versions.circuitCooldownMs,
+    now,
+    sleep: dependencies.sleep,
+    random: dependencies.random,
+    logger,
+    metrics,
+  });
   let activeState = {
     catalog: null,
     paper: null,
@@ -354,13 +352,39 @@ export function createVersionService(config, dependencies = {}) {
   function getCacheBustedUrl(value) {
     const url = new URL(value);
     upstreamRequestSequence += 1;
-    url.searchParams.set("cacheBust", `${Date.now()}-${upstreamRequestSequence}`);
+    url.searchParams.set("cacheBust", `${Number(now())}-${upstreamRequestSequence}`);
     return url.toString();
   }
 
   function getSpigetLatestUrl(resourceId) {
     // Spiget and Zrips listings can remain cached after a plugin release.
     return getCacheBustedUrl(`${SPIGET_API_ROOT}/resources/${resourceId}/versions/latest`);
+  }
+
+  async function fetchUpstream(resourceKey, url, bodyType) {
+    return resilience.execute(resourceKey, async () => {
+      const response = await fetchImplementation(url, {
+        headers: {
+          accept: "application/json",
+          "user-agent": "LookupBot/0.1 (+https://github.com/mrfdev/CMIBot)",
+        },
+        signal: AbortSignal.timeout(config.versions.requestTimeoutMs),
+      });
+      if (!response.ok) {
+        throw new UpstreamHttpError(response.status, {
+          retryAfterMs: parseRetryAfter(response.headers?.get?.("retry-after"), Number(now())),
+        });
+      }
+      return bodyType === "json" ? response.json() : response.text();
+    });
+  }
+
+  function fetchJson(resourceKey, url) {
+    return fetchUpstream(resourceKey, url, "json");
+  }
+
+  function fetchText(resourceKey, url) {
+    return fetchUpstream(resourceKey, url, "text");
   }
 
   function createEmptyState(catalog = null) {
@@ -538,8 +562,8 @@ export function createVersionService(config, dependencies = {}) {
 
   async function checkPaper() {
     const builds = await fetchJson(
+      "paper",
       `${PAPER_API_ROOT}/versions/${encodeURIComponent(config.versions.paperVersion)}/builds`,
-      config.versions.requestTimeoutMs,
     );
     if (!Array.isArray(builds)) {
       throw new Error("Paper returned an unexpected builds response.");
@@ -560,15 +584,16 @@ export function createVersionService(config, dependencies = {}) {
 
   async function checkPlugin(plugin) {
     const source = plugin.versionSource;
+    const resourceKey = `plugin:${plugin.id}`;
     if (source?.type === "zrips-listing") {
-      const content = await fetchText(getCacheBustedUrl(source.url), config.versions.requestTimeoutMs);
+      const content = await fetchText(resourceKey, getCacheBustedUrl(source.url));
       return parseZripsListingVersion(content, source, plugin.label);
     }
 
     if (plugin.resourceId) {
       const latest = await fetchJson(
+        resourceKey,
         getSpigetLatestUrl(plugin.resourceId),
-        config.versions.requestTimeoutMs,
       );
       if (!latest?.name) {
         throw new Error(`${plugin.label} returned no latest version name.`);
@@ -577,7 +602,7 @@ export function createVersionService(config, dependencies = {}) {
     }
 
     if (source?.type === "luckperms-metadata") {
-      const metadata = await fetchJson(source.url, config.versions.requestTimeoutMs);
+      const metadata = await fetchJson(resourceKey, source.url);
       if (!metadata?.version) {
         throw new Error(`${plugin.label} returned no latest version.`);
       }
@@ -585,7 +610,7 @@ export function createVersionService(config, dependencies = {}) {
     }
 
     if (source?.type === "jenkins-artifact") {
-      const build = await fetchJson(source.url, config.versions.requestTimeoutMs);
+      const build = await fetchJson(resourceKey, source.url);
       const artifactPattern = new RegExp(source.artifactPattern, "i");
       const artifact = build?.artifacts?.find((entry) => artifactPattern.test(String(entry.fileName)));
       const match = artifact?.fileName?.match(artifactPattern);
@@ -603,9 +628,10 @@ export function createVersionService(config, dependencies = {}) {
 
   async function checkCompanion(companion) {
     const source = companion.versionSource;
+    const resourceKey = `companion:${companion.id}`;
 
     if (source.type === "github-pom") {
-      const content = await fetchText(source.url, config.versions.requestTimeoutMs);
+      const content = await fetchText(resourceKey, source.url);
       const pattern = new RegExp(
         `<artifactId>\\s*${escapeRegex(source.artifactId)}\\s*</artifactId>\\s*<version>\\s*([^<]+?)\\s*</version>`,
         "i",
@@ -618,7 +644,7 @@ export function createVersionService(config, dependencies = {}) {
     }
 
     if (source.type === "zrips-listing") {
-      const content = await fetchText(getCacheBustedUrl(source.url), config.versions.requestTimeoutMs);
+      const content = await fetchText(resourceKey, getCacheBustedUrl(source.url));
       return parseZripsListingVersion(content, source, companion.label);
     }
 

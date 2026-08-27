@@ -3,6 +3,9 @@ import { expandSearchQueries } from "./searchSynonyms.js";
 const BRACE_TOKEN_PATTERN = /^\{[^{}\s]+\}$/;
 const PERCENT_TOKEN_PATTERN = /^%[^%\s]+%$/;
 const BRACKET_TOKEN_PATTERN = /^\[[^\]\s]+\]$/;
+const MAX_SUGGESTION_CANDIDATES = 20_000;
+const MAX_SUGGESTION_TEXT_LENGTH = 80;
+const UNSAFE_SUGGESTION_PATTERN = /[`@\u0000-\u001f\u007f]/;
 
 function normalize(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -14,6 +17,210 @@ function compact(value) {
 
 function tokenize(value) {
   return normalize(value).split(/\s+/).filter(Boolean);
+}
+
+function splitIdentifierWords(value) {
+  return String(value)
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .match(/[a-z0-9]+/gi) ?? [];
+}
+
+function getMaximumSuggestionDistance(length) {
+  if (length <= 3) {
+    return 0;
+  }
+  if (length <= 5) {
+    return 1;
+  }
+  if (length <= 9) {
+    return 2;
+  }
+  if (length <= 16) {
+    return 3;
+  }
+  return 4;
+}
+
+function boundedDamerauLevenshtein(left, right, maximumDistance) {
+  if (left === right) {
+    return 0;
+  }
+  if (!maximumDistance || Math.abs(left.length - right.length) > maximumDistance) {
+    return maximumDistance + 1;
+  }
+
+  let previousPrevious = null;
+  let previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = new Array(right.length + 1).fill(maximumDistance + 1);
+    current[0] = leftIndex;
+    const start = Math.max(1, leftIndex - maximumDistance);
+    const end = Math.min(right.length, leftIndex + maximumDistance);
+    let rowMinimum = current[0];
+
+    for (let rightIndex = start; rightIndex <= end; rightIndex += 1) {
+      const substitutionCost = left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1;
+      current[rightIndex] = Math.min(
+        previous[rightIndex] + 1,
+        current[rightIndex - 1] + 1,
+        previous[rightIndex - 1] + substitutionCost,
+      );
+
+      if (
+        previousPrevious &&
+        leftIndex > 1 &&
+        rightIndex > 1 &&
+        left[leftIndex - 1] === right[rightIndex - 2] &&
+        left[leftIndex - 2] === right[rightIndex - 1]
+      ) {
+        current[rightIndex] = Math.min(current[rightIndex], previousPrevious[rightIndex - 2] + 1);
+      }
+      rowMinimum = Math.min(rowMinimum, current[rightIndex]);
+    }
+
+    if (rowMinimum > maximumDistance) {
+      return maximumDistance + 1;
+    }
+    previousPrevious = previous;
+    previous = current;
+  }
+
+  return previous[right.length];
+}
+
+function collectSuggestionCandidates(entries) {
+  const candidates = new Map();
+
+  function addCandidate(display, priority) {
+    const trimmed = String(display ?? "").replace(/\s+/g, " ").trim();
+    if (
+      !trimmed ||
+      trimmed.length > MAX_SUGGESTION_TEXT_LENGTH ||
+      UNSAFE_SUGGESTION_PATTERN.test(trimmed)
+    ) {
+      return;
+    }
+
+    const normalized = compact(trimmed);
+    if (normalized.length < 4 || normalized.length > 64) {
+      return;
+    }
+
+    const existing = candidates.get(normalized);
+    if (existing) {
+      existing.frequency += 1;
+      if (priority > existing.priority) {
+        existing.display = trimmed;
+        existing.priority = priority;
+      }
+      return;
+    }
+    if (candidates.size >= MAX_SUGGESTION_CANDIDATES) {
+      return;
+    }
+    candidates.set(normalized, {
+      display: trimmed,
+      normalized,
+      priority,
+      frequency: 1,
+    });
+  }
+
+  for (const entry of entries) {
+    addCandidate(entry.key, 3);
+    addCandidate(entry.yamlPath, 2);
+    const keyParts = new Set([
+      ...String(entry.yamlPath ?? "").split("."),
+      String(entry.key ?? ""),
+    ]);
+    for (const keyPart of keyParts) {
+      for (const word of splitIdentifierWords(keyPart)) {
+        addCandidate(word, 1);
+      }
+    }
+  }
+
+  return [...candidates.values()];
+}
+
+function collectSuggestionTargets(query) {
+  const rawTargets = [query, ...splitIdentifierWords(query)];
+  const targets = [];
+  const seen = new Set();
+  for (const rawTarget of rawTargets) {
+    const normalized = compact(rawTarget);
+    if (normalized.length < 4 || normalized.length > 64 || seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    targets.push(normalized);
+  }
+  return targets;
+}
+
+export function suggestSearchQueries(query, entries, { limit = 3 } = {}) {
+  const targets = collectSuggestionTargets(query);
+  if (!targets.length || !Array.isArray(entries) || !entries.length) {
+    return [];
+  }
+
+  const ranked = [];
+  for (const candidate of collectSuggestionCandidates(entries)) {
+    let best = null;
+    for (let targetIndex = 0; targetIndex < targets.length; targetIndex += 1) {
+      const target = targets[targetIndex];
+      if (candidate.normalized === target) {
+        continue;
+      }
+      const longestLength = Math.max(target.length, candidate.normalized.length);
+      const maximumDistance = getMaximumSuggestionDistance(longestLength);
+      const distance = boundedDamerauLevenshtein(
+        target,
+        candidate.normalized,
+        maximumDistance,
+      );
+      if (distance > maximumDistance || 1 - distance / longestLength < 0.7) {
+        continue;
+      }
+      const match = {
+        ...candidate,
+        distance,
+        distanceRatio: distance / longestLength,
+        targetIndex,
+        lengthDifference: Math.abs(target.length - candidate.normalized.length),
+      };
+      if (
+        !best ||
+        match.distanceRatio < best.distanceRatio ||
+        (match.distanceRatio === best.distanceRatio && match.distance < best.distance) ||
+        (match.distanceRatio === best.distanceRatio &&
+          match.distance === best.distance &&
+          match.targetIndex < best.targetIndex)
+      ) {
+        best = match;
+      }
+    }
+    if (best) {
+      ranked.push(best);
+    }
+  }
+
+  const boundedLimit = Math.max(1, Math.min(5, Number(limit) || 3));
+  return ranked
+    .sort(
+      (left, right) =>
+        left.distanceRatio - right.distanceRatio ||
+        left.distance - right.distance ||
+        left.targetIndex - right.targetIndex ||
+        right.priority - left.priority ||
+        right.frequency - left.frequency ||
+        left.lengthDifference - right.lengthDifference ||
+        left.display.localeCompare(right.display, undefined, { sensitivity: "base" }),
+    )
+    .slice(0, boundedLimit)
+    .map((candidate) => candidate.display);
 }
 
 function isSpecialTokenQuery(query) {

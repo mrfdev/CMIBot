@@ -53,6 +53,9 @@ test("health output reports readiness without infrastructure identifiers", () =>
           searches: { count: 3, p95Ms: 25, results: { returned: 7 } },
           reloads: { count: 1, p95Ms: 500 },
           ai: { count: 1, tokens: { total: 30 } },
+          upstream: {
+            checks: { retries: 2, circuitOpenings: 1, circuitRejections: 3 },
+          },
           memory: { rssBytes: 10 * 1024 * 1024, heapUsedBytes: 4 * 1024 * 1024 },
         };
       },
@@ -80,6 +83,7 @@ test("health output reports readiness without infrastructure identifiers", () =>
   assert.match(message, /Search cache: `ready, 100 entries from 4 files`/);
   assert.match(message, /Upstream checks: `healthy`/);
   assert.match(message, /Commands: `4 observed, p95 50 ms, 1 errors`/);
+  assert.match(message, /Upstream resilience: `retries: 2, circuits opened: 1, requests skipped: 3`/);
   assert.match(message, /Service logs: `bounded to 10 MiB per stream with 5 archives; 0 writes dropped`/);
   for (const privateValue of privateValues) {
     assert.doesNotMatch(message, new RegExp(privateValue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));

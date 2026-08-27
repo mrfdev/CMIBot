@@ -1,6 +1,10 @@
 import { performance } from "node:perf_hooks";
 import { MessageFlags } from "discord.js";
-import { lexicalSearchWithStats, orderMatchesForDisplay } from "../search.js";
+import {
+  lexicalSearchWithStats,
+  orderMatchesForDisplay,
+  suggestSearchQueries,
+} from "../search.js";
 import { resolveFileFilter, sanitizeForDisplay, validateQuery } from "../security.js";
 import { findRelatedEntries, makeDisplayContext } from "../yamlIndex.js";
 import { NO_MENTIONS, PRIMARY_COMMAND_NAME } from "./constants.js";
@@ -224,6 +228,7 @@ export async function handleSearchInteraction({
     const finalMatches = orderedMatches.slice(0, limit);
 
     if (!finalMatches.length) {
+      const suggestions = suggestSearchQueries(keyword, entries, { limit: 3 });
       await logEvent(interaction, {
         subcommand,
         keyword,
@@ -233,11 +238,15 @@ export async function handleSearchInteraction({
         summary,
         synonymApplied: searchResult.synonymApplied,
         queryVariantCount: searchResult.queryVariantCount,
+        suggestionCount: suggestions.length,
         outcome: "empty",
         detectedContext: context.pluginId,
       });
+      const suggestionText = suggestions.length
+        ? `\nDid you mean: ${suggestions.map((suggestion) => `\`${sanitizeForDisplay(suggestion)}\``).join(", ")}?`
+        : "";
       await interaction.editReply({
-        content: `No ${profile.entryLabel ?? "entries"} matched \`${sanitizeForDisplay(keyword)}\` in the \`${context.plugin.label}\` \`${canonicalSubcommand}\` profile${fileFilter.normalizedFilter ? ` with file filter \`${sanitizeForDisplay(fileFilter.normalizedFilter)}\`` : ""}.`,
+        content: `No ${profile.entryLabel ?? "entries"} matched \`${sanitizeForDisplay(keyword)}\` in the \`${context.plugin.label}\` \`${canonicalSubcommand}\` profile${fileFilter.normalizedFilter ? ` with file filter \`${sanitizeForDisplay(fileFilter.normalizedFilter)}\`` : ""}.${suggestionText}`,
         allowedMentions: NO_MENTIONS,
       });
       return;

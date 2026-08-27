@@ -253,6 +253,8 @@ Discord responsibilities are separated under `src/discord/`: command schema and 
 
 Keep new Discord presentation or routing behavior in the matching focused module instead of growing the central interaction handler. `npm run check` syntax-checks both top-level source files and every `src/discord/*.js` module before running the tests.
 
+When a valid lookup has no useful result, Discord and the local lookup command can offer up to three conservative “Did you mean?” alternatives. Suggestions are calculated locally from keys and YAML key paths in the already-selected plugin, profile, and optional file filter. They never use source filenames, arbitrary values, external AI, or data outside that search scope, and they do not automatically run another search.
+
 ## Version Checks
 
 `/lookup latest` privately shows the clean snapshot version for the active plugin, CMILib, and Paper. `/lookup latest public:true` posts a compact public response containing only the latest upstream versions for the active plugin and CMILib, followed by an upgrade recommendation. It never includes the local clean snapshot, Paper, internal generation timestamps, or other tracked resources.
@@ -265,7 +267,7 @@ The CMI companion section always tracks CMI-API, CMI-Bungee, CMI-Velocity, CMI-V
 
 Most tracked Spigot resource versions are checked through the public Spiget API. Residence is checked directly through its official free Zrips listing at `https://zrips.net/Residence/`, Paper builds through Paper's official Fill API, LuckPerms through its official metadata service, and PlaceholderAPI through its latest successful Jenkins artifact. Spiget and Zrips listing requests use a unique cache key because their cached pages can otherwise lag behind a plugin release. CMI companion downloads use their Zrips listings, while CMI-API uses its GitHub project version. PlaceholderAPI output includes both its plugin version and Jenkins build number. A failed or disabled network check never prevents the bot from starting; the command continues to show the local inventory.
 
-Upstream refreshes are resilient per resource. After a resource has checked successfully, a temporary timeout or provider failure retains that last-known version while unrelated successful checks still update normally. The sanitized last-known state is atomically persisted to the ignored `VERSION_STATE_PATH`, so fallback survives bot and machine restarts. Retained values are clearly marked as last known in private and public version output, and recover automatically after the provider succeeds again. A resource with no successful check yet remains unavailable rather than inventing a version.
+Upstream refreshes are resilient per resource. Temporary network failures, timeouts, rate limits, and server errors receive bounded exponential-backoff retries with jitter; permanent HTTP failures fail immediately. Repeated failed refreshes open an in-memory circuit for only that resource, skip further requests during cooldown, and allow one recovery probe afterward. After a resource has checked successfully, a failed refresh retains that last-known version while unrelated successful checks still update normally. The sanitized last-known state is atomically persisted to the ignored `VERSION_STATE_PATH`, so fallback survives bot and machine restarts. Retained values are clearly marked as last known in private and public version output, and recover automatically after the provider succeeds again. A resource with no successful check yet remains unavailable rather than inventing a version.
 
 Version controls:
 
@@ -274,6 +276,11 @@ Version controls:
 - `VERSION_CHECK_ENABLED=true`
 - `VERSION_CHECK_INTERVAL_HOURS=12`
 - `VERSION_CHECK_TIMEOUT_SECONDS=8`
+- `VERSION_CHECK_MAX_ATTEMPTS=3`
+- `VERSION_CHECK_RETRY_BASE_MS=250`
+- `VERSION_CHECK_RETRY_MAX_MS=2000`
+- `VERSION_CHECK_CIRCUIT_FAILURE_THRESHOLD=3`
+- `VERSION_CHECK_CIRCUIT_COOLDOWN_SECONDS=300`
 - `PAPER_VERSION=26.2`
 - `PAPER_VERSION_CHANNELS=STABLE`
 

@@ -28,6 +28,10 @@ test("metrics retain bounded aggregates without query or identity labels", () =>
     totalTokens: 30,
   });
   metrics.recordUpstream({ durationMs: 2_000, outcome: "error", resourceCount: 9, errorCount: 1, retainedCount: 1 });
+  metrics.recordUpstreamRetry();
+  metrics.recordUpstreamCircuit({ outcome: "opened" });
+  metrics.recordUpstreamCircuit({ outcome: "rejected" });
+  metrics.recordUpstreamCircuit({ outcome: "closed" });
   metrics.observeLogRecord({ level: "error", event: "discord.client_error" });
   currentTime = 2_500;
 
@@ -39,7 +43,15 @@ test("metrics retain bounded aggregates without query or identity labels", () =>
   assert.deepEqual(snapshot.searches.results, { returned: 3, candidates: 12 });
   assert.equal(snapshot.reloads.scopes.profile, 1);
   assert.deepEqual(snapshot.ai.tokens, { input: 20, output: 10, total: 30 });
-  assert.deepEqual(snapshot.upstream.checks, { resources: 9, failures: 1, retained: 1 });
+  assert.deepEqual(snapshot.upstream.checks, {
+    resources: 9,
+    failures: 1,
+    retained: 1,
+    retries: 1,
+    circuitOpenings: 1,
+    circuitRejections: 1,
+    circuitRecoveries: 1,
+  });
   assert.equal(snapshot.errors.categories.discord, 1);
   assert.deepEqual(snapshot.memory, {
     rssBytes: 1_024,

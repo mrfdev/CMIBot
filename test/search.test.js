@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { extractEntriesFromTokenListText } from "../src/logIndex.js";
-import { lexicalSearchWithStats, orderMatchesForDisplay } from "../src/search.js";
+import {
+  lexicalSearchWithStats,
+  orderMatchesForDisplay,
+  suggestSearchQueries,
+} from "../src/search.js";
 import { extractEntriesFromText } from "../src/yamlIndex.js";
 
 test("log source paths do not count as material matches", () => {
@@ -110,4 +114,28 @@ test("display grouping preserves synonym relevance tiers", () => {
   const ordered = orderMatchesForDisplay(result.matches);
 
   assert.deepEqual(ordered.map((item) => item.entry.key), ["TP", "TELEPORT"]);
+});
+
+test("empty-search suggestions correct conservative key typos and transpositions", () => {
+  const entries = extractEntriesFromText(
+    ["TeleportRequest:", "  Enabled: true", "Economy:", "  Enabled: false"].join("\n"),
+    "config.yml",
+  );
+
+  assert.deepEqual(suggestSearchQueries("teleprot", entries), ["Teleport"]);
+  assert.equal(suggestSearchQueries("teleprot request", entries)[0], "TeleportRequest");
+  assert.deepEqual(suggestSearchQueries("completely unrelated", entries), []);
+});
+
+test("suggestions stay inside the supplied scope and ignore paths and values", () => {
+  const scopedEntries = extractEntriesFromText(
+    ["SafeSetting: supersecretvalue", "Teleport: true"].join("\n"),
+    "../etc/passwd",
+  );
+  const otherFileEntries = extractEntriesFromText("Residence: true", "other.yml");
+
+  assert.deepEqual(suggestSearchQueries("residnce", scopedEntries), []);
+  assert.deepEqual(suggestSearchQueries("passwrd", scopedEntries), []);
+  assert.deepEqual(suggestSearchQueries("supersecrtvalue", scopedEntries), []);
+  assert.deepEqual(suggestSearchQueries("residnce", otherFileEntries), ["Residence"]);
 });

@@ -21,6 +21,11 @@ function makeConfig(workspaceRoot) {
       paperVersion: "26.2",
       paperChannels: ["STABLE"],
       requestTimeoutMs: 1_000,
+      retryMaxAttempts: 1,
+      retryBaseDelayMs: 0,
+      retryMaxDelayMs: 0,
+      circuitFailureThreshold: 3,
+      circuitCooldownMs: 60_000,
     },
   };
 }
@@ -153,6 +158,53 @@ function createFetchFixture(t) {
 
   return state;
 }
+
+test("version checks recover from temporary HTTP failures through the resilience layer", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-version-retry-"));
+  const catalogPath = path.join(workspaceRoot, "versions.json");
+  const config = makeNetworkConfig(workspaceRoot);
+  config.versions.retryMaxAttempts = 3;
+  config.versions.retryBaseDelayMs = 10;
+  config.versions.retryMaxDelayMs = 20;
+  const delays = [];
+  let attempts = 0;
+  const service = createVersionService(config, {
+    random: () => 0.5,
+    sleep: async (delayMs) => delays.push(delayMs),
+    logger: { info() {}, warn() {}, error() {} },
+    async fetch() {
+      attempts += 1;
+      if (attempts < 3) {
+        return {
+          ok: false,
+          status: 503,
+          headers: { get: () => null },
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return [{ id: 91, channel: "STABLE" }];
+        },
+      };
+    },
+  });
+
+  try {
+    await fs.writeFile(catalogPath, JSON.stringify(makeCatalog("generated")), "utf8");
+    const snapshot = await service.start();
+
+    assert.equal(snapshot.paper.build, 91);
+    assert.equal(snapshot.errorCount, 0);
+    assert.equal(attempts, 3);
+    assert.deepEqual(delays, [10, 20]);
+  } finally {
+    service.stop();
+    await service.flushPersistence();
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
 
 test("Spiget requests bypass stale CDN entries on every refresh", async (t) => {
   const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-version-cache-bust-"));

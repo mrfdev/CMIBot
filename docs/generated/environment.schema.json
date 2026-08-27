@@ -235,6 +235,46 @@
       "pattern": "^[0-9]+$",
       "default": "8"
     },
+    "VERSION_CHECK_MAX_ATTEMPTS": {
+      "type": "string",
+      "description": "Maximum attempts for a temporary upstream failure.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "3"
+    },
+    "VERSION_CHECK_RETRY_BASE_MS": {
+      "type": "string",
+      "description": "Initial upstream retry delay in milliseconds.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "250"
+    },
+    "VERSION_CHECK_RETRY_MAX_MS": {
+      "type": "string",
+      "description": "Maximum upstream retry delay in milliseconds.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "2000"
+    },
+    "VERSION_CHECK_CIRCUIT_FAILURE_THRESHOLD": {
+      "type": "string",
+      "description": "Consecutive failed refreshes before a resource circuit opens.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "3"
+    },
+    "VERSION_CHECK_CIRCUIT_COOLDOWN_SECONDS": {
+      "type": "string",
+      "description": "Cooldown before an open resource circuit permits a recovery probe.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "300"
+    },
     "PAPER_VERSION": {
       "type": "string",
       "description": "Paper version line checked upstream.",

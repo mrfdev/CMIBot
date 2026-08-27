@@ -298,3 +298,80 @@ test("the extracted search lifecycle applies context synonyms and audits a forma
   assert.equal(searchMetrics[0].resultCount, 1);
   assert.equal("query" in searchMetrics[0], false);
 });
+
+test("an empty Discord search offers scoped suggestions without auditing their text", async () => {
+  const entries = extractEntriesFromText("Teleport: true", "CMIPlugin/CMI/config.yml");
+  const responses = [];
+  const auditEvents = [];
+  const plugin = makePlugin();
+  plugin.profiles.config = {
+    defaultResultLimit: 3,
+    maxResultLimit: 15,
+    entryLabel: "YAML entries",
+  };
+  const interaction = {
+    user: { id: "support-user" },
+    member: { roles: { cache: [{ id: "support-role" }] } },
+    options: {
+      getString(name) {
+        return {
+          keyword: "teleprot",
+          file: "",
+          mode: "exact",
+        }[name] ?? null;
+      },
+      getInteger: () => null,
+      getBoolean: () => false,
+    },
+    async deferReply() {},
+    async editReply(payload) {
+      responses.push(payload);
+    },
+    async reply(payload) {
+      responses.push(payload);
+    },
+  };
+
+  await handleSearchInteraction({
+    interaction,
+    subcommand: "config",
+    canonicalSubcommand: "config",
+    context: { plugin, pluginId: "cmi" },
+    config: {
+      search: {
+        defaultResultLimit: 3,
+        maxResultLimit: 15,
+        synonymsByPlugin: {},
+      },
+      security: {
+        queryAllowlist: [],
+        queryBlocklist: [],
+        queryMinLength: 2,
+        queryMaxLength: 100,
+        queryDebugErrors: false,
+        lookupCooldownSeconds: 0,
+        summaryCooldownSeconds: 0,
+      },
+      discord: { aiRoleIds: ["admin-role"] },
+      formatDisplayPath: (_pluginId, relativePath) => relativePath,
+    },
+    searchCache: {
+      getEntries: () => entries,
+    },
+    aiEnabled: false,
+    resolveAiReranker: async () => null,
+    cooldowns: {
+      check: () => ({ allowed: true, retryAfterSeconds: 0 }),
+    },
+    logEvent: async (_interaction, payload) => auditEvents.push(payload),
+    logRateLimitEvent: async () => {},
+    metrics: { recordSearch() {} },
+  });
+
+  assert.equal(responses.length, 1);
+  assert.match(responses[0].content, /No YAML entries matched `teleprot`/);
+  assert.match(responses[0].content, /Did you mean: `Teleport`\?/);
+  assert.equal(auditEvents.at(-1).outcome, "empty");
+  assert.equal(auditEvents.at(-1).suggestionCount, 1);
+  assert.equal("suggestions" in auditEvents.at(-1), false);
+});

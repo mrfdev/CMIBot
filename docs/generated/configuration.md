@@ -54,6 +54,11 @@ Identifiers are intentionally blank in generated examples.
 | `VERSION_CHECK_ENABLED` | boolean | no | public | `true` | Enable live upstream version checks. |
 | `VERSION_CHECK_INTERVAL_HOURS` | integer | no | public | `12` | Hours between scheduled upstream checks. |
 | `VERSION_CHECK_TIMEOUT_SECONDS` | integer | no | public | `8` | Timeout for each upstream request. |
+| `VERSION_CHECK_MAX_ATTEMPTS` | integer | no | public | `3` | Maximum attempts for a temporary upstream failure. |
+| `VERSION_CHECK_RETRY_BASE_MS` | integer | no | public | `250` | Initial upstream retry delay in milliseconds. |
+| `VERSION_CHECK_RETRY_MAX_MS` | integer | no | public | `2000` | Maximum upstream retry delay in milliseconds. |
+| `VERSION_CHECK_CIRCUIT_FAILURE_THRESHOLD` | integer | no | public | `3` | Consecutive failed refreshes before a resource circuit opens. |
+| `VERSION_CHECK_CIRCUIT_COOLDOWN_SECONDS` | integer | no | public | `300` | Cooldown before an open resource circuit permits a recovery probe. |
 | `PAPER_VERSION` | string | no | public | `26.2` | Paper version line checked upstream. |
 | `PAPER_VERSION_CHANNELS` | csv | no | public | `STABLE` | Comma-separated accepted Paper release channels. |
 

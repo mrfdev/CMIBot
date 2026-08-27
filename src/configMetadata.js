@@ -497,6 +497,34 @@ const environmentSections = [
         type: "integer",
         defaultValue: "8",
       }),
+      variable("VERSION_CHECK_MAX_ATTEMPTS", "Maximum attempts for a temporary upstream failure.", {
+        type: "integer",
+        defaultValue: "3",
+      }),
+      variable("VERSION_CHECK_RETRY_BASE_MS", "Initial upstream retry delay in milliseconds.", {
+        type: "integer",
+        defaultValue: "250",
+      }),
+      variable("VERSION_CHECK_RETRY_MAX_MS", "Maximum upstream retry delay in milliseconds.", {
+        type: "integer",
+        defaultValue: "2000",
+      }),
+      variable(
+        "VERSION_CHECK_CIRCUIT_FAILURE_THRESHOLD",
+        "Consecutive failed refreshes before a resource circuit opens.",
+        {
+          type: "integer",
+          defaultValue: "3",
+        },
+      ),
+      variable(
+        "VERSION_CHECK_CIRCUIT_COOLDOWN_SECONDS",
+        "Cooldown before an open resource circuit permits a recovery probe.",
+        {
+          type: "integer",
+          defaultValue: "300",
+        },
+      ),
       variable("PAPER_VERSION", "Paper version line checked upstream.", { defaultValue: "26.2" }),
       variable("PAPER_VERSION_CHANNELS", "Comma-separated accepted Paper release channels.", {
         type: "csv",

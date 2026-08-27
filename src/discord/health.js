@@ -104,6 +104,11 @@ export function formatHealthMessage({
       `AI: \`${metricsSnapshot.ai.count} requests, ${metricsSnapshot.ai.tokens.total} tokens reported\``,
       `Process memory: \`${formatBytes(metricsSnapshot.memory.rssBytes)} RSS, ${formatBytes(metricsSnapshot.memory.heapUsedBytes)} heap used\``,
     );
+    if (metricsSnapshot.upstream?.checks) {
+      lines.push(
+        `Upstream resilience: \`retries: ${metricsSnapshot.upstream.checks.retries}, circuits opened: ${metricsSnapshot.upstream.checks.circuitOpenings}, requests skipped: ${metricsSnapshot.upstream.checks.circuitRejections}\``,
+      );
+    }
   }
 
   if (serviceLogSnapshot) {
