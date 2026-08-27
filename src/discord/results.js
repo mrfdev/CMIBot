@@ -245,16 +245,20 @@ function getReferenceLabel(profile) {
 }
 
 function formatResultLead(result, options) {
+  const sourceLink = result.sourceUrl
+    ? `[source line ${result.lineNumber}](<${result.sourceUrl}>)`
+    : "";
   if (options.layout === "faq") {
     const url = extractUrlFromComments(result.comments);
-    return url ? `[${sanitizeForDisplay(result.yamlPath)}](<${url}>)` : `\`${result.yamlPath}\``;
+    const faqLink = url ? `[${sanitizeForDisplay(result.yamlPath)}](<${url}>)` : `\`${result.yamlPath}\``;
+    return sourceLink ? `${faqLink} · ${sourceLink}` : faqLink;
   }
 
   if (["permission", "command"].includes(options.layout)) {
-    return "";
+    return sourceLink;
   }
 
-  return `Look around line ${result.lineNumber} -> \`${result.yamlPath}\``;
+  return `Look around ${sourceLink || `line ${result.lineNumber}`} -> \`${result.yamlPath}\``;
 }
 
 function formatResultSnippet(result, options) {
@@ -265,13 +269,32 @@ function formatResultSnippet(result, options) {
   return result.snippet;
 }
 
-function formatMaterialResultsMessage(keyword, results, totalMentions) {
+function formatPaginationFooter(pagination, totalMentions) {
+  if (!pagination) {
+    return "";
+  }
+  const retainedNote =
+    totalMentions > pagination.availableResultCount
+      ? `; top ${pagination.availableResultCount} of ${totalMentions} matches retained`
+      : "";
+  return `_Page ${pagination.pageNumber}/${pagination.totalPages}, showing results ${pagination.startResult}-${pagination.endResult} of ${pagination.availableResultCount}${retainedNote}._`;
+}
+
+function formatMaterialResultsMessage(keyword, results, totalMentions, options) {
   const mentionLabel = pluralize(totalMentions, "mention");
   const safeKeyword = sanitizeForDisplay(keyword);
   const header = `### Found [${totalMentions}] ${mentionLabel} in the NMS material list for \`${safeKeyword}\``;
-  const values = results.map((result) => result.yamlPath).join("\n");
-  const footer = `_Showing ${results.length} ${pluralize(results.length, "result")}${totalMentions > results.length ? ", but there are more." : "."}_`;
-  return [header, `\`\`\`text\n${values}\n\`\`\``, footer].filter(Boolean).join("\n");
+  const values = results
+    .map((result) =>
+      result.sourceUrl
+        ? `- \`${sanitizeForDisplay(result.yamlPath)}\` ([source](<${result.sourceUrl}>))`
+        : `- \`${sanitizeForDisplay(result.yamlPath)}\``,
+    )
+    .join("\n");
+  const footer =
+    formatPaginationFooter(options.pagination, totalMentions) ||
+    `_Showing ${results.length} ${pluralize(results.length, "result")}${totalMentions > results.length ? ", but there are more." : "."}_`;
+  return [header, values, footer].filter(Boolean).join("\n");
 }
 
 export function formatResultsMessage(
@@ -284,7 +307,7 @@ export function formatResultsMessage(
   options = {},
 ) {
   if (options.layout === "materialList") {
-    return formatMaterialResultsMessage(keyword, results, totalMentions);
+    return formatMaterialResultsMessage(keyword, results, totalMentions, options);
   }
 
   const mentionLabel = pluralize(totalMentions, "mention");
@@ -318,7 +341,13 @@ export function formatResultsMessage(
       const leadLine = formatResultLead(result, options);
       const snippet = formatResultSnippet(result, options);
       const relatedLine = result.related?.length
-        ? `Related: ${result.related.map((entry) => `\`${entry.yamlPath}\` (line ${entry.lineNumber})`).join(", ")}\n`
+        ? `Related: ${result.related
+            .map((entry) =>
+              entry.sourceUrl
+                ? `\`${entry.yamlPath}\` ([line ${entry.lineNumber}](<${entry.sourceUrl}>))`
+                : `\`${entry.yamlPath}\` (line ${entry.lineNumber})`,
+            )
+            .join(", ")}\n`
         : "";
       blocks.push([leadLine, `${relatedLine}\`\`\`${result.codeLanguage}\n${snippet}\n\`\`\``].filter(Boolean).join("\n"));
     }
@@ -342,10 +371,10 @@ export function formatResultsMessage(
                 ? `### Found [${totalMentions}] ${mentionLabel} for ${profileReference || "`permissions`"} matching \`${safeKeyword}\``
                 : `### Found [${totalMentions}] ${mentionLabel} in [${fileCount}] ${fileLabel} for \`${safeKeyword}\`${fileHint}`;
 
-  let footer = "";
-  if (shownCount === totalMentions) {
+  let footer = formatPaginationFooter(options.pagination, totalMentions);
+  if (!footer && shownCount === totalMentions) {
     footer = `_Showing ${shownCount} ${pluralize(shownCount, "result")}._`;
-  } else if (totalMentions > shownCount) {
+  } else if (!footer && totalMentions > shownCount) {
     footer = `_Showing top ${shownCount} results, but there are more._`;
   }
 

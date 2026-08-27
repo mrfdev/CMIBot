@@ -15,8 +15,14 @@ import {
   resolveChannelContext,
 } from "./discord/context.js";
 import { formatDebugMessage } from "./discord/debug.js";
+import {
+  formatIndexedCategoriesMessage,
+  formatIndexedFilesMessage,
+  listSafeIndexedFiles,
+} from "./discord/browse.js";
 import { formatHelpMessage } from "./discord/help.js";
 import { formatHealthMessage } from "./discord/health.js";
+import { createResultPagination } from "./discord/pagination.js";
 import {
   formatLangStatsOnlyMessage,
   formatReloadMessage,
@@ -65,6 +71,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
   const rateLimiter = createSlidingWindowRateLimiter();
   const testOverrides = new Map();
   const requestMetadata = new WeakMap();
+  const pagination = dependencies.pagination ?? createResultPagination(config.search);
   let reloadInProgress = false;
 
   function logEvent(interaction, payload) {
@@ -106,6 +113,45 @@ export function createInteractionHandler(config, searchCache, versionService, de
   }
 
   async function handleInteraction(interaction) {
+    if (pagination.isPaginationButton(interaction)) {
+      const context = resolveChannelContext(interaction.channelId, config, testOverrides);
+      const result = pagination.resolveButton(interaction.customId, {
+        userId: interaction.user?.id,
+        guildId: interaction.guildId,
+        channelId: interaction.channelId,
+        pluginId: context.pluginId,
+        cacheGeneration: searchCache.getGeneration?.() ?? 0,
+        hasAccess:
+          config.discord.allowedChannelIds.includes(interaction.channelId) &&
+          hasRole(interaction.member, { roleIds: config.discord.allowedRoleIds }),
+      });
+      logger.info("discord.pagination_action", {
+        status: result.status,
+        action: result.action ?? "none",
+        pageNumber: result.pageNumber ?? 0,
+      });
+
+      if (result.status === "ok") {
+        await interaction.update(result.payload);
+        return;
+      }
+
+      const content =
+        result.status === "unauthorized"
+          ? "These result controls belong to the support member who ran the lookup."
+          : result.status === "stale"
+            ? "The lookup cache changed after these results were created. Run the lookup again."
+            : result.status === "invalid-context"
+              ? "These result controls are not valid in this channel or plugin context."
+              : "These result controls expired. Run the lookup again for fresh results.";
+      await interaction.reply({
+        content,
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
     if (!interaction.isChatInputCommand() || !SUPPORTED_COMMAND_NAMES.has(interaction.commandName)) {
       return;
     }
@@ -446,6 +492,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
             allowedMentions: NO_MENTIONS,
           });
         }
+        void dependencies.attentionMonitor?.checkNow();
       } finally {
         reloadInProgress = false;
       }
@@ -643,6 +690,85 @@ export function createInteractionHandler(config, searchCache, versionService, de
       return;
     }
 
+    if (canonicalSubcommand === "categories") {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      const summary = searchCache.getPluginSummary(context.plugin.id);
+      await logEvent(interaction, {
+        subcommand,
+        outcome: "success",
+        detectedContext: context.pluginId,
+        categoryCount: summary?.profileSummaries?.length ?? 0,
+      });
+      await interaction.editReply({
+        content: truncateDiscordMessage(formatIndexedCategoriesMessage(context.plugin, summary)),
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
+    if (canonicalSubcommand === "files") {
+      const profileName = interaction.options.getString("profile") ?? "";
+      if (profileName && !context.plugin.profiles[profileName]) {
+        await logEvent(interaction, {
+          subcommand,
+          outcome: "rejected",
+          reason: "invalid-file-profile",
+          detectedContext: context.pluginId,
+        });
+        await interaction.reply({
+          content: "That fixed cache profile is not available for the current plugin context.",
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+        return;
+      }
+
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      try {
+        const profileNames = profileName ? [profileName] : Object.keys(context.plugin.profiles);
+        const entries = profileNames.flatMap((name) => searchCache.getEntries(context.plugin.id, name));
+        const allowedRoots = [
+          ...(context.plugin.debugRoots ?? []),
+          ...(config.sharedDebugRoots ?? []).flatMap((root) => root.directories ?? []),
+        ];
+        const listing = listSafeIndexedFiles(entries, { allowedRoots });
+        const messages = splitDiscordMessages(
+          formatIndexedFilesMessage(context.plugin, listing, profileName),
+        );
+        await logEvent(interaction, {
+          subcommand,
+          outcome: "success",
+          detectedContext: context.pluginId,
+          profileName: profileName || "all",
+          visibleFileCount: listing.totalFileCount,
+          rejectedEntryCount: listing.rejectedCount,
+        });
+        await interaction.editReply({
+          content: messages[0],
+          allowedMentions: NO_MENTIONS,
+        });
+        for (const message of messages.slice(1)) {
+          await interaction.followUp({
+            content: message,
+            flags: MessageFlags.Ephemeral,
+            allowedMentions: NO_MENTIONS,
+          });
+        }
+      } catch {
+        await logEvent(interaction, {
+          subcommand,
+          outcome: "error",
+          reason: "file-browser-unavailable",
+          detectedContext: context.pluginId,
+        });
+        await interaction.editReply({
+          content: "The safe indexed-file list is temporarily unavailable.",
+          allowedMentions: NO_MENTIONS,
+        });
+      }
+      return;
+    }
+
     if (canonicalSubcommand === "langstats") {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
@@ -690,6 +816,8 @@ export function createInteractionHandler(config, searchCache, versionService, de
       logEvent,
       logRateLimitEvent,
       metrics,
+      runtimeInfo: dependencies.runtimeInfo,
+      pagination,
     });
   }
 
@@ -702,6 +830,10 @@ export function createInteractionHandler(config, searchCache, versionService, de
   }
 
   async function handleInteractionWithTelemetry(interaction) {
+    if (pagination.isPaginationButton(interaction)) {
+      await handleInteraction(interaction);
+      return;
+    }
     if (!interaction.isChatInputCommand() || !SUPPORTED_COMMAND_NAMES.has(interaction.commandName)) {
       return;
     }

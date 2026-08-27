@@ -1,6 +1,7 @@
 import path from "node:path";
 import { loadSearchSynonyms, parseSearchSynonymDocument } from "./searchSynonyms.js";
 import { parseServiceLogOptions } from "./serviceLog.js";
+import { normalizePublicGitHubRepositoryUrl } from "./sourceLinks.js";
 
 const SUPPORTED_PROFILE_SOURCE_TYPES = new Set(["log", "yaml"]);
 const SUPPORTED_LOG_PARSER_TYPES = new Set([
@@ -774,6 +775,8 @@ function buildPluginCommandAvailability(overrides = {}) {
     tabcomplete: "ready",
     langstats: "ready",
     stats: "ready",
+    files: "ready",
+    categories: "ready",
     latest: "ready",
     health: "ready",
     debug: "ready",
@@ -833,6 +836,7 @@ export function loadConfig() {
       allowedRoleIds: parseCsv(process.env.ALLOWED_ROLE_IDS),
       adminRoleIds: parseCsv(process.env.ADMIN_ROLE_IDS),
       aiRoleIds: parseCsv(process.env.AI_ROLE_IDS ?? process.env.ADMIN_ROLE_IDS),
+      adminAlertChannelId: process.env.DISCORD_ADMIN_ALERT_CHANNEL_ID?.trim() || "",
     },
     openai: {
       enabled: parseBoolean(process.env.OPENAI_ENABLED, false),
@@ -842,6 +846,23 @@ export function loadConfig() {
     search: {
       defaultResultLimit: Math.max(1, Math.min(15, parseInteger(process.env.DEFAULT_RESULT_LIMIT, 3))),
       maxResultLimit: 15,
+      cacheLoadConcurrency: Math.max(
+        1,
+        Math.min(16, parseInteger(process.env.CACHE_LOAD_CONCURRENCY, 4)),
+      ),
+      sourceLinksEnabled: parseBoolean(process.env.SOURCE_LINKS_ENABLED, true),
+      sourceRepositoryUrl:
+        process.env.SOURCE_REPOSITORY_URL?.trim() || "https://github.com/mrfdev/CMIBot",
+      paginationTtlMs:
+        Math.max(1, parseInteger(process.env.PAGINATION_TTL_MINUTES, 10)) * 60 * 1000,
+      paginationMaxSessions: Math.max(
+        1,
+        Math.min(1_000, parseInteger(process.env.PAGINATION_MAX_SESSIONS, 200)),
+      ),
+      paginationMaxResults: Math.max(
+        25,
+        Math.min(250, parseInteger(process.env.PAGINATION_MAX_RESULTS, 100)),
+      ),
       synonymsPath: searchSynonymsPath,
       synonymsByPlugin,
     },
@@ -865,6 +886,25 @@ export function loadConfig() {
         ) * 1000,
       paperVersion: process.env.PAPER_VERSION?.trim() || "26.2",
       paperChannels: parseCsv(process.env.PAPER_VERSION_CHANNELS ?? "STABLE").map((item) => item.toUpperCase()),
+    },
+    attention: {
+      intervalMs:
+        Math.max(1, parseInteger(process.env.ADMIN_ALERT_INTERVAL_MINUTES, 15)) * 60 * 1000,
+      reminderMs:
+        Math.max(1, parseInteger(process.env.ADMIN_ALERT_REMINDER_HOURS, 24)) * 60 * 60 * 1000,
+      cleanDataMaxAgeMs:
+        Math.max(1, parseInteger(process.env.CLEAN_DATA_STALE_HOURS, 48)) * 60 * 60 * 1000,
+      upstreamMaxAgeMs:
+        Math.max(
+          1,
+          parseInteger(
+            process.env.UPSTREAM_CHECK_STALE_HOURS,
+            Math.max(1, parseInteger(process.env.VERSION_CHECK_INTERVAL_HOURS, 12) * 2),
+          ),
+        ) *
+        60 *
+        60 *
+        1000,
     },
     logging: parseServiceLogOptions(process.env),
     metrics: {
@@ -1063,6 +1103,12 @@ export function validateBotConfig(config) {
   }
   if (config.openai.enabled && !config.discord.aiRoleIds.length) {
     throw new Error("Define AI_ROLE_IDS so the bot can guard AI-backed features.");
+  }
+  if (
+    config.search.sourceLinksEnabled === true &&
+    !normalizePublicGitHubRepositoryUrl(config.search.sourceRepositoryUrl)
+  ) {
+    throw new Error("SOURCE_REPOSITORY_URL must be a public HTTPS GitHub repository URL.");
   }
 
   validateRelativePath(config.versions.catalogPath, "VERSION_CATALOG_PATH");

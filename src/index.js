@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { performance } from "node:perf_hooks";
 import { Client, GatewayIntentBits } from "discord.js";
+import { createAttentionMonitor } from "./attentionMonitor.js";
 import { createSearchCache } from "./cache.js";
 import { loadConfig, validateBotConfig } from "./config.js";
 import { createInteractionHandler, registerCommands } from "./discordBot.js";
@@ -13,6 +14,7 @@ import { validateStartupState } from "./startupValidation.js";
 import { createVersionService } from "./versionCatalog.js";
 
 const activeResources = {
+  attentionMonitor: null,
   client: null,
   metrics: null,
   serviceLogs: null,
@@ -26,6 +28,7 @@ async function stopLookupBot() {
   }
 
   stopPromise = (async () => {
+    activeResources.attentionMonitor?.stop();
     activeResources.versionService?.stop();
     activeResources.metrics?.stop();
     activeResources.client?.destroy();
@@ -99,9 +102,15 @@ async function main() {
     intents: [GatewayIntentBits.Guilds],
   });
   activeResources.client = client;
+  const attentionMonitor = createAttentionMonitor(config, versionService, {
+    client,
+    logger: serviceLogger,
+  });
+  activeResources.attentionMonitor = attentionMonitor;
 
   client.once("clientReady", () => {
     serviceLogger.info("discord.connected", { ready: true });
+    attentionMonitor.start();
   });
 
   client.on("error", (error) => {
@@ -120,6 +129,7 @@ async function main() {
       runtimeInfo,
       serviceLogs,
       startupState,
+      attentionMonitor,
     }),
   );
 

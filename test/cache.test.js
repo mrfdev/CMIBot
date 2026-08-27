@@ -241,6 +241,41 @@ test("CMILib profiles load once and are composed into every plugin context", asy
   assert.deepEqual(cache.getGlobalSummary(), summary);
 });
 
+test("full cache warming uses one bounded concurrency limit across profile loaders", async () => {
+  const config = makeSharedConfig();
+  config.search = { cacheLoadConcurrency: 2 };
+  let activeLoads = 0;
+  let maximumActiveLoads = 0;
+  let completedLoads = 0;
+  const cache = createSearchCache(config, {
+    async loadEntriesForProfile(profile) {
+      activeLoads += 1;
+      maximumActiveLoads = Math.max(maximumActiveLoads, activeLoads);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      activeLoads -= 1;
+      completedLoads += 1;
+      return [
+        {
+          relativePath: profile.include[0],
+          lineNumber: 1,
+          yamlPath: profile.name,
+          searchText: profile.name,
+        },
+      ];
+    },
+    async buildLanguageCategoryStats() {
+      return [];
+    },
+  });
+
+  assert.equal(cache.getGeneration(), 0);
+  await cache.warm();
+
+  assert.equal(completedLoads, 6);
+  assert.equal(maximumActiveLoads, 2);
+  assert.equal(cache.getGeneration(), 1);
+});
+
 test("a failed shared CMILib reload leaves local and shared snapshots unchanged", async () => {
   let generation = "old";
   let failSharedReload = false;

@@ -74,6 +74,7 @@ export function buildCommandTree(commandName, config) {
   const reloadProfileChoices = [
     ...new Set(Object.values(config.plugins).flatMap((plugin) => Object.keys(plugin.profiles))),
   ].map((profileName) => ({ name: profileName, value: profileName }));
+  const browseProfileChoices = reloadProfileChoices;
 
   return new SlashCommandBuilder()
     .setName(commandName)
@@ -162,6 +163,22 @@ export function buildCommandTree(commandName, config) {
       subcommand
         .setName("stats")
         .setDescription("Show cache totals and per-profile counts for the active plugin context."),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("files")
+        .setDescription("Privately list safe filenames already indexed for this context.")
+        .addStringOption((option) =>
+          option
+            .setName("profile")
+            .setDescription("Optional fixed cache profile to browse.")
+            .addChoices(...browseProfileChoices),
+        ),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("categories")
+        .setDescription("Privately list available cache profiles and their aggregate counts."),
     )
     .addSubcommand((subcommand) =>
       subcommand

@@ -147,6 +147,14 @@
       "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
       "writeOnly": true
     },
+    "DISCORD_ADMIN_ALERT_CHANNEL_ID": {
+      "type": "string",
+      "description": "Private channel that receives aggregate data-health alerts.",
+      "x-value-type": "discord-id",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}$",
+      "writeOnly": true
+    },
     "OPENAI_ENABLED": {
       "type": "string",
       "description": "Hard switch for OpenAI-backed features.",
@@ -186,6 +194,56 @@
       "x-sensitivity": "public",
       "pattern": "^[0-9]+$",
       "default": "3"
+    },
+    "CACHE_LOAD_CONCURRENCY": {
+      "type": "string",
+      "description": "Maximum number of cache profiles loaded concurrently.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "4"
+    },
+    "SOURCE_LINKS_ENABLED": {
+      "type": "string",
+      "description": "Link lookup results to the exact deployed source revision.",
+      "x-value-type": "boolean",
+      "x-sensitivity": "public",
+      "enum": [
+        "true",
+        "false"
+      ],
+      "default": "true"
+    },
+    "SOURCE_REPOSITORY_URL": {
+      "type": "string",
+      "description": "Public HTTPS GitHub repository used for pinned source links.",
+      "x-value-type": "url",
+      "x-sensitivity": "public",
+      "default": "https://github.com/mrfdev/CMIBot"
+    },
+    "PAGINATION_TTL_MINUTES": {
+      "type": "string",
+      "description": "Minutes before interactive result controls expire.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "10"
+    },
+    "PAGINATION_MAX_SESSIONS": {
+      "type": "string",
+      "description": "Maximum in-memory interactive result sessions.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "200"
+    },
+    "PAGINATION_MAX_RESULTS": {
+      "type": "string",
+      "description": "Maximum ranked results retained per interactive session.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "100"
     },
     "SEARCH_SYNONYMS_PATH": {
       "type": "string",
@@ -360,6 +418,38 @@
       "x-sensitivity": "public",
       "pattern": "^[0-9]+$",
       "default": "30"
+    },
+    "ADMIN_ALERT_INTERVAL_MINUTES": {
+      "type": "string",
+      "description": "Minutes between aggregate data-health checks.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "15"
+    },
+    "ADMIN_ALERT_REMINDER_HOURS": {
+      "type": "string",
+      "description": "Hours before repeating an unchanged alert.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "24"
+    },
+    "CLEAN_DATA_STALE_HOURS": {
+      "type": "string",
+      "description": "Maximum clean-snapshot age before an alert.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "48"
+    },
+    "UPSTREAM_CHECK_STALE_HOURS": {
+      "type": "string",
+      "description": "Maximum upstream-check age before an alert.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "24"
     },
     "QUERY_MIN_LENGTH": {
       "type": "string",

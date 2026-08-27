@@ -146,3 +146,18 @@ test("search synonyms cannot reference an unknown plugin context", () => {
 
   assert.throws(() => validateBotConfig(config), /unknown plugin context/i);
 });
+
+test("source links reject non-public repository hosts without echoing them", () => {
+  const config = makeConfig({ enabled: false, apiKey: "", model: "gpt-5-mini" });
+  config.search.sourceLinksEnabled = true;
+  config.search.sourceRepositoryUrl = "https://private-host-alias/internal/repository";
+
+  assert.throws(
+    () => validateBotConfig(config),
+    (error) => {
+      assert.match(error.message, /public HTTPS GitHub repository/i);
+      assert.doesNotMatch(error.message, /private-host-alias/);
+      return true;
+    },
+  );
+});

@@ -10,10 +10,11 @@ The repository is still named `CMIBot`, but `/lookup` is the only registered sla
 - Exact, whole-word, and broad searches
 - Configurable plugin-scoped aliases and synonym expansion
 - Safe indexed-file filtering for config searches
+- Private, fixed-scope browsing of cached filenames and categories without filesystem reads
 - English locale searches with shared CMILib data
 - Curated command, permission, placeholder, FAQ, material, and tab-complete indexes where available
 - Automatic runtime extraction of commands, permissions, and placeholders from initialized plugin jars
-- In-memory caches with transactional full, plugin, and profile reloads
+- In-memory caches with bounded parallel warming and transactional full, plugin, and profile reloads
 - Clean first-install plugin data generated from a disposable Paper server
 - Local version inventory plus scheduled Paper and Spigot resource checks
 - Paper 26.2 stable/API drift checks plus Java 25 and Java 26 smoke commands
@@ -21,6 +22,8 @@ The repository is still named `CMIBot`, but `/lookup` is the only registered sla
 - Fail-closed startup validation for configuration, routes, indexes, cache summaries, and version-catalog drift
 - Layered user/channel/global rate limits, input validation, disabled mentions, role-ID access checks, JSONL audit logs, and bounded privacy-aware structured service logs
 - Privacy-safe aggregate metrics for commands, searches, reloads, AI usage, upstream checks, errors, and memory
+- Optional aggregate admin alerts for stale snapshots, upstream failures, and tracked updates
+- Owner-bound interactive result pagination and commit-pinned public source links
 - Generated environment schema, blank-safe examples, and plugin-profile documentation
 - Context-aware help, stats, language stats, latest versions, health, and debug output
 
@@ -37,7 +40,7 @@ The repository is still named `CMIBot`, but `/lookup` is the only registered sla
 | TradeMe | config, language, generated placeholder, generated command, generated permission |
 | BottledExp | config, language, generated command, generated permission |
 
-All contexts also support `help`, `stats`, `langstats`, and `latest`. The global `health`, `debug`, and `reload` commands are admin-only. Unsupported search features are hidden from the context-specific available list and are reported clearly if called directly.
+All contexts also support `help`, `stats`, `langstats`, `files`, `categories`, and `latest`. The global `health`, `debug`, and `reload` commands are admin-only. Unsupported search features are hidden from the context-specific available list and are reported clearly if called directly.
 
 CMILib config and English locale files are shared with every plugin context.
 
@@ -58,6 +61,9 @@ CMILib config and English locale files are shared with every plugin context.
 /lookup tabcomplete <keyword>
 /lookup langstats
 /lookup stats
+/lookup files
+/lookup files profile:config
+/lookup categories
 /lookup latest
 /lookup latest public:true
 /lookup latest scope:all
@@ -80,6 +86,8 @@ CMILib config and English locale files are shared with every plugin context.
 - `file:<name>` restricts config results to a valid indexed file in the active context.
 - Source filenames and repository paths are metadata, not searchable content. Use `file:` when you intentionally want to restrict a config lookup to an indexed file.
 - Found totals and file counts are calculated before the display limit is applied.
+- When more results exist, opaque Previous/Next controls retain up to `PAGINATION_MAX_RESULTS` ranked matches for the configured session lifetime. Every click revalidates the owning user, support role, channel, plugin context, and cache generation.
+- Source links point to the full commit deployed when the response was generated. A later deployment uses its new commit, while links in older Discord messages remain stable.
 - `related:true` adds nearby YAML entries to config and language results.
 - `summary:true` requests an AI summary only when OpenAI support and the configured AI role are enabled.
 - Configured aliases are expanded automatically only inside the active plugin context. Direct matches for the original term remain first.
@@ -309,7 +317,7 @@ The scripts prefer the JDK home paths from the compatibility manifest. If a patc
 
 ## Cache Behavior
 
-All indexed YAML plus curated and jar-generated log data is loaded into RAM during startup. `/lookup reload` without options globally rebuilds every plugin cache, reloads the version catalog, and refreshes upstream version checks. `plugin:` narrows the cache reload to one context, and `profile:` narrows it to one profile. A profile without `plugin:` uses the current channel context. Selective reloads intentionally leave version data and unrelated cache snapshots unchanged.
+All indexed YAML plus curated and jar-generated log data is loaded into RAM during startup. Profile loaders share the bounded `CACHE_LOAD_CONCURRENCY` pool; shared CMILib profiles finish before dependent plugin profiles begin. `/lookup reload` without options globally rebuilds every plugin cache, reloads the version catalog, and refreshes upstream version checks. `plugin:` narrows the cache reload to one context, and `profile:` narrows it to one profile. A profile without `plugin:` uses the current channel context. Selective reloads intentionally leave version data and unrelated cache snapshots unchanged.
 
 CMILib is cached once through the `CMILIB_*_INCLUDE_GLOBS` profiles. Plugin contexts retain only their own entries, then compose the matching shared CMILib config, language, and placeholder entries into searches at read time. This preserves the same `/lookup` results and per-context stats without retaining another copy of every CMILib entry for every Zrips plugin.
 
@@ -332,6 +340,12 @@ The command is restricted to `ADMIN_ROLE_IDS`. Regular searches continue to use 
 Reload reports are private. If the global per-plugin breakdown exceeds one Discord message, the bot continues it in additional ephemeral follow-ups instead of trimming contexts from the end.
 
 `/lookup stats` reports only the current plugin context. Startup and a full `/lookup reload` report every context, followed by a separate `Shared CMILib data` section. Selective reloads report only the requested plugin or profile.
+
+`/lookup files` and `/lookup categories` are support-role-only and ephemeral. The file browser accepts only fixed cache-profile choices, lists only safe plugin-relative names already present in memory, and never accepts a path or reads file contents. Traversal, hidden paths, credential-like names, key formats, log files, and files outside the active plugin/shared roots fail closed.
+
+## Admin Data Alerts
+
+Aggregate alerts are disabled unless `DISCORD_ADMIN_ALERT_CHANNEL_ID` names a text channel in the configured guild. When enabled, the bot checks for stale clean data, overdue or failed upstream checks, retained last-known results, and tracked updates. Unchanged alerts are deduplicated until the reminder interval, and recovery is announced once. Alert text and logs omit resource identifiers, paths, hostnames, channel IDs, and raw errors.
 
 ## Health Output
 
@@ -361,6 +375,9 @@ Reload reports are private. If the global per-plugin breakdown exceeds one Disco
 - Short valid terms such as `rt`, `rtp`, `tp`, and placeholders can be allowlisted.
 - Discord mentions are disabled on all bot responses.
 - `file:` only resolves against files already indexed in the active plugin profile.
+- `/lookup files` never reads from a user-supplied path or returns file contents.
+- Pagination IDs are random and contain no query, user, route, or path data; sessions are bounded, expire automatically, and are invalidated by cache reloads.
+- Pinned source links require a full deployed commit and a safe path beneath the active plugin or shared root; short revisions, mutable branches, private hosts, traversal, and credential-like targets produce no link.
 - A sliding-window limit follows each user across every subcommand, so switching commands cannot bypass throttling.
 - Authorized support commands also share per-channel and process-wide windows to contain coordinated bursts.
 - Lookup and AI-summary operations retain separate per-user cooldowns; lookup throttling runs before cache filtering.

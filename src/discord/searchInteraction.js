@@ -6,6 +6,7 @@ import {
   suggestSearchQueries,
 } from "../search.js";
 import { resolveFileFilter, sanitizeForDisplay, validateQuery } from "../security.js";
+import { buildPinnedSourceUrl } from "../sourceLinks.js";
 import { findRelatedEntries, makeDisplayContext } from "../yamlIndex.js";
 import { NO_MENTIONS, PRIMARY_COMMAND_NAME } from "./constants.js";
 import {
@@ -51,6 +52,8 @@ export async function handleSearchInteraction({
   logEvent,
   logRateLimitEvent,
   metrics,
+  runtimeInfo,
+  pagination,
 }) {
   const availability = getCommandAvailability(context.plugin, canonicalSubcommand);
   if (availability !== "ready") {
@@ -207,7 +210,11 @@ export async function handleSearchInteraction({
     const searchStartedAt = performance.now();
     let searchResult;
     try {
-      searchResult = lexicalSearchWithStats(keyword, entries, { limit: 25, mode, synonyms });
+      searchResult = lexicalSearchWithStats(keyword, entries, {
+        limit: pagination?.getMaxResults?.() ?? config.search.paginationMaxResults ?? 100,
+        mode,
+        synonyms,
+      });
       metrics?.recordSearch({
         durationMs: performance.now() - searchStartedAt,
         outcome: searchResult.matches.length ? "success" : "empty",
@@ -223,11 +230,21 @@ export async function handleSearchInteraction({
     }
     const lexicalMatches = searchResult.matches;
     const reranker = aiEnabled && canUseAi ? await resolveAiReranker() : null;
-    const rerankedMatches = reranker ? await reranker.rerank(keyword, lexicalMatches) : lexicalMatches;
-    const orderedMatches = orderMatchesForDisplay(rerankedMatches);
-    const finalMatches = orderedMatches.slice(0, limit);
+    const rerankCandidates = lexicalMatches.slice(0, 25);
+    const rerankedMatches = reranker
+      ? await reranker.rerank(keyword, rerankCandidates)
+      : rerankCandidates;
+    const orderedMatches = [
+      ...orderMatchesForDisplay(rerankedMatches),
+      ...orderMatchesForDisplay(lexicalMatches.slice(25)),
+    ];
+    const retainedMatches = orderedMatches.slice(
+      0,
+      pagination?.getMaxResults?.() ?? config.search.paginationMaxResults ?? 100,
+    );
+    const initialMatches = retainedMatches.slice(0, limit);
 
-    if (!finalMatches.length) {
+    if (!initialMatches.length) {
       const suggestions = suggestSearchQueries(keyword, entries, { limit: 3 });
       await logEvent(interaction, {
         subcommand,
@@ -252,34 +269,77 @@ export async function handleSearchInteraction({
       return;
     }
 
-    const visibleResults = finalMatches.map((item) => ({
-      ...makeDisplayContext(item.entry, context.plugin.id, config.formatDisplayPath),
-      related: related ? findRelatedEntries(item.entry, entries) : [],
-    }));
+    const allowedSourceRoots = [
+      ...(context.plugin.debugRoots ?? []),
+      ...(config.sharedDebugRoots ?? []).flatMap((root) => root.directories ?? []),
+    ];
+    const sourceUrlFor = (relativePath, lineNumber) =>
+      buildPinnedSourceUrl({
+        enabled: config.search.sourceLinksEnabled,
+        repositoryUrl: config.search.sourceRepositoryUrl,
+        revision: runtimeInfo?.fullRevision,
+        relativePath,
+        lineNumber,
+        allowedRoots: allowedSourceRoots,
+      });
+    const visibleResults = retainedMatches.map((item) => {
+      const relatedEntries = related ? findRelatedEntries(item.entry, entries) : [];
+      return {
+        ...makeDisplayContext(item.entry, context.plugin.id, config.formatDisplayPath),
+        sourceUrl: sourceUrlFor(item.entry.relativePath, item.entry.lineNumber),
+        related: relatedEntries.map((entry) => ({
+          ...entry,
+          sourceUrl: sourceUrlFor(item.entry.relativePath, entry.lineNumber),
+        })),
+      };
+    });
     const totalMentions = searchResult.totalMatches;
     const fileCount = searchResult.matchedFiles.length;
     let aiSummary = "";
     if (summary && reranker && canUseAi) {
       aiSummary =
-        (await reranker.summarize(keyword, finalMatches, {
+        (await reranker.summarize(keyword, initialMatches, {
           profileName: `${context.plugin.id}:${canonicalSubcommand}`,
         })) || "";
     }
     const allMatchedFiles = searchResult.matchedFiles;
-    const message = formatResultsMessage(
-      keyword,
-      visibleResults,
-      totalMentions,
-      fileCount,
-      aiSummary,
-      allMatchedFiles,
-      {
-        profile,
-        preferShortPath: canonicalSubcommand === "language",
-        showFileHints: canonicalSubcommand === "config",
-        layout: getResultLayout(canonicalSubcommand),
-      },
-    );
+    const formatOptions = {
+      profile,
+      preferShortPath: canonicalSubcommand === "language",
+      showFileHints: canonicalSubcommand === "config",
+      layout: getResultLayout(canonicalSubcommand),
+    };
+    const responsePayload =
+      pagination && visibleResults.length > limit
+        ? pagination.createSession({
+            ownerId: interaction.user.id,
+            guildId: interaction.guildId,
+            channelId: interaction.channelId,
+            pluginId: context.pluginId,
+            cacheGeneration: searchCache.getGeneration?.() ?? 0,
+            keyword,
+            results: visibleResults,
+            totalMentions,
+            fileCount,
+            aiSummary,
+            allMatchedFiles,
+            options: formatOptions,
+            pageSize: limit,
+          }).payload
+        : {
+            content: truncateDiscordMessage(
+              formatResultsMessage(
+                keyword,
+                visibleResults.slice(0, limit),
+                totalMentions,
+                fileCount,
+                aiSummary,
+                allMatchedFiles,
+                formatOptions,
+              ),
+            ),
+            allowedMentions: NO_MENTIONS,
+          };
 
     await logEvent(interaction, {
       subcommand,
@@ -293,14 +353,12 @@ export async function handleSearchInteraction({
       aiEnabled: canUseAi,
       outcome: "success",
       detectedContext: context.pluginId,
-      resultCount: finalMatches.length,
+      resultCount: initialMatches.length,
+      retainedResultCount: retainedMatches.length,
       totalMentions,
       fileCount,
     });
-    await interaction.editReply({
-      content: truncateDiscordMessage(message),
-      allowedMentions: NO_MENTIONS,
-    });
+    await interaction.editReply(responsePayload);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     await logEvent(interaction, {

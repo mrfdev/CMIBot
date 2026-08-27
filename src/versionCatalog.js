@@ -111,6 +111,72 @@ function comparePluginRelease(plugin, upstream) {
   return Number(plugin.build) - Number(upstream.build);
 }
 
+export function getVersionAttentionSummary(snapshot) {
+  if (!snapshot?.catalog || !snapshot.checkEnabled) {
+    return {
+      updateKeys: [],
+      unavailableKeys: [],
+      staleKeys: [],
+    };
+  }
+
+  const updateKeys = [];
+  const unavailableKeys = [];
+  const staleKeys = [];
+  const { catalog } = snapshot;
+
+  if (!snapshot.paper?.build) {
+    unavailableKeys.push("paper");
+  } else {
+    if (snapshot.paper.stale) {
+      staleKeys.push("paper");
+    }
+    const sameVersion = String(catalog.paper.version) === String(snapshot.paper.version);
+    const comparison = sameVersion
+      ? Number(catalog.paper.build ?? 0) - Number(snapshot.paper.build)
+      : compareVersions(catalog.paper.version, snapshot.paper.version);
+    if (comparison < 0) {
+      updateKeys.push("paper");
+    }
+  }
+
+  for (const plugin of (catalog.plugins ?? []).filter(
+    (entry) => entry.resourceId || entry.versionSource,
+  )) {
+    const upstream = snapshot.plugins?.get(plugin.id);
+    if (!upstream?.version) {
+      unavailableKeys.push(`plugin:${plugin.id}`);
+      continue;
+    }
+    if (upstream.stale) {
+      staleKeys.push(`plugin:${plugin.id}`);
+    }
+    if (comparePluginRelease(plugin, upstream) < 0) {
+      updateKeys.push(`plugin:${plugin.id}`);
+    }
+  }
+
+  for (const companion of (catalog.companions ?? []).filter((entry) => entry.versionSource)) {
+    const upstream = snapshot.companions?.get(companion.id);
+    if (!upstream?.version) {
+      unavailableKeys.push(`companion:${companion.id}`);
+      continue;
+    }
+    if (upstream.stale) {
+      staleKeys.push(`companion:${companion.id}`);
+    }
+    if (companion.version && compareVersions(companion.version, upstream.version) < 0) {
+      updateKeys.push(`companion:${companion.id}`);
+    }
+  }
+
+  return {
+    updateKeys: updateKeys.sort(),
+    unavailableKeys: unavailableKeys.sort(),
+    staleKeys: staleKeys.sort(),
+  };
+}
+
 function formatPluginVersionLine(plugin, upstream, checkEnabled) {
   const label = linkedLabel(plugin.label, plugin.resourceUrl || plugin.website);
   const prefix = `- **${label}:** clean snapshot \`${formatPluginRelease(plugin.version, plugin.build)}\``;

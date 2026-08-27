@@ -433,6 +433,10 @@ const discordVariables = [
     sensitivity: "private",
     condition: "Required when OPENAI_ENABLED=true; otherwise falls back to ADMIN_ROLE_IDS.",
   }),
+  variable("DISCORD_ADMIN_ALERT_CHANNEL_ID", "Private channel that receives aggregate data-health alerts.", {
+    type: "discord-id",
+    sensitivity: "private",
+  }),
 ];
 
 const environmentSections = [
@@ -467,6 +471,30 @@ const environmentSections = [
       variable("DEFAULT_RESULT_LIMIT", "Default number of lookup results.", {
         type: "integer",
         defaultValue: "3",
+      }),
+      variable("CACHE_LOAD_CONCURRENCY", "Maximum number of cache profiles loaded concurrently.", {
+        type: "integer",
+        defaultValue: "4",
+      }),
+      variable("SOURCE_LINKS_ENABLED", "Link lookup results to the exact deployed source revision.", {
+        type: "boolean",
+        defaultValue: "true",
+      }),
+      variable("SOURCE_REPOSITORY_URL", "Public HTTPS GitHub repository used for pinned source links.", {
+        type: "url",
+        defaultValue: "https://github.com/mrfdev/CMIBot",
+      }),
+      variable("PAGINATION_TTL_MINUTES", "Minutes before interactive result controls expire.", {
+        type: "integer",
+        defaultValue: "10",
+      }),
+      variable("PAGINATION_MAX_SESSIONS", "Maximum in-memory interactive result sessions.", {
+        type: "integer",
+        defaultValue: "200",
+      }),
+      variable("PAGINATION_MAX_RESULTS", "Maximum ranked results retained per interactive session.", {
+        type: "integer",
+        defaultValue: "100",
       }),
       variable("SEARCH_SYNONYMS_PATH", "Repository-relative path to plugin-scoped search synonyms.", {
         type: "relative-path",
@@ -544,6 +572,28 @@ const environmentSections = [
       variable("DEBUG_COOLDOWN_SECONDS", "Global admin debug cooldown.", { type: "integer", defaultValue: "10" }),
       variable("RELOAD_COOLDOWN_SECONDS", "Global admin reload cooldown.", { type: "integer", defaultValue: "30" }),
       variable("RATE_LIMIT_AUDIT_COOLDOWN_SECONDS", "Coalescing window for repeated rate-limit audit entries.", { type: "integer", defaultValue: "30" }),
+    ],
+  },
+  {
+    title: "Admin data alerts",
+    description: "Alerts are disabled unless DISCORD_ADMIN_ALERT_CHANNEL_ID is configured.",
+    variables: [
+      variable("ADMIN_ALERT_INTERVAL_MINUTES", "Minutes between aggregate data-health checks.", {
+        type: "integer",
+        defaultValue: "15",
+      }),
+      variable("ADMIN_ALERT_REMINDER_HOURS", "Hours before repeating an unchanged alert.", {
+        type: "integer",
+        defaultValue: "24",
+      }),
+      variable("CLEAN_DATA_STALE_HOURS", "Maximum clean-snapshot age before an alert.", {
+        type: "integer",
+        defaultValue: "48",
+      }),
+      variable("UPSTREAM_CHECK_STALE_HOURS", "Maximum upstream-check age before an alert.", {
+        type: "integer",
+        defaultValue: "24",
+      }),
     ],
   },
   {

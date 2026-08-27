@@ -28,6 +28,7 @@ Identifiers are intentionally blank in generated examples.
 | `ALLOWED_ROLE_IDS` | discord-id-list | yes | private | (blank) | Comma-separated role IDs allowed to use lookup commands. |
 | `ADMIN_ROLE_IDS` | discord-id-list | yes | private | (blank) | Comma-separated role IDs allowed to use admin commands. |
 | `AI_ROLE_IDS` | discord-id-list | no | private | (blank) | Comma-separated role IDs allowed to use AI-backed options. Required when OPENAI_ENABLED=true; otherwise falls back to ADMIN_ROLE_IDS. |
+| `DISCORD_ADMIN_ALERT_CHANNEL_ID` | discord-id | no | private | (blank) | Private channel that receives aggregate data-health alerts. |
 
 ## AI
 
@@ -43,6 +44,12 @@ Identifiers are intentionally blank in generated examples.
 | --- | --- | --- | --- | --- | --- |
 | `DISPLAY_PATH_PREFIX` | string | no | public | `~/plugins` | Prefix shown before repository-relative lookup paths. |
 | `DEFAULT_RESULT_LIMIT` | integer | no | public | `3` | Default number of lookup results. |
+| `CACHE_LOAD_CONCURRENCY` | integer | no | public | `4` | Maximum number of cache profiles loaded concurrently. |
+| `SOURCE_LINKS_ENABLED` | boolean | no | public | `true` | Link lookup results to the exact deployed source revision. |
+| `SOURCE_REPOSITORY_URL` | url | no | public | `https://github.com/mrfdev/CMIBot` | Public HTTPS GitHub repository used for pinned source links. |
+| `PAGINATION_TTL_MINUTES` | integer | no | public | `10` | Minutes before interactive result controls expire. |
+| `PAGINATION_MAX_SESSIONS` | integer | no | public | `200` | Maximum in-memory interactive result sessions. |
+| `PAGINATION_MAX_RESULTS` | integer | no | public | `100` | Maximum ranked results retained per interactive session. |
 | `SEARCH_SYNONYMS_PATH` | relative-path | no | public | `data/search-synonyms.json` | Repository-relative path to plugin-scoped search synonyms. |
 
 ## Version checks
@@ -75,6 +82,17 @@ Identifiers are intentionally blank in generated examples.
 | `DEBUG_COOLDOWN_SECONDS` | integer | no | public | `10` | Global admin debug cooldown. |
 | `RELOAD_COOLDOWN_SECONDS` | integer | no | public | `30` | Global admin reload cooldown. |
 | `RATE_LIMIT_AUDIT_COOLDOWN_SECONDS` | integer | no | public | `30` | Coalescing window for repeated rate-limit audit entries. |
+
+## Admin data alerts
+
+Alerts are disabled unless DISCORD_ADMIN_ALERT_CHANNEL_ID is configured.
+
+| Variable | Type | Required | Exposure | Default | Description |
+| --- | --- | --- | --- | --- | --- |
+| `ADMIN_ALERT_INTERVAL_MINUTES` | integer | no | public | `15` | Minutes between aggregate data-health checks. |
+| `ADMIN_ALERT_REMINDER_HOURS` | integer | no | public | `24` | Hours before repeating an unchanged alert. |
+| `CLEAN_DATA_STALE_HOURS` | integer | no | public | `48` | Maximum clean-snapshot age before an alert. |
+| `UPSTREAM_CHECK_STALE_HOURS` | integer | no | public | `24` | Maximum upstream-check age before an alert. |
 
 ## Input safety
 

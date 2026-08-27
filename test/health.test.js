@@ -99,11 +99,20 @@ test("runtime release metadata accepts commit IDs but ignores arbitrary labels",
       "utf8",
     );
 
+    const fullRevision = "abcdef1234567890abcdef1234567890abcdef12";
     const release = await createRuntimeInfo(workspaceRoot, {
-      configuredRelease: "abcdef1234567890",
+      configuredRelease: fullRevision,
       startedAt: new Date("2026-08-27T09:00:00.000Z"),
     });
     assert.equal(release.release, "1.2.3 (abcdef123456)");
+    assert.equal(release.revision, "abcdef123456");
+    assert.equal(release.fullRevision, fullRevision);
+
+    const abbreviated = await createRuntimeInfo(workspaceRoot, {
+      configuredRelease: "abcdef1234567890",
+    });
+    assert.equal(abbreviated.release, "1.2.3 (abcdef123456)");
+    assert.equal(abbreviated.fullRevision, "");
 
     const ignored = await createRuntimeInfo(workspaceRoot, {
       configuredRelease: "private-host-alias",

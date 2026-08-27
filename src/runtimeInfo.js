@@ -9,7 +9,7 @@ function normalizeVersion(value) {
 }
 
 function normalizeRevision(value) {
-  return typeof value === "string" && COMMIT_PATTERN.test(value) ? value.toLowerCase().slice(0, 12) : "";
+  return typeof value === "string" && COMMIT_PATTERN.test(value) ? value.toLowerCase() : "";
 }
 
 export async function createRuntimeInfo(
@@ -18,17 +18,21 @@ export async function createRuntimeInfo(
 ) {
   const packageJson = JSON.parse(await fs.readFile(path.join(workspaceRoot, "package.json"), "utf8"));
   const packageVersion = normalizeVersion(packageJson.version);
-  let revision = normalizeRevision(configuredRelease);
+  let detectedRevision = normalizeRevision(configuredRelease);
 
-  if (!revision) {
+  if (!detectedRevision) {
     const realWorkspaceRoot = await fs.realpath(workspaceRoot);
-    revision = normalizeRevision(path.basename(realWorkspaceRoot));
+    detectedRevision = normalizeRevision(path.basename(realWorkspaceRoot));
   }
+
+  const revision = detectedRevision.slice(0, 12);
+  const fullRevision = detectedRevision.length === 40 ? detectedRevision : "";
 
   return {
     startedAt: new Date(startedAt),
     packageVersion,
     revision,
+    fullRevision,
     release: revision ? `${packageVersion} (${revision})` : packageVersion,
   };
 }

@@ -8,6 +8,7 @@ import {
   createSafeInteractionListener,
   reloadServicesAtomically,
 } from "../src/discordBot.js";
+import { createResultPagination } from "../src/discord/pagination.js";
 
 const SILENT_LOGGER = {
   info() {},
@@ -283,6 +284,96 @@ test("authorized health output is private and uses live service state", async ()
     assert.match(replies[0].content, /Search cache: `ready, 12 entries from 3 files`/);
     assert.ok(replies[0].flags);
     assert.doesNotMatch(replies[0].content, /channel-1|admin-1/);
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("pagination buttons revalidate the owning user, role, channel, context, and cache", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-pagination-role-"));
+  const pagination = createResultPagination(
+    { paginationTtlMs: 10_000 },
+    { createSessionId: () => "buttonSession01", now: () => 1_000 },
+  );
+  const session = pagination.createSession({
+    ownerId: "support-user",
+    guildId: "expected-guild",
+    channelId: "channel-1",
+    pluginId: "cmi",
+    cacheGeneration: 4,
+    keyword: "setting",
+    results: [
+      {
+        displayPath: "CMIPlugin/config.yml",
+        relativePath: "CMIPlugin/config.yml",
+        yamlPath: "One",
+        lineNumber: 1,
+        snippet: "One: true",
+        codeLanguage: "yml",
+        sourceType: "yaml",
+        related: [],
+      },
+      {
+        displayPath: "CMIPlugin/config.yml",
+        relativePath: "CMIPlugin/config.yml",
+        yamlPath: "Two",
+        lineNumber: 2,
+        snippet: "Two: true",
+        codeLanguage: "yml",
+        sourceType: "yaml",
+        related: [],
+      },
+    ],
+    totalMentions: 2,
+    fileCount: 1,
+    pageSize: 1,
+  });
+  const nextCustomId = session.payload.components[0].components[2].custom_id;
+  const handler = createTestInteractionHandler(
+    makeConfig(workspaceRoot),
+    { getGeneration: () => 4 },
+    {},
+    { pagination },
+  );
+
+  function makeButton(roleIds) {
+    const replies = [];
+    const updates = [];
+    return {
+      replies,
+      updates,
+      interaction: {
+        isButton: () => true,
+        isRepliable: () => true,
+        customId: nextCustomId,
+        guildId: "expected-guild",
+        channelId: "channel-1",
+        user: { id: "support-user", tag: "support" },
+        member: { roles: { cache: roleIds.map((id) => ({ id })) } },
+        replied: false,
+        deferred: false,
+        async reply(payload) {
+          this.replied = true;
+          replies.push(payload);
+        },
+        async update(payload) {
+          this.replied = true;
+          updates.push(payload);
+        },
+      },
+    };
+  }
+
+  try {
+    const denied = makeButton([]);
+    await handler(denied.interaction);
+    assert.match(denied.replies[0].content, /belong to the support member/i);
+    assert.ok(denied.replies[0].flags);
+
+    const allowed = makeButton(["support-role"]);
+    await handler(allowed.interaction);
+    assert.equal(allowed.updates.length, 1);
+    assert.match(allowed.updates[0].content, /Two: true/);
   } finally {
     await fs.rm(workspaceRoot, { recursive: true, force: true });
   }

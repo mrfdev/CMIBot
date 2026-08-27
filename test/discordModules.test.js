@@ -2,6 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildCommandData } from "../src/discord/commands.js";
 import {
+  formatIndexedCategoriesMessage,
+  formatIndexedFilesMessage,
+  isSafeIndexedRelativePath,
+  listSafeIndexedFiles,
+} from "../src/discord/browse.js";
+import {
   getCommandAvailability,
   hasRole,
   resolveCanonicalSubcommand,
@@ -9,6 +15,7 @@ import {
 } from "../src/discord/context.js";
 import { formatBytes, formatDuration } from "../src/discord/debug.js";
 import { formatHelpMessage } from "../src/discord/help.js";
+import { createResultPagination } from "../src/discord/pagination.js";
 import {
   formatResultsMessage,
   splitDiscordMessages,
@@ -77,6 +84,8 @@ test("slash command schema keeps aliases, limits, and safe config filters", () =
   assert.ok(subcommands.has("permission"));
   assert.ok(subcommands.has("perm"));
   assert.ok(subcommands.has("health"));
+  assert.ok(subcommands.has("files"));
+  assert.ok(subcommands.has("categories"));
 
   const configOptions = new Map(subcommands.get("config").options.map((option) => [option.name, option]));
   assert.ok(configOptions.has("file"));
@@ -100,6 +109,44 @@ test("slash command schema keeps aliases, limits, and safe config filters", () =
     reloadOptions.get("profile").choices.map((choice) => choice.value),
     ["material"],
   );
+  assert.deepEqual(
+    subcommands.get("files").options[0].choices.map((choice) => choice.value),
+    ["material"],
+  );
+});
+
+test("indexed-file browsing allows only cached plugin-relative non-sensitive paths", () => {
+  const allowedRoots = ["CMIPlugin", "CMILibPlugin"];
+  assert.equal(isSafeIndexedRelativePath("CMIPlugin/CMI/config.yml", allowedRoots), true);
+  assert.equal(isSafeIndexedRelativePath("CMILibPlugin/data/commands.log", allowedRoots), false);
+  assert.equal(isSafeIndexedRelativePath("../etc/passwd", allowedRoots), false);
+  assert.equal(isSafeIndexedRelativePath("/etc/passwd", allowedRoots), false);
+  assert.equal(isSafeIndexedRelativePath("CMIPlugin/private/secret.key", allowedRoots), false);
+  assert.equal(isSafeIndexedRelativePath("CMIPlugin/private/token.yml", allowedRoots), false);
+  assert.equal(isSafeIndexedRelativePath("CMIPlugin/secrets/config.yml", allowedRoots), false);
+  assert.equal(isSafeIndexedRelativePath("OtherPlugin/config.yml", allowedRoots), false);
+
+  const listing = listSafeIndexedFiles(
+    [
+      { relativePath: "CMIPlugin/CMI/config.yml" },
+      { relativePath: "CMIPlugin/CMI/config.yml" },
+      { relativePath: "CMIPlugin/private/credentials.json" },
+      { relativePath: "../etc/passwd" },
+    ],
+    { allowedRoots },
+  );
+  assert.deepEqual(listing.files, ["CMIPlugin/CMI/config.yml"]);
+  assert.equal(listing.totalFileCount, 1);
+  assert.equal(listing.rejectedCount, 2);
+
+  const filesMessage = formatIndexedFilesMessage(makePlugin(), listing, "config");
+  assert.match(filesMessage, /CMIPlugin\/CMI\/config\.yml/);
+  assert.doesNotMatch(filesMessage, /credentials|passwd/i);
+
+  const categoriesMessage = formatIndexedCategoriesMessage(makePlugin(), {
+    profileSummaries: [{ profileName: "config", entryCount: 12, fileCount: 2 }],
+  });
+  assert.match(categoriesMessage, /`config`: 12 entries in 2 files/);
 });
 
 test("reload scope defaults to all and profile-only selection uses the current context", () => {
@@ -191,6 +238,36 @@ test("result formatting keeps internal metadata out of public headings", () => {
   assert.match(message, /Found \[1\] mention for \[placeholders\]/);
   assert.doesNotMatch(message, /data\/placeholders\.log/);
   assert.match(message, /```yml/);
+});
+
+test("result formatting presents commit-pinned source links without exposing raw paths", () => {
+  const revision = "abcdef1234567890abcdef1234567890abcdef12";
+  const sourceUrl = `https://github.com/mrfdev/CMIBot/blob/${revision}/CMIPlugin/data/commands.log#L10`;
+  const message = formatResultsMessage(
+    "balance",
+    [
+      {
+        displayPath: "private-display-path",
+        relativePath: "CMIPlugin/data/commands.log",
+        yamlPath: "/cmi balance",
+        lineNumber: 10,
+        snippet: "/cmi balance",
+        codeLanguage: "text",
+        sourceType: "log",
+        sourceUrl,
+        related: [],
+      },
+    ],
+    1,
+    1,
+    "",
+    ["CMIPlugin/data/commands.log"],
+    { layout: "command" },
+  );
+
+  assert.match(message, new RegExp(`blob/${revision}/CMIPlugin/data/commands\\.log#L10`));
+  assert.match(message, /source line 10/);
+  assert.doesNotMatch(message, /private-display-path/);
 });
 
 test("Discord output helpers enforce message-size boundaries", () => {
@@ -374,4 +451,104 @@ test("an empty Discord search offers scoped suggestions without auditing their t
   assert.equal(auditEvents.at(-1).outcome, "empty");
   assert.equal(auditEvents.at(-1).suggestionCount, 1);
   assert.equal("suggestions" in auditEvents.at(-1), false);
+});
+
+test("Discord search retains bounded matches behind opaque pagination controls", async () => {
+  const entries = extractEntriesFromText(
+    Array.from({ length: 8 }, (_, index) => `Setting${index + 1}: true`).join("\n"),
+    "CMIPlugin/CMI/config.yml",
+  );
+  const responses = [];
+  const rerankSizes = [];
+  const plugin = makePlugin();
+  plugin.debugRoots = ["CMIPlugin"];
+  plugin.profiles.config = {
+    defaultResultLimit: 2,
+    maxResultLimit: 15,
+    entryLabel: "YAML entries",
+  };
+  plugin.commandAvailability.config = "ready";
+  const pagination = createResultPagination(
+    { paginationMaxResults: 5, paginationTtlMs: 10_000 },
+    { createSessionId: () => "searchSession01", now: () => 1_000 },
+  );
+  const interaction = {
+    guildId: "guild-one",
+    channelId: "channel-one",
+    user: { id: "support-user" },
+    member: { roles: { cache: [{ id: "support-role" }] } },
+    options: {
+      getString(name) {
+        return { keyword: "setting", file: "", mode: "exact" }[name] ?? null;
+      },
+      getInteger: () => 2,
+      getBoolean: () => false,
+    },
+    async deferReply() {},
+    async editReply(payload) {
+      responses.push(payload);
+    },
+  };
+
+  await handleSearchInteraction({
+    interaction,
+    subcommand: "config",
+    canonicalSubcommand: "config",
+    context: { plugin, pluginId: "cmi" },
+    config: {
+      search: {
+        defaultResultLimit: 2,
+        maxResultLimit: 15,
+        paginationMaxResults: 5,
+        sourceLinksEnabled: false,
+        synonymsByPlugin: {},
+      },
+      security: {
+        queryAllowlist: [],
+        queryBlocklist: [],
+        queryMinLength: 2,
+        queryMaxLength: 100,
+        queryDebugErrors: false,
+        lookupCooldownSeconds: 0,
+        summaryCooldownSeconds: 0,
+      },
+      discord: { aiRoleIds: ["support-role"] },
+      sharedDebugRoots: [],
+      formatDisplayPath: (_pluginId, relativePath) => relativePath,
+    },
+    searchCache: {
+      getEntries: () => entries,
+      getGeneration: () => 9,
+    },
+    aiEnabled: true,
+    resolveAiReranker: async () => ({
+      async rerank(_keyword, matches) {
+        rerankSizes.push(matches.length);
+        return matches;
+      },
+    }),
+    cooldowns: { check: () => ({ allowed: true, retryAfterSeconds: 0 }) },
+    logEvent: async () => {},
+    logRateLimitEvent: async () => {},
+    metrics: { recordSearch() {} },
+    pagination,
+  });
+
+  assert.deepEqual(rerankSizes, [5]);
+  assert.equal(responses.length, 1);
+  assert.match(responses[0].content, /Page 1\/3/);
+  const nextCustomId = responses[0].components[0].components[2].custom_id;
+  assert.match(nextCustomId, /^lookup-page:searchSession01:next$/);
+  assert.doesNotMatch(nextCustomId, /setting|CMIPlugin|support-user/);
+
+  const next = pagination.resolveButton(nextCustomId, {
+    userId: "support-user",
+    guildId: "guild-one",
+    channelId: "channel-one",
+    pluginId: "cmi",
+    cacheGeneration: 9,
+    hasAccess: true,
+  });
+  assert.equal(next.status, "ok");
+  assert.match(next.payload.content, /Page 2\/3/);
 });

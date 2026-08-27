@@ -144,6 +144,54 @@ function combineLanguageCategories(localCategories, sharedCategories) {
   return [...localCategories, ...sharedCategories];
 }
 
+function normalizeConcurrency(value) {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? Math.min(parsed, 16) : 4;
+}
+
+export function createTaskLimiter(maxConcurrency = 4) {
+  const concurrency = normalizeConcurrency(maxConcurrency);
+  const queue = [];
+  let activeCount = 0;
+
+  function drain() {
+    while (activeCount < concurrency && queue.length) {
+      const job = queue.shift();
+      activeCount += 1;
+      Promise.resolve()
+        .then(job.task)
+        .then(job.resolve, job.reject)
+        .finally(() => {
+          activeCount -= 1;
+          drain();
+        });
+    }
+  }
+
+  return function runLimited(task) {
+    return new Promise((resolve, reject) => {
+      queue.push({ task, resolve, reject });
+      drain();
+    });
+  };
+}
+
+function unwrapSettled(settled) {
+  const failure = settled.find((result) => result.status === "rejected");
+  if (failure) {
+    throw failure.reason;
+  }
+  return settled.map((result) => result.value);
+}
+
+async function runTaskBatch(items, runLimited, worker) {
+  return unwrapSettled(
+    await Promise.allSettled(
+      items.map((item, index) => runLimited(() => worker(item, index))),
+    ),
+  );
+}
+
 export function formatCacheSummary(summary, { verb = "Loaded", suffix = "." } = {}) {
   const entryLabel = pluralize(summary.totalEntries ?? 0, "entry", "entries");
   const fileLabel = pluralize(summary.totalFiles ?? 0, "file");
@@ -191,10 +239,12 @@ export function formatCacheSummary(summary, { verb = "Loaded", suffix = "." } = 
 export function createSearchCache(config, dependencies = {}) {
   const loadProfileEntries = dependencies.loadEntriesForProfile ?? loadEntriesForProfile;
   const loadLanguageCategories = dependencies.buildLanguageCategoryStats ?? buildLanguageCategoryStats;
+  const loadConcurrency = normalizeConcurrency(config.search?.cacheLoadConcurrency);
   let cache = new Map();
   let pluginSummaries = new Map();
   let sharedCmilibSummary = null;
   let lastReloadedAt = null;
+  let generation = 0;
 
   function getCacheKey(pluginId, profileName) {
     return `${pluginId}:${profileName}`;
@@ -277,12 +327,12 @@ export function createSearchCache(config, dependencies = {}) {
     };
   }
 
-  async function loadPlugin(plugin, targetCache, targetPluginSummaries) {
-    const profileSummaries = [];
-
-    for (const profile of Object.values(plugin.profiles)) {
-      profileSummaries.push(await loadProfile(plugin, profile, targetCache));
-    }
+  async function loadPlugin(plugin, targetCache, targetPluginSummaries, runLimited) {
+    const profileSummaries = await runTaskBatch(
+      Object.values(plugin.profiles),
+      runLimited,
+      (profile) => loadProfile(plugin, profile, targetCache),
+    );
 
     const pluginSummary = buildPluginSummary(plugin, profileSummaries);
 
@@ -322,6 +372,7 @@ export function createSearchCache(config, dependencies = {}) {
         pluginSummaries = nextPluginSummaries;
         sharedCmilibSummary = nextSharedCmilibSummary;
         lastReloadedAt = nextReloadedAt;
+        generation += 1;
         settled = true;
         return summary;
       },
@@ -336,17 +387,28 @@ export function createSearchCache(config, dependencies = {}) {
     const nextPluginSummaries = new Map();
     const loadedPluginSummaries = [];
     const sharedProfileSummaries = [];
+    const runLimited = createTaskLimiter(loadConcurrency);
 
     if (config.sharedCmilib?.profiles) {
-      for (const profile of Object.values(config.sharedCmilib.profiles)) {
-        sharedProfileSummaries.push(await loadSharedCmilibProfile(profile, nextCache));
-      }
+      sharedProfileSummaries.push(
+        ...(await runTaskBatch(
+          Object.values(config.sharedCmilib.profiles),
+          runLimited,
+          (profile) => loadSharedCmilibProfile(profile, nextCache),
+        )),
+      );
     }
     const nextSharedCmilibSummary = buildSharedCmilibSummary(config.sharedCmilib, sharedProfileSummaries);
 
-    for (const plugin of Object.values(config.plugins)) {
-      loadedPluginSummaries.push(await loadPlugin(plugin, nextCache, nextPluginSummaries));
-    }
+    loadedPluginSummaries.push(
+      ...unwrapSettled(
+        await Promise.allSettled(
+          Object.values(config.plugins).map((plugin) =>
+            loadPlugin(plugin, nextCache, nextPluginSummaries, runLimited),
+          ),
+        ),
+      ),
+    );
 
     const { totalEntries, totalFiles } = getStoredCacheTotals(
       loadedPluginSummaries,
@@ -385,6 +447,7 @@ export function createSearchCache(config, dependencies = {}) {
     const nextCache = new Map(cache);
     const nextPluginSummaries = new Map(pluginSummaries);
     let refreshedPluginSummary;
+    const runLimited = createTaskLimiter(loadConcurrency);
 
     if (profileName) {
       const refreshedProfileSummary = await loadProfile(
@@ -410,7 +473,12 @@ export function createSearchCache(config, dependencies = {}) {
       refreshedPluginSummary = buildPluginSummary(plugin, refreshedProfiles);
       nextPluginSummaries.set(plugin.id, refreshedPluginSummary);
     } else {
-      refreshedPluginSummary = await loadPlugin(plugin, nextCache, nextPluginSummaries);
+      refreshedPluginSummary = await loadPlugin(
+        plugin,
+        nextCache,
+        nextPluginSummaries,
+        runLimited,
+      );
     }
 
     const nextReloadedAt = new Date();
@@ -495,6 +563,9 @@ export function createSearchCache(config, dependencies = {}) {
     },
     getPluginSummary(pluginId) {
       return pluginSummaries.get(pluginId) ?? null;
+    },
+    getGeneration() {
+      return generation;
     },
     getGlobalSummary() {
       const loadedPluginSummaries = Object.values(config.plugins)

@@ -8,6 +8,7 @@ import {
   formatLatestVersions,
   formatPublicLatestVersions,
   formatVersionServiceSummary,
+  getVersionAttentionSummary,
 } from "../src/versionCatalog.js";
 
 function makeConfig(workspaceRoot) {
@@ -158,6 +159,42 @@ function createFetchFixture(t) {
 
   return state;
 }
+
+test("version attention summary reports only privacy-safe resource keys", () => {
+  const catalog = makeTrackedCatalog();
+  const snapshot = {
+    catalog,
+    checkEnabled: true,
+    paper: { version: "26.2", build: 87, stale: false },
+    plugins: new Map([
+      ["cmi", { version: "1.0.0", stale: true }],
+      ["cmilib", { version: "1.0.0", stale: false }],
+    ]),
+    companions: new Map(),
+  };
+
+  assert.deepEqual(getVersionAttentionSummary(snapshot), {
+    updateKeys: ["paper", "plugin:cmi", "plugin:cmilib"],
+    unavailableKeys: ["companion:cmi-bungee"],
+    staleKeys: ["plugin:cmi"],
+  });
+});
+
+test("version attention summary is empty when live checks are disabled", () => {
+  assert.deepEqual(
+    getVersionAttentionSummary({
+      catalog: makeTrackedCatalog(),
+      checkEnabled: false,
+      plugins: new Map(),
+      companions: new Map(),
+    }),
+    {
+      updateKeys: [],
+      unavailableKeys: [],
+      staleKeys: [],
+    },
+  );
+});
 
 test("version checks recover from temporary HTTP failures through the resilience layer", async () => {
   const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-version-retry-"));
