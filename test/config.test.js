@@ -172,6 +172,20 @@ test("profile include globs cannot escape the project workspace", () => {
   );
 });
 
+test("derived indexes must stay in a dedicated private logs child", () => {
+  const config = makeConfig({ enabled: false, apiKey: "", model: "gpt-5-mini" });
+  config.search.derivedIndexPath = "CMIPlugin/cache";
+
+  assert.throws(
+    () => validateBotConfig(config),
+    (error) => {
+      assert.match(error.message, /dedicated child of the private logs directory/i);
+      assert.doesNotMatch(error.message, /CMIPlugin/);
+      return true;
+    },
+  );
+});
+
 test("search synonyms cannot reference an unknown plugin context", () => {
   const config = makeConfig({ enabled: false, apiKey: "", model: "gpt-5-mini" });
   config.search.synonymsByPlugin = {

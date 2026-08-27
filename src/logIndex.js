@@ -1,6 +1,5 @@
-import fs from "node:fs/promises";
 import path from "node:path";
-import fg from "fast-glob";
+import { loadProfileSourceSnapshot } from "./profileSources.js";
 
 function toPosixPath(value) {
   return value.split(path.sep).join("/");
@@ -600,26 +599,19 @@ function canonicalEntryKey(profileName, entry) {
   return normalizeVariableSegments(rawKey);
 }
 
-export async function loadEntriesFromLogProfile(profile, workspaceRoot) {
-  const relativePaths = await fg(profile.include, {
-    cwd: workspaceRoot,
-    ignore: profile.exclude,
-    onlyFiles: true,
-    unique: true,
-    dot: false,
-  });
-
+export async function loadEntriesFromLogProfile(profile, workspaceRoot, { sourceFiles } = {}) {
+  const files = sourceFiles ?? (await loadProfileSourceSnapshot(profile, workspaceRoot)).files;
   const entries = [];
   const curatedKeys = new Set();
   const generatedKeys = new Set();
-  const sortedPaths = relativePaths.sort((left, right) => {
-    const generatedDifference = Number(isGeneratedIndexPath(left)) - Number(isGeneratedIndexPath(right));
-    return generatedDifference || left.localeCompare(right);
+  const sortedFiles = [...files].sort((left, right) => {
+    const generatedDifference =
+      Number(isGeneratedIndexPath(left.relativePath)) -
+      Number(isGeneratedIndexPath(right.relativePath));
+    return generatedDifference || left.relativePath.localeCompare(right.relativePath);
   });
 
-  for (const relativePath of sortedPaths) {
-    const absolutePath = path.join(workspaceRoot, relativePath);
-    const fileText = await fs.readFile(absolutePath, "utf8");
+  for (const { relativePath, fileText } of sortedFiles) {
     const isGenerated = isGeneratedIndexPath(relativePath);
     const parserType = getGeneratedParserType(relativePath) ?? profile.parserType ?? "commentBlocks";
     let parsedEntries = extractEntriesByParser(parserType, fileText, relativePath);

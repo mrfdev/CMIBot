@@ -66,6 +66,7 @@ export function formatHealthMessage({
 }) {
   const cacheSummary = searchCache.getGlobalSummary();
   const resultCacheSummary = searchCache.getResultCacheSummary?.();
+  const derivedIndexSummary = searchCache.getDerivedIndexSummary?.();
   const versionSnapshot = versionService.getSnapshot();
   const discordState = getDiscordConnectionState(client);
   const cacheReady = Boolean(
@@ -115,6 +116,12 @@ export function formatHealthMessage({
   if (resultCacheSummary) {
     lines.push(
       `Repeated-search LRU: \`${resultCacheSummary.entries}/${resultCacheSummary.maxEntries} entries, ${resultCacheSummary.hits} hits, ${resultCacheSummary.misses} misses, ${resultCacheSummary.evictions} evictions\``,
+    );
+  }
+
+  if (derivedIndexSummary?.enabled) {
+    lines.push(
+      `Derived indexes: \`${derivedIndexSummary.hits} reused, ${derivedIndexSummary.rebuilds} rebuilt (${derivedIndexSummary.forcedRebuilds} forced), ${derivedIndexSummary.rejectedArtifacts} rejected, ${derivedIndexSummary.writeFailures} write failures\``,
     );
   }
 

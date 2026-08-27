@@ -23,9 +23,16 @@ export function createSafeInteractionListener(handleInteraction, handleError, lo
   };
 }
 
-export function resolveReloadScope(config, currentPluginId, pluginOption = "", profileOption = "") {
+export function resolveReloadScope(
+  config,
+  currentPluginId,
+  pluginOption = "",
+  profileOption = "",
+  forceRebuild = false,
+) {
+  const forceOption = forceRebuild ? { forceRebuild: true } : {};
   if (!pluginOption && !profileOption) {
-    return {};
+    return forceOption;
   }
 
   const pluginId = !pluginOption || pluginOption === "current" ? currentPluginId : pluginOption;
@@ -40,6 +47,7 @@ export function resolveReloadScope(config, currentPluginId, pluginOption = "", p
   return {
     pluginId,
     profileName: profileOption,
+    ...forceOption,
   };
 }
 
@@ -54,7 +62,7 @@ export async function reloadServicesAtomically(searchCache, versionService, scop
   }
 
   const [cacheResult, versionResult] = await Promise.allSettled([
-    searchCache.prepareReload(),
+    searchCache.prepareReload(scope),
     versionService.prepareReload(),
   ]);
   const failures = [];

@@ -1,9 +1,11 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import fg from "fast-glob";
+import { loadProfileSourceSnapshot } from "./profileSources.js";
 
 const KEY_LINE_PATTERN = /^(\s*)([^#\s-][^:]*?):(?:\s*(.*))?$/;
 const DEFAULT_SURROUNDING_LINE_COUNT = 2;
+
+function toPosixPath(value) {
+  return String(value).replace(/\\/g, "/");
+}
 
 function stripInlineComment(value) {
   if (!value) {
@@ -15,10 +17,6 @@ function stripInlineComment(value) {
 
 function normalizeCommentLine(line) {
   return line.replace(/^\s*#\s?/, "").trimEnd();
-}
-
-function toPosixPath(value) {
-  return value.split(path.sep).join("/");
 }
 
 function getLeadingSpaceCount(line) {
@@ -183,20 +181,11 @@ export function extractEntriesFromText(fileText, relativePath) {
   return entries;
 }
 
-export async function loadEntriesForProfile(profile, workspaceRoot) {
-  const relativePaths = await fg(profile.include, {
-    cwd: workspaceRoot,
-    ignore: profile.exclude,
-    onlyFiles: true,
-    unique: true,
-    dot: false,
-  });
-
+export async function loadEntriesForProfile(profile, workspaceRoot, { sourceFiles } = {}) {
+  const files = sourceFiles ?? (await loadProfileSourceSnapshot(profile, workspaceRoot)).files;
   const entries = [];
 
-  for (const relativePath of relativePaths.sort()) {
-    const absolutePath = path.join(workspaceRoot, relativePath);
-    const fileText = await fs.readFile(absolutePath, "utf8");
+  for (const { relativePath, fileText } of files) {
     entries.push(...extractEntriesFromText(fileText, relativePath));
   }
 

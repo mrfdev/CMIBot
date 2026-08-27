@@ -77,6 +77,7 @@ export function formatHelpMessage(config, member, context, commandName) {
     lines.push(`- \`${prefix} reload\` refreshes the cache for every plugin context`);
     lines.push(`- \`${prefix} reload plugin:current\` refreshes only this plugin context`);
     lines.push(`- \`${prefix} reload profile:config\` refreshes one profile in this context`);
+    lines.push(`- \`${prefix} reload force:true\` safely rebuilds derived indexes from source`);
   }
 
   if (comingSoonCommands.length) {

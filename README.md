@@ -18,6 +18,7 @@ See [CHANGELOG.md](CHANGELOG.md) for dated summaries of shipped changes.
 - Curated command, permission, placeholder, FAQ, material, and tab-complete indexes where available
 - Automatic runtime extraction of commands, permissions, and placeholders from initialized plugin jars
 - In-memory caches with bounded parallel warming and transactional full, plugin, and profile reloads
+- Private compact derived indexes with content-based invalidation and safe force rebuilding
 - Bounded repeated-search LRU caching with aggregate hit/miss metrics and reload invalidation
 - Clean first-install plugin data generated from a disposable Paper server
 - Local version inventory, scheduled upstream checks, and private opt-in version differences with bounded release notes
@@ -81,6 +82,7 @@ CMILib config and English locale files are shared with every plugin context.
 /lookup reload                # full reload by default, admin only
 /lookup reload plugin:current
 /lookup reload plugin:cmi profile:config
+/lookup reload force:true     # rebuild derived indexes from source
 ```
 
 `language|lang`, `command|cmd`, and `permission|perm` are equivalent long and short forms.
@@ -337,7 +339,11 @@ The scripts prefer the JDK home paths from the compatibility manifest. If a patc
 
 ## Cache Behavior
 
-All indexed YAML plus curated and jar-generated log data is loaded into RAM during startup. Profile loaders share the bounded `CACHE_LOAD_CONCURRENCY` pool; shared CMILib profiles finish before dependent plugin profiles begin. `/lookup reload` without options globally rebuilds every plugin cache, reloads the version catalog, and refreshes upstream version checks. `plugin:` narrows the cache reload to one context, and `profile:` narrows it to one profile. A profile without `plugin:` uses the current channel context. Selective reloads intentionally leave version data and unrelated cache snapshots unchanged.
+All indexed YAML plus curated and jar-generated log data is loaded into RAM during startup. Profile loaders share the bounded `CACHE_LOAD_CONCURRENCY` pool; shared CMILib profiles finish before dependent plugin profiles begin. `/lookup reload` without options globally refreshes every plugin cache, reloads the version catalog, and refreshes upstream version checks. `plugin:` narrows the cache reload to one context, and `profile:` narrows it to one profile. A profile without `plugin:` uses the current channel context. Selective reloads intentionally leave version data and unrelated cache snapshots unchanged.
+
+Before parsing a profile, the bot takes a safe source snapshot and computes a SHA-256 fingerprint from exact file content and repository-relative names. When the source fingerprint, profile settings, schema, and index-format version all match, startup or reload hydrates the compact gzip artifact instead of reparsing it. Any source change, parser-format bump, missing artifact, malformed payload, unsafe artifact, or validation failure causes a rebuild from authoritative source data. YAML document context is restored as shared non-enumerable metadata, so expandable results behave the same after a cache hit.
+
+Derived artifacts live under `DERIVED_INDEX_PATH` (default `logs/derived-indexes`), which startup validation restricts to a dedicated child of the ignored private `logs/` directory. The directory is owner-only (`0700`), artifacts are owner-only (`0600`), filenames are opaque hashes, and compressed and expanded sizes are bounded. Cache metadata adds no host path or operational identifier; the payload contains only the same repository-relative indexed data already held in RAM. Artifacts are only an optimization; a rejected or unwritable artifact never becomes authoritative and normal source loading remains available.
 
 Each indexed YAML file retains one shared in-memory line snapshot so an authorized result can reconstruct its complete nested block without rereading the filesystem. Expansion is available only for safe YAML paths beneath the active plugin or shared roots. The selector contains only an opaque session ID and numeric result choices, and every selection revalidates the original member, role, guild, channel, plugin context, visible page, and cache generation. Sessions expire automatically; a reload immediately makes earlier selectors stale.
 
@@ -357,9 +363,11 @@ Use reload after adding, replacing, renaming, or removing indexed files:
 /lookup reload
 /lookup reload plugin:current
 /lookup reload profile:language
+/lookup reload force:true
+/lookup reload plugin:current profile:config force:true
 ```
 
-The command is restricted to `ADMIN_ROLE_IDS`. Regular searches continue to use the old in-memory snapshot until reload or restart completes.
+The command is restricted to `ADMIN_ROLE_IDS`. `force:true` bypasses the selected derived artifacts, parses a fresh source snapshot, validates it, and atomically replaces only the corresponding derived files after success. It never recursively clears a directory and never deletes or modifies source data. Regular searches continue to use the old in-memory snapshot until reload or restart completes.
 
 Reload reports are private. If the global per-plugin breakdown exceeds one Discord message, the bot continues it in additional ephemeral follow-ups instead of trimming contexts from the end.
 
@@ -373,7 +381,7 @@ Aggregate alerts are disabled unless `DISCORD_ADMIN_ALERT_CHANNEL_ID` names a te
 
 ## Health Output
 
-`/lookup health` is admin-only and ephemeral. It reports the release, uptime, Discord readiness, cache readiness and freshness, clean-data generation time, upstream version-check state, startup-validation state, bounded command/search/reload/AI aggregates, process memory, and service-log protection state. It intentionally omits query text, channel and role IDs, routes, hostnames, usernames, and filesystem paths.
+`/lookup health` is admin-only and ephemeral. It reports the release, uptime, Discord readiness, cache readiness and freshness, aggregate derived-index reuse/rebuild/rejection counts, clean-data generation time, upstream version-check state, startup-validation state, bounded command/search/reload/AI aggregates, process memory, and service-log protection state. It intentionally omits query text, channel and role IDs, routes, hostnames, usernames, and filesystem paths.
 
 ## Zero-cost Local AI
 
@@ -436,6 +444,7 @@ npm run remote:ai-status
 - Authorized support commands also share per-channel and process-wide windows to contain coordinated bursts.
 - Lookup, AI-summary, and grounded-question operations retain separate per-user cooldowns; lookup throttling runs before cache filtering.
 - Debug has a global cooldown, while reload has both a global cooldown and a single-flight guard.
+- Derived-index reads reject symlinks, wrong-owner files, malformed or oversized payloads, stale fingerprints, and invalid hydrated entries. Writes use owner-only temporary files plus atomic replacement, and force rebuilding can target only the bot's opaque derived artifact names.
 - Rate-limit state is memory-bounded and expired buckets are pruned automatically.
 - Repeated rate-limit audit events are coalesced to prevent JSONL log flooding.
 - Usage is written as JSON lines to `logs/cmibot-usage.jsonl`. Before the active log would exceed `AUDIT_LOG_MAX_SIZE_MB`, it rotates to numbered archives and retains at most `AUDIT_LOG_MAX_FILES` archives.
@@ -572,7 +581,7 @@ The last two verified releases can be swapped explicitly with:
 ./scripts/deploy --rollback
 ```
 
-The LaunchAgent points at `.deploy/current`. Each release is assembled with its generated `node_modules` during staging and is left unchanged after activation; `.env`, usage logs, and upstream-version state remain shared at the project root across deploys and rollbacks.
+The LaunchAgent points at `.deploy/current`. Each release is assembled with its generated `node_modules` during staging and is left unchanged after activation; `.env`, usage logs, upstream-version state, and rebuildable derived indexes remain shared at the project root across deploys and rollbacks.
 
 ## Continuous Integration
 

@@ -109,6 +109,18 @@ function validateRelativePath(value, name, { allowGlob = false } = {}) {
   }
 }
 
+function validateDerivedIndexPath(value) {
+  validateRelativePath(value, "DERIVED_INDEX_PATH");
+  const segments = value.split("/");
+  if (
+    segments.length < 2 ||
+    segments[0] !== "logs" ||
+    segments.some((segment) => !segment || segment === ".")
+  ) {
+    throw new Error("DERIVED_INDEX_PATH must name a dedicated child of the private logs directory.");
+  }
+}
+
 function validateProfile(profileKey, profile, scopeName, sharedProfiles) {
   if (!profile || typeof profile !== "object") {
     throw new Error(`${scopeName} profile ${profileKey} is invalid.`);
@@ -882,6 +894,16 @@ export function loadConfig() {
         0,
         Math.min(4_096, parseInteger(process.env.SEARCH_RESULT_CACHE_MAX_ENTRIES, 256)),
       ),
+      derivedIndexEnabled: parseBoolean(process.env.DERIVED_INDEX_ENABLED, true),
+      derivedIndexPath:
+        process.env.DERIVED_INDEX_PATH?.trim() || "logs/derived-indexes",
+      derivedIndexMaxArtifactBytes:
+        Math.max(
+          1,
+          Math.min(128, parseInteger(process.env.DERIVED_INDEX_MAX_ARTIFACT_MB, 32)),
+        ) *
+        1024 *
+        1024,
       sourceLinksEnabled: parseBoolean(process.env.SOURCE_LINKS_ENABLED, true),
       sourceRepositoryUrl:
         process.env.SOURCE_REPOSITORY_URL?.trim() || "https://github.com/mrfdev/CMIBot",
@@ -1158,6 +1180,7 @@ export function validateBotConfig(config) {
   validateRelativePath(config.versions.catalogPath, "VERSION_CATALOG_PATH");
   validateRelativePath(config.versions.statePath, "VERSION_STATE_PATH");
   validateRelativePath(config.search.synonymsPath, "SEARCH_SYNONYMS_PATH");
+  validateDerivedIndexPath(config.search.derivedIndexPath ?? "logs/derived-indexes");
   validateRelativePath(config.ai.usageStatePath, "AI_USAGE_STATE_PATH");
   validateRelativePath(config.security.auditLogPath, "AUDIT_LOG_PATH");
   if (!Number.isSafeInteger(config.versions.checkIntervalMs) || config.versions.checkIntervalMs <= 0) {
@@ -1165,6 +1188,13 @@ export function validateBotConfig(config) {
   }
   if (!Number.isSafeInteger(config.versions.requestTimeoutMs) || config.versions.requestTimeoutMs <= 0) {
     throw new Error("The version-check timeout must be a positive integer.");
+  }
+  if (
+    config.search.derivedIndexMaxArtifactBytes != null &&
+    (!Number.isSafeInteger(config.search.derivedIndexMaxArtifactBytes) ||
+      config.search.derivedIndexMaxArtifactBytes <= 0)
+  ) {
+    throw new Error("The derived index artifact size limit must be a positive integer.");
   }
   if (!Number.isSafeInteger(config.logging.maxBytes) || config.logging.maxBytes <= 0) {
     throw new Error("The service log size limit must be a positive integer.");

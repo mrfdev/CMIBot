@@ -528,6 +528,18 @@ const environmentSections = [
         type: "integer",
         defaultValue: "256",
       }),
+      variable("DERIVED_INDEX_ENABLED", "Reuse private compact derived indexes when source content and index format match.", {
+        type: "boolean",
+        defaultValue: "true",
+      }),
+      variable("DERIVED_INDEX_PATH", "Dedicated repository-relative directory under logs/ for rebuildable derived indexes.", {
+        type: "relative-path",
+        defaultValue: "logs/derived-indexes",
+      }),
+      variable("DERIVED_INDEX_MAX_ARTIFACT_MB", "Maximum compressed size of one derived profile index.", {
+        type: "integer",
+        defaultValue: "32",
+      }),
       variable("SOURCE_LINKS_ENABLED", "Link lookup results to the exact deployed source revision.", {
         type: "boolean",
         defaultValue: "true",

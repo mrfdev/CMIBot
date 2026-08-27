@@ -47,6 +47,8 @@ This file records material LookupBot changes by ship date. User-facing examples 
 ### Performance, observability, and maintenance
 
 - Added bounded parallel cache warming, transactional reloads, and a bounded LRU cache for repeated identical searches.
+- Added owner-only compact derived profile indexes with exact content fingerprints, automatic stale/corrupt fallback, preserved YAML expansion metadata, bounded gzip artifacts, and aggregate health counters.
+- Added admin-only `/lookup reload force:true` for full, plugin, or profile scopes. It validates a fresh source snapshot and atomically replaces only selected derived artifacts without deleting or modifying source data.
 - Added structured service records with request IDs and command timing, bounded aggregate metrics, independent log rotation, retention limits, and disk-reserve protection.
 - Added GitHub Actions checks across supported Node.js versions, syntax and test validation, a production dependency audit, least-privilege workflow settings, and Dependabot coverage.
 - Added canonical configuration metadata plus generated blank-safe environment examples, JSON Schema, and Markdown references. CI now fails when generated documentation drifts.

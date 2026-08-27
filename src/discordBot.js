@@ -663,6 +663,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
             context.pluginId,
             interaction.options.getString?.("plugin") ?? "",
             interaction.options.getString?.("profile") ?? "",
+            interaction.options.getBoolean?.("force") ?? false,
           );
         } catch (error) {
           const message = error instanceof Error ? error.message : "The requested reload scope is invalid.";
@@ -730,6 +731,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
           reloadScope: scope.type,
           pluginId: scope.pluginId ?? "all",
           profileName: scope.profileName || "all",
+          forceRebuild: scope.forceRebuild === true,
           totalEntries: summary.totalEntries,
           totalFiles: summary.totalFiles,
         });
@@ -738,6 +740,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
           scope: scope.type,
           pluginId: scope.pluginId ?? "all",
           profileName: scope.profileName || "all",
+          forceRebuild: scope.forceRebuild === true,
           totalEntries: summary.totalEntries,
           totalFiles: summary.totalFiles,
           versionChecksRefreshed: scope.type === "all",
@@ -749,8 +752,15 @@ export function createInteractionHandler(config, searchCache, versionService, de
             : scope.type === "profile"
               ? `Only the ${config.plugins[scope.pluginId].label} ${scope.profileName} profile was refreshed; version data was left unchanged.`
               : `Only the ${config.plugins[scope.pluginId].label} context was refreshed; version data was left unchanged.`;
+        const derivedActivity = summary.derivedIndexActivity;
+        const forceFailureNote = derivedActivity?.writeFailures
+          ? `; ${derivedActivity.writeFailures} artifact writes failed`
+          : "";
+        const forceMessage = scope.forceRebuild
+          ? `Derived indexes were rebuilt directly from source (${derivedActivity?.rebuilds ?? 0} profiles rebuilt; ${derivedActivity?.artifactsWritten ?? 0} private artifacts replaced${forceFailureNote}); source files were not modified.`
+          : "";
         const reloadMessages = splitDiscordMessages(
-          `${formatReloadMessage(summary)}\n${scopeMessage}`,
+          `${formatReloadMessage(summary)}\n${scopeMessage}${forceMessage ? `\n${forceMessage}` : ""}`,
         );
         await interaction.editReply({
           content: reloadMessages[0],

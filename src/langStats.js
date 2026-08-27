@@ -96,6 +96,7 @@ export async function buildLanguageCategoryStats(workspaceRoot, includeGlobs, ex
     onlyFiles: true,
     unique: true,
     dot: false,
+    followSymbolicLinks: false,
   });
 
   const categories = [];
@@ -128,6 +129,7 @@ export async function buildLanguageCategoryStats(workspaceRoot, includeGlobs, ex
       onlyFiles: true,
       unique: true,
       dot: false,
+      followSymbolicLinks: false,
     });
 
     const languageCodes = siblingPaths

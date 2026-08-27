@@ -76,6 +76,9 @@ async function main() {
     totalEntries: warmSummary.totalEntries,
     totalFiles: warmSummary.totalFiles,
     pluginCount: warmSummary.pluginSummaries.length,
+    derivedIndexHits: warmSummary.derivedIndexActivity?.hits ?? 0,
+    derivedIndexRebuilds: warmSummary.derivedIndexActivity?.rebuilds ?? 0,
+    derivedIndexWriteFailures: warmSummary.derivedIndexActivity?.writeFailures ?? 0,
   });
   const versionService = createVersionService(config, { logger: serviceLogger, metrics });
   activeResources.versionService = versionService;

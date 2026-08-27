@@ -311,6 +311,32 @@
       "pattern": "^[0-9]+$",
       "default": "256"
     },
+    "DERIVED_INDEX_ENABLED": {
+      "type": "string",
+      "description": "Reuse private compact derived indexes when source content and index format match.",
+      "x-value-type": "boolean",
+      "x-sensitivity": "public",
+      "enum": [
+        "true",
+        "false"
+      ],
+      "default": "true"
+    },
+    "DERIVED_INDEX_PATH": {
+      "type": "string",
+      "description": "Dedicated repository-relative directory under logs/ for rebuildable derived indexes.",
+      "x-value-type": "relative-path",
+      "x-sensitivity": "public",
+      "default": "logs/derived-indexes"
+    },
+    "DERIVED_INDEX_MAX_ARTIFACT_MB": {
+      "type": "string",
+      "description": "Maximum compressed size of one derived profile index.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "32"
+    },
     "SOURCE_LINKS_ENABLED": {
       "type": "string",
       "description": "Link lookup results to the exact deployed source revision.",

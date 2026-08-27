@@ -139,6 +139,8 @@ test("slash command schema keeps aliases, limits, and safe config filters", () =
   );
 
   const reloadOptions = new Map(subcommands.get("reload").options.map((option) => [option.name, option]));
+  assert.equal(reloadOptions.get("force").type, ApplicationCommandOptionType.Boolean);
+  assert.equal(reloadOptions.get("force").required, false);
   assert.deepEqual(
     reloadOptions.get("plugin").choices.map((choice) => choice.value),
     ["current", "cmi", "jobs"],
@@ -240,6 +242,9 @@ test("reload scope defaults to all and profile-only selection uses the current c
   const config = makeConfig();
 
   assert.deepEqual(resolveReloadScope(config, "cmi"), {});
+  assert.deepEqual(resolveReloadScope(config, "cmi", "", "", true), {
+    forceRebuild: true,
+  });
   assert.deepEqual(resolveReloadScope(config, "cmi", "current", ""), {
     pluginId: "cmi",
     profileName: "",
@@ -247,6 +252,11 @@ test("reload scope defaults to all and profile-only selection uses the current c
   assert.deepEqual(resolveReloadScope(config, "jobs", "", "material"), {
     pluginId: "jobs",
     profileName: "material",
+  });
+  assert.deepEqual(resolveReloadScope(config, "jobs", "", "material", true), {
+    pluginId: "jobs",
+    profileName: "material",
+    forceRebuild: true,
   });
   assert.throws(
     () => resolveReloadScope(config, "jobs", "jobs", "config"),

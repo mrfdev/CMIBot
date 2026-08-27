@@ -267,6 +267,11 @@ export function buildCommandTree(commandName, config) {
             .setName("profile")
             .setDescription("Optional profile scope. Uses the current context when plugin is omitted.")
             .addChoices(...reloadProfileChoices),
+        )
+        .addBooleanOption((option) =>
+          option
+            .setName("force")
+            .setDescription("Rebuild derived indexes from source; source files are never deleted."),
         ),
     )
     .toJSON();

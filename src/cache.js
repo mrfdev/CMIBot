@@ -1,4 +1,6 @@
 import { loadEntriesForProfile } from "./profileIndex.js";
+import { loadProfileSourceSnapshot } from "./profileSources.js";
+import { createDerivedIndexStore } from "./derivedIndex.js";
 import { buildLanguageCategoryStats } from "./langStats.js";
 import { createBoundedLruCache } from "./lruCache.js";
 import { lexicalSearchWithStats } from "./search.js";
@@ -168,6 +170,35 @@ function copySearchResult(result) {
   };
 }
 
+function getDisabledDerivedIndexSummary() {
+  return {
+    enabled: false,
+    hits: 0,
+    misses: 0,
+    rebuilds: 0,
+    forcedRebuilds: 0,
+    rejectedArtifacts: 0,
+    artifactsWritten: 0,
+    writeFailures: 0,
+  };
+}
+
+function diffDerivedIndexSummary(before, after) {
+  const activity = { enabled: after.enabled === true };
+  for (const key of [
+    "hits",
+    "misses",
+    "rebuilds",
+    "forcedRebuilds",
+    "rejectedArtifacts",
+    "artifactsWritten",
+    "writeFailures",
+  ]) {
+    activity[key] = Math.max(0, Number(after[key] ?? 0) - Number(before[key] ?? 0));
+  }
+  return activity;
+}
+
 export function createTaskLimiter(maxConcurrency = 4) {
   const concurrency = normalizeConcurrency(maxConcurrency);
   const queue = [];
@@ -257,8 +288,19 @@ export function formatCacheSummary(summary, { verb = "Loaded", suffix = "." } = 
 
 export function createSearchCache(config, dependencies = {}) {
   const loadProfileEntries = dependencies.loadEntriesForProfile ?? loadEntriesForProfile;
+  const loadProfileSources = dependencies.loadProfileSourceSnapshot ?? loadProfileSourceSnapshot;
   const loadLanguageCategories = dependencies.buildLanguageCategoryStats ?? buildLanguageCategoryStats;
   const runLexicalSearch = dependencies.lexicalSearchWithStats ?? lexicalSearchWithStats;
+  const derivedIndexStore =
+    dependencies.derivedIndexStore ??
+    (config.search?.derivedIndexEnabled === true && !dependencies.loadEntriesForProfile
+      ? createDerivedIndexStore({
+          workspaceRoot: config.workspaceRoot,
+          cacheDirectory: config.search.derivedIndexPath,
+          maxArtifactBytes: config.search.derivedIndexMaxArtifactBytes,
+          logger: dependencies.logger,
+        })
+      : null);
   const loadConcurrency = normalizeConcurrency(config.search?.cacheLoadConcurrency);
   const resultCache = createBoundedLruCache(
     normalizeResultCacheMaximum(config.search?.resultCacheMaxEntries),
@@ -274,6 +316,7 @@ export function createSearchCache(config, dependencies = {}) {
   let pluginSummaries = new Map();
   let sharedCmilibSummary = null;
   let lastReloadedAt = null;
+  let lastDerivedIndexActivity = null;
   let generation = 0;
 
   function getCacheKey(pluginId, profileName) {
@@ -288,9 +331,44 @@ export function createSearchCache(config, dependencies = {}) {
     return profileName ? targetCache.get(getSharedCmilibCacheKey(profileName)) ?? null : null;
   }
 
-  async function loadSharedCmilibProfile(profile, targetCache) {
-    const entries = await loadProfileEntries(profile, config.workspaceRoot);
-    validateLoadedEntries(entries, `shared:${profile.name}`, { allowEmpty: profile.allowEmpty === true });
+  function getDerivedIndexSummary() {
+    return derivedIndexStore?.getSummary?.() ?? getDisabledDerivedIndexSummary();
+  }
+
+  async function loadValidatedProfileEntries(
+    scopeKey,
+    profile,
+    scopeLabel,
+    { allowEmpty = false, forceRebuild = false } = {},
+  ) {
+    const validate = (entries) => validateLoadedEntries(entries, scopeLabel, { allowEmpty });
+    if (!derivedIndexStore) {
+      const entries = await loadProfileEntries(profile, config.workspaceRoot);
+      validate(entries);
+      return entries;
+    }
+
+    const sourceSnapshot = await loadProfileSources(profile, config.workspaceRoot);
+    return derivedIndexStore.loadOrBuild({
+      scopeKey,
+      profile,
+      sourceFingerprint: sourceSnapshot.fingerprint,
+      forceRebuild,
+      build: () =>
+        loadProfileEntries(profile, config.workspaceRoot, {
+          sourceFiles: sourceSnapshot.files,
+        }),
+      validate,
+    });
+  }
+
+  async function loadSharedCmilibProfile(profile, targetCache, { forceRebuild = false } = {}) {
+    const entries = await loadValidatedProfileEntries(
+      `shared:${profile.name}`,
+      profile,
+      `shared:${profile.name}`,
+      { allowEmpty: profile.allowEmpty === true, forceRebuild },
+    );
     const summary = summarizeEntries(entries);
     const languageCategories =
       profile.name === "language"
@@ -313,10 +391,14 @@ export function createSearchCache(config, dependencies = {}) {
     };
   }
 
-  async function loadProfile(plugin, profile, targetCache) {
+  async function loadProfile(plugin, profile, targetCache, { forceRebuild = false } = {}) {
     const localProfile = profile.sharedProfileName ? withoutSharedCmilib(profile) : profile;
-    const entries = await loadProfileEntries(localProfile, config.workspaceRoot);
-    validateLoadedEntries(entries, `${plugin.id}:${profile.name}`);
+    const entries = await loadValidatedProfileEntries(
+      `plugin:${plugin.id}:${profile.name}`,
+      localProfile,
+      `${plugin.id}:${profile.name}`,
+      { forceRebuild },
+    );
     const localSummary = summarizeEntries(entries);
     const sharedSnapshot = getSharedSnapshot(targetCache, profile.sharedProfileName);
     if (profile.sharedProfileName && !sharedSnapshot) {
@@ -357,11 +439,17 @@ export function createSearchCache(config, dependencies = {}) {
     };
   }
 
-  async function loadPlugin(plugin, targetCache, targetPluginSummaries, runLimited) {
+  async function loadPlugin(
+    plugin,
+    targetCache,
+    targetPluginSummaries,
+    runLimited,
+    { forceRebuild = false } = {},
+  ) {
     const profileSummaries = await runTaskBatch(
       Object.values(plugin.profiles),
       runLimited,
-      (profile) => loadProfile(plugin, profile, targetCache),
+      (profile) => loadProfile(plugin, profile, targetCache, { forceRebuild }),
     );
 
     const pluginSummary = buildPluginSummary(plugin, profileSummaries);
@@ -402,6 +490,7 @@ export function createSearchCache(config, dependencies = {}) {
         pluginSummaries = nextPluginSummaries;
         sharedCmilibSummary = nextSharedCmilibSummary;
         lastReloadedAt = nextReloadedAt;
+        lastDerivedIndexActivity = summary.derivedIndexActivity ?? null;
         generation += 1;
         resultCacheStats.invalidatedEntries += resultCache.clear();
         resultCacheStats.invalidations += 1;
@@ -414,7 +503,8 @@ export function createSearchCache(config, dependencies = {}) {
     };
   }
 
-  async function prepareFullReload() {
+  async function prepareFullReload({ forceRebuild = false } = {}) {
+    const derivedIndexBefore = getDerivedIndexSummary();
     const nextCache = new Map();
     const nextPluginSummaries = new Map();
     const loadedPluginSummaries = [];
@@ -426,7 +516,7 @@ export function createSearchCache(config, dependencies = {}) {
         ...(await runTaskBatch(
           Object.values(config.sharedCmilib.profiles),
           runLimited,
-          (profile) => loadSharedCmilibProfile(profile, nextCache),
+          (profile) => loadSharedCmilibProfile(profile, nextCache, { forceRebuild }),
         )),
       );
     }
@@ -436,7 +526,7 @@ export function createSearchCache(config, dependencies = {}) {
       ...unwrapSettled(
         await Promise.allSettled(
           Object.values(config.plugins).map((plugin) =>
-            loadPlugin(plugin, nextCache, nextPluginSummaries, runLimited),
+            loadPlugin(plugin, nextCache, nextPluginSummaries, runLimited, { forceRebuild }),
           ),
         ),
       ),
@@ -453,6 +543,10 @@ export function createSearchCache(config, dependencies = {}) {
       pluginSummaries: loadedPluginSummaries,
       sharedCmilibSummary: nextSharedCmilibSummary,
       lastReloadedAt: nextReloadedAt,
+      derivedIndexActivity: diffDerivedIndexSummary(
+        derivedIndexBefore,
+        getDerivedIndexSummary(),
+      ),
     };
     return createReloadTransaction({
       nextCache,
@@ -460,11 +554,19 @@ export function createSearchCache(config, dependencies = {}) {
       nextSharedCmilibSummary,
       nextReloadedAt,
       summary,
-      scope: { type: "all" },
+      scope: {
+        type: "all",
+        ...(forceRebuild ? { forceRebuild: true } : {}),
+      },
     });
   }
 
-  async function prepareSelectiveReload({ pluginId, profileName = "" }) {
+  async function prepareSelectiveReload({
+    pluginId,
+    profileName = "",
+    forceRebuild = false,
+  }) {
+    const derivedIndexBefore = getDerivedIndexSummary();
     const plugin = config.plugins[pluginId];
     if (!plugin) {
       throw new Error("The requested plugin reload scope is not configured.");
@@ -486,6 +588,7 @@ export function createSearchCache(config, dependencies = {}) {
         plugin,
         plugin.profiles[profileName],
         nextCache,
+        { forceRebuild },
       );
       const activePluginSummary = pluginSummaries.get(plugin.id);
       if (!activePluginSummary) {
@@ -510,6 +613,7 @@ export function createSearchCache(config, dependencies = {}) {
         nextCache,
         nextPluginSummaries,
         runLimited,
+        { forceRebuild },
       );
     }
 
@@ -526,6 +630,10 @@ export function createSearchCache(config, dependencies = {}) {
       pluginSummaries: [visiblePluginSummary],
       sharedCmilibSummary: null,
       lastReloadedAt: nextReloadedAt,
+      derivedIndexActivity: diffDerivedIndexSummary(
+        derivedIndexBefore,
+        getDerivedIndexSummary(),
+      ),
     };
 
     return createReloadTransaction({
@@ -538,12 +646,13 @@ export function createSearchCache(config, dependencies = {}) {
         type: profileName ? "profile" : "plugin",
         pluginId,
         profileName,
+        ...(forceRebuild ? { forceRebuild: true } : {}),
       },
     });
   }
 
   async function prepareReload(scope = {}) {
-    return scope.pluginId ? prepareSelectiveReload(scope) : prepareFullReload();
+    return scope.pluginId ? prepareSelectiveReload(scope) : prepareFullReload(scope);
   }
 
   async function reload(scope = {}) {
@@ -631,6 +740,7 @@ export function createSearchCache(config, dependencies = {}) {
         ...resultCacheStats,
       };
     },
+    getDerivedIndexSummary,
     getSnapshot(pluginId, profileName) {
       const snapshot = cache.get(getCacheKey(pluginId, profileName)) ?? null;
       if (!snapshot) {
@@ -670,6 +780,9 @@ export function createSearchCache(config, dependencies = {}) {
         pluginSummaries: loadedPluginSummaries,
         sharedCmilibSummary,
         lastReloadedAt,
+        ...(lastDerivedIndexActivity
+          ? { derivedIndexActivity: lastDerivedIndexActivity }
+          : {}),
       };
     },
   };

@@ -1178,7 +1178,7 @@ test("only one global reload can prepare data at a time", async () => {
   }
 });
 
-test("an admin can reload one profile without refreshing version data", async () => {
+test("an admin can force-rebuild one profile without refreshing version data", async () => {
   const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-selective-reload-"));
   const config = makeConfig(workspaceRoot);
   config.plugins.cmi.profiles = { config: {} };
@@ -1243,6 +1243,9 @@ test("an admin can reload one profile without refreshing version data", async ()
         getString(name) {
           return name === "profile" ? "config" : null;
         },
+        getBoolean(name) {
+          return name === "force";
+        },
       },
       replied: false,
       deferred: false,
@@ -1260,9 +1263,14 @@ test("an admin can reload one profile without refreshing version data", async ()
 
     await handler(interaction);
 
-    assert.deepEqual(receivedScope, { pluginId: "cmi", profileName: "config" });
+    assert.deepEqual(receivedScope, {
+      pluginId: "cmi",
+      profileName: "config",
+      forceRebuild: true,
+    });
     assert.equal(versionPreparations, 0);
     assert.match(responses[0].content, /Only the CMI config profile was refreshed/i);
+    assert.match(responses[0].content, /rebuilt directly from source/i);
     assert.equal(reloadMetrics.length, 1);
     assert.equal(reloadMetrics[0].outcome, "success");
     assert.equal(reloadMetrics[0].scope, "profile");
