@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { performance } from "node:perf_hooks";
 import { serviceLogger } from "./logger.js";
 import { validateVersionCatalog } from "./startupValidation.js";
 
@@ -331,6 +332,7 @@ export function formatVersionServiceSummary(snapshot) {
 
 export function createVersionService(config, dependencies = {}) {
   const logger = dependencies.logger ?? serviceLogger;
+  const metrics = dependencies.metrics;
   let activeState = {
     catalog: null,
     paper: null,
@@ -637,6 +639,7 @@ export function createVersionService(config, dependencies = {}) {
       return nextState;
     }
 
+    const startedAt = performance.now();
     const trackedPlugins = catalog.plugins.filter((entry) => entry.resourceId || entry.versionSource);
     const trackedCompanions = catalog.companions.filter((entry) => entry.versionSource);
     const results = await Promise.allSettled([
@@ -709,6 +712,13 @@ export function createVersionService(config, dependencies = {}) {
     }
 
     nextState.checkedAt = checkedAt;
+    metrics?.recordUpstream({
+      durationMs: performance.now() - startedAt,
+      outcome: nextState.errorCount ? "error" : "success",
+      resourceCount: results.length,
+      errorCount: nextState.errorCount,
+      retainedCount: countRetainedUpstreams(nextState),
+    });
     return nextState;
   }
 

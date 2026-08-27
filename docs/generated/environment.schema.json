@@ -1,0 +1,1332 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LookupBot environment",
+  "description": "Security-aware schema generated from static configuration metadata.",
+  "type": "object",
+  "properties": {
+    "DISCORD_TOKEN": {
+      "type": "string",
+      "description": "Discord bot token from the Developer Portal.",
+      "x-value-type": "secret",
+      "x-sensitivity": "secret",
+      "writeOnly": true
+    },
+    "DISCORD_APPLICATION_ID": {
+      "type": "string",
+      "description": "Discord application/client ID.",
+      "x-value-type": "discord-id",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}$",
+      "writeOnly": true
+    },
+    "DISCORD_GUILD_ID": {
+      "type": "string",
+      "description": "Discord server ID to which the bot is locked.",
+      "x-value-type": "discord-id",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}$",
+      "writeOnly": true
+    },
+    "DISCORD_ALLOWED_CHANNEL_IDS": {
+      "type": "string",
+      "description": "Comma-separated allowlist of support and test channel IDs.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true
+    },
+    "DISCORD_CMI_CHANNEL_IDS": {
+      "type": "string",
+      "description": "Comma-separated channel IDs routed to the CMI context.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true
+    },
+    "DISCORD_JOBS_CHANNEL_IDS": {
+      "type": "string",
+      "description": "Comma-separated channel IDs routed to the Jobs context.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true
+    },
+    "DISCORD_SVIS_CHANNEL_IDS": {
+      "type": "string",
+      "description": "Comma-separated channel IDs routed to the SVIS context.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true
+    },
+    "DISCORD_MFM_CHANNEL_IDS": {
+      "type": "string",
+      "description": "Comma-separated channel IDs routed to the MFM context.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true
+    },
+    "DISCORD_TRYME_CHANNEL_IDS": {
+      "type": "string",
+      "description": "Comma-separated channel IDs routed to the TryMe context.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true
+    },
+    "DISCORD_TRADEME_CHANNEL_IDS": {
+      "type": "string",
+      "description": "Comma-separated channel IDs routed to the TradeMe context.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true
+    },
+    "DISCORD_RESIDENCE_CHANNEL_IDS": {
+      "type": "string",
+      "description": "Comma-separated channel IDs routed to the Residence context.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true
+    },
+    "DISCORD_BOTTLEDEXP_CHANNEL_IDS": {
+      "type": "string",
+      "description": "Comma-separated channel IDs routed to the BottledExp context.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true
+    },
+    "DISCORD_TEST_CHANNEL_IDS": {
+      "type": "string",
+      "description": "Comma-separated test channel IDs.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true
+    },
+    "DISCORD_CMI_TEST_CHANNEL_IDS": {
+      "type": "string",
+      "description": "Legacy fallback for test channel IDs.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true,
+      "deprecated": true
+    },
+    "DISCORD_TEST_DEFAULT_CONTEXT": {
+      "type": "string",
+      "description": "Plugin context used by test channels until overridden.",
+      "x-value-type": "string",
+      "x-sensitivity": "public",
+      "default": "cmi"
+    },
+    "ALLOWED_ROLE_IDS": {
+      "type": "string",
+      "description": "Comma-separated role IDs allowed to use lookup commands.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true
+    },
+    "ADMIN_ROLE_IDS": {
+      "type": "string",
+      "description": "Comma-separated role IDs allowed to use admin commands.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true
+    },
+    "AI_ROLE_IDS": {
+      "type": "string",
+      "description": "Comma-separated role IDs allowed to use AI-backed options. Required when OPENAI_ENABLED=true; otherwise falls back to ADMIN_ROLE_IDS.",
+      "x-value-type": "discord-id-list",
+      "x-sensitivity": "private",
+      "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
+      "writeOnly": true
+    },
+    "OPENAI_ENABLED": {
+      "type": "string",
+      "description": "Hard switch for OpenAI-backed features.",
+      "x-value-type": "boolean",
+      "x-sensitivity": "public",
+      "enum": [
+        "true",
+        "false"
+      ],
+      "default": "false"
+    },
+    "OPENAI_API_KEY": {
+      "type": "string",
+      "description": "OpenAI API key. Required when OPENAI_ENABLED=true.",
+      "x-value-type": "secret",
+      "x-sensitivity": "secret",
+      "writeOnly": true
+    },
+    "OPENAI_MODEL": {
+      "type": "string",
+      "description": "OpenAI model used for reranking and summaries.",
+      "x-value-type": "string",
+      "x-sensitivity": "public",
+      "default": "gpt-5-mini"
+    },
+    "DISPLAY_PATH_PREFIX": {
+      "type": "string",
+      "description": "Prefix shown before repository-relative lookup paths.",
+      "x-value-type": "string",
+      "x-sensitivity": "public",
+      "default": "~/plugins"
+    },
+    "DEFAULT_RESULT_LIMIT": {
+      "type": "string",
+      "description": "Default number of lookup results.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "3"
+    },
+    "SEARCH_SYNONYMS_PATH": {
+      "type": "string",
+      "description": "Repository-relative path to plugin-scoped search synonyms.",
+      "x-value-type": "relative-path",
+      "x-sensitivity": "public",
+      "default": "data/search-synonyms.json"
+    },
+    "VERSION_CATALOG_PATH": {
+      "type": "string",
+      "description": "Repository-relative clean-server version catalog.",
+      "x-value-type": "relative-path",
+      "x-sensitivity": "public",
+      "default": "data/versions.json"
+    },
+    "VERSION_STATE_PATH": {
+      "type": "string",
+      "description": "Repository-relative persistent last-known upstream state.",
+      "x-value-type": "relative-path",
+      "x-sensitivity": "public",
+      "default": "logs/upstream-versions.json"
+    },
+    "VERSION_CHECK_ENABLED": {
+      "type": "string",
+      "description": "Enable live upstream version checks.",
+      "x-value-type": "boolean",
+      "x-sensitivity": "public",
+      "enum": [
+        "true",
+        "false"
+      ],
+      "default": "true"
+    },
+    "VERSION_CHECK_INTERVAL_HOURS": {
+      "type": "string",
+      "description": "Hours between scheduled upstream checks.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "12"
+    },
+    "VERSION_CHECK_TIMEOUT_SECONDS": {
+      "type": "string",
+      "description": "Timeout for each upstream request.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "8"
+    },
+    "PAPER_VERSION": {
+      "type": "string",
+      "description": "Paper version line checked upstream.",
+      "x-value-type": "string",
+      "x-sensitivity": "public",
+      "default": "26.2"
+    },
+    "PAPER_VERSION_CHANNELS": {
+      "type": "string",
+      "description": "Comma-separated accepted Paper release channels.",
+      "x-value-type": "csv",
+      "x-sensitivity": "public",
+      "default": "STABLE"
+    },
+    "COMMAND_USER_RATE_LIMIT": {
+      "type": "string",
+      "description": "Commands allowed per user in each rate window.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "10"
+    },
+    "COMMAND_CHANNEL_RATE_LIMIT": {
+      "type": "string",
+      "description": "Commands allowed per channel in each rate window.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "30"
+    },
+    "COMMAND_GLOBAL_RATE_LIMIT": {
+      "type": "string",
+      "description": "Commands allowed globally in each rate window.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "100"
+    },
+    "COMMAND_RATE_WINDOW_SECONDS": {
+      "type": "string",
+      "description": "Sliding command-rate window in seconds.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "30"
+    },
+    "LOOKUP_COOLDOWN_SECONDS": {
+      "type": "string",
+      "description": "Per-user lookup cooldown.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "3"
+    },
+    "SUMMARY_COOLDOWN_SECONDS": {
+      "type": "string",
+      "description": "Per-user AI summary cooldown.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "15"
+    },
+    "DEBUG_COOLDOWN_SECONDS": {
+      "type": "string",
+      "description": "Global admin debug cooldown.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "10"
+    },
+    "RELOAD_COOLDOWN_SECONDS": {
+      "type": "string",
+      "description": "Global admin reload cooldown.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "30"
+    },
+    "RATE_LIMIT_AUDIT_COOLDOWN_SECONDS": {
+      "type": "string",
+      "description": "Coalescing window for repeated rate-limit audit entries.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "30"
+    },
+    "QUERY_MIN_LENGTH": {
+      "type": "string",
+      "description": "Minimum normalized query length.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "2"
+    },
+    "QUERY_MAX_LENGTH": {
+      "type": "string",
+      "description": "Maximum normalized query length.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "80"
+    },
+    "QUERY_BLOCKLIST": {
+      "type": "string",
+      "description": "Comma-separated exact queries rejected as too broad.",
+      "x-value-type": "csv",
+      "x-sensitivity": "public"
+    },
+    "QUERY_ALLOWLIST": {
+      "type": "string",
+      "description": "Comma-separated short queries exempt from minimum length.",
+      "x-value-type": "csv",
+      "x-sensitivity": "public"
+    },
+    "QUERY_DEBUG_ERRORS": {
+      "type": "string",
+      "description": "Expose detailed validation reasons to users.",
+      "x-value-type": "boolean",
+      "x-sensitivity": "public",
+      "enum": [
+        "true",
+        "false"
+      ],
+      "default": "false"
+    },
+    "AUDIT_LOG_PATH": {
+      "type": "string",
+      "description": "Repository-relative JSONL usage-audit path.",
+      "x-value-type": "relative-path",
+      "x-sensitivity": "public",
+      "default": "logs/cmibot-usage.jsonl"
+    },
+    "AUDIT_LOG_MAX_SIZE_MB": {
+      "type": "string",
+      "description": "Maximum active audit-log size before rotation.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "10"
+    },
+    "AUDIT_LOG_MAX_FILES": {
+      "type": "string",
+      "description": "Maximum retained audit-log archives.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "5"
+    },
+    "SERVICE_LOG_MAX_SIZE_MB": {
+      "type": "string",
+      "description": "Maximum size of each active structured service-log stream.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "10"
+    },
+    "SERVICE_LOG_MAX_FILES": {
+      "type": "string",
+      "description": "Maximum archives retained for each service-log stream.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "5"
+    },
+    "SERVICE_LOG_MIN_FREE_MB": {
+      "type": "string",
+      "description": "Minimum free disk reserve below which service logs stop growing.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "256"
+    },
+    "METRICS_LOG_INTERVAL_MINUTES": {
+      "type": "string",
+      "description": "Interval for privacy-safe aggregate metrics snapshots; use 0 to disable periodic snapshots.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "5"
+    },
+    "CMILIB_LOOKUP_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "CMILibPlugin/CMILib/config.yml"
+    },
+    "CMILIB_LOOKUP_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "CMILIB_LANGUAGE_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "CMILibPlugin/CMILib/Translations/**/*_EN.yml"
+    },
+    "CMILIB_LANGUAGE_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "CMILIB_PLACEHOLDER_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the placeholder profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "CMILibPlugin/data/generated-placeholders.log"
+    },
+    "CMILIB_PLACEHOLDER_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the placeholder profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "LOOKUP_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "CMIPlugin/CMI/config.yml,CMIPlugin/CMI/Settings/**/*.yml"
+    },
+    "LOOKUP_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "**/Translations/**,**/DatabaseBackups/**,**/FileBackups/**,**/Logs/**,**/moneyLog/**,**/sellLogs/**"
+    },
+    "LANGLOOKUP_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "CMIPlugin/CMI/Translations/**/Locale_EN.yml"
+    },
+    "LANGLOOKUP_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "PLACEHOLDER_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the placeholder profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "CMIPlugin/data/placeholders.log,CMIPlugin/data/generated-placeholders.log"
+    },
+    "PLACEHOLDER_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the placeholder profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "MATERIAL_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the material profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "CMIPlugin/data/materials.log"
+    },
+    "MATERIAL_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the material profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "COMMAND_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "CMIPlugin/data/commands.log,CMIPlugin/data/generated-commands.log"
+    },
+    "COMMAND_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "PERMISSION_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "CMIPlugin/data/permissions.log,CMIPlugin/data/cmdperms.log,CMIPlugin/data/generated-permissions.log"
+    },
+    "PERMISSION_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "FAQ_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the faq profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "CMIPlugin/data/faq.log"
+    },
+    "FAQ_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the faq profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "TABCOMPLETE_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the tabcomplete profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "CMIPlugin/data/tabcompletes.log"
+    },
+    "TABCOMPLETE_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the tabcomplete profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "JOBS_LOOKUP_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "JobsPlugin/*.yml,JobsPlugin/jobs/**/*.yml"
+    },
+    "JOBS_LOOKUP_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "JobsPlugin/locale/**,JobsPlugin/TranslatableWords/**,JobsPlugin/data/**,JobsPlugin/Signs.yml,JobsPlugin/activeBoosts.yml,JobsPlugin/blockOwnerShips.yml"
+    },
+    "JOBS_LANGUAGE_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "JobsPlugin/locale/messages_en.yml,JobsPlugin/TranslatableWords/Words_en.yml"
+    },
+    "JOBS_LANGUAGE_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "JOBS_PLACEHOLDER_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the placeholder profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "JobsPlugin/data/placeholders.log,JobsPlugin/data/generated-placeholders.log"
+    },
+    "JOBS_PLACEHOLDER_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the placeholder profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "JOBS_COMMAND_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "JobsPlugin/data/commands.log,JobsPlugin/data/generated-commands.log"
+    },
+    "JOBS_COMMAND_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "JOBS_PERMISSION_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "JobsPlugin/data/permissions.log,JobsPlugin/data/generated-permissions.log"
+    },
+    "JOBS_PERMISSION_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "JOBS_FAQ_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the faq profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "JobsPlugin/data/faq.log,JobsPlugin/data/faq/*.md"
+    },
+    "JOBS_FAQ_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the faq profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "SVIS_LOOKUP_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "SVISPlugin/config.yml"
+    },
+    "SVIS_LOOKUP_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "SVIS_LANGUAGE_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "SVISPlugin/Locale_EN.yml"
+    },
+    "SVIS_LANGUAGE_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "SVIS_COMMAND_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "SVISPlugin/data/commands.log,SVISPlugin/data/generated-commands.log"
+    },
+    "SVIS_COMMAND_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "SVIS_PERMISSION_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "SVISPlugin/data/permissions.log,SVISPlugin/data/generated-permissions.log"
+    },
+    "SVIS_PERMISSION_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "RESIDENCE_LOOKUP_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "ResidencePlugin/config.yml,ResidencePlugin/groups.yml,ResidencePlugin/flags.yml,ResidencePlugin/ShopVotes.yml"
+    },
+    "RESIDENCE_LOOKUP_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "RESIDENCE_LANGUAGE_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "ResidencePlugin/Language/English.yml"
+    },
+    "RESIDENCE_LANGUAGE_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "RESIDENCE_PLACEHOLDER_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the placeholder profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "ResidencePlugin/data/placeholders.log,ResidencePlugin/data/generated-placeholders.log"
+    },
+    "RESIDENCE_PLACEHOLDER_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the placeholder profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "RESIDENCE_COMMAND_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "ResidencePlugin/data/commands.log,ResidencePlugin/data/generated-commands.log"
+    },
+    "RESIDENCE_COMMAND_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "RESIDENCE_PERMISSION_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "ResidencePlugin/data/permissions.log,ResidencePlugin/data/generated-permissions.log"
+    },
+    "RESIDENCE_PERMISSION_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "MFM_LOOKUP_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "MFMPlugin/config.yml"
+    },
+    "MFM_LOOKUP_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "MFM_LANGUAGE_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "MFMPlugin/Locale/Locale_EN.yml"
+    },
+    "MFM_LANGUAGE_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "MFM_COMMAND_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "MFMPlugin/data/generated-commands.log"
+    },
+    "MFM_COMMAND_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "MFM_PERMISSION_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "MFMPlugin/data/generated-permissions.log"
+    },
+    "MFM_PERMISSION_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "TRYME_LOOKUP_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "TryMePlugin/*.yml"
+    },
+    "TRYME_LOOKUP_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "TryMePlugin/Locale_EN.yml,TryMePlugin/Signs.yml"
+    },
+    "TRYME_LANGUAGE_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "TryMePlugin/Locale_EN.yml"
+    },
+    "TRYME_LANGUAGE_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "TRYME_PLACEHOLDER_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the placeholder profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "TryMePlugin/data/generated-placeholders.log"
+    },
+    "TRYME_PLACEHOLDER_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the placeholder profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "TRYME_COMMAND_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "TryMePlugin/data/generated-commands.log"
+    },
+    "TRYME_COMMAND_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "TRYME_PERMISSION_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "TryMePlugin/data/generated-permissions.log"
+    },
+    "TRYME_PERMISSION_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "TRADEME_LOOKUP_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "TradeMePlugin/config.yml"
+    },
+    "TRADEME_LOOKUP_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "TRADEME_LANGUAGE_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "TradeMePlugin/Locale_EN.yml"
+    },
+    "TRADEME_LANGUAGE_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "TRADEME_PLACEHOLDER_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the placeholder profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "TradeMePlugin/data/generated-placeholders.log"
+    },
+    "TRADEME_PLACEHOLDER_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the placeholder profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "TRADEME_COMMAND_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "TradeMePlugin/data/generated-commands.log"
+    },
+    "TRADEME_COMMAND_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "TRADEME_PERMISSION_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "TradeMePlugin/data/generated-permissions.log"
+    },
+    "TRADEME_PERMISSION_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "BOTTLEDEXP_LOOKUP_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "BottledExpPlugin/config.yml,BottledExpPlugin/recipes.yml"
+    },
+    "BOTTLEDEXP_LOOKUP_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the config profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "BOTTLEDEXP_LANGUAGE_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "BottledExpPlugin/Locale_EN.yml"
+    },
+    "BOTTLEDEXP_LANGUAGE_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the language profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "BOTTLEDEXP_COMMAND_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "BottledExpPlugin/data/generated-commands.log"
+    },
+    "BOTTLEDEXP_COMMAND_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the command profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    },
+    "BOTTLEDEXP_PERMISSION_INCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated include globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public",
+      "default": "BottledExpPlugin/data/generated-permissions.log"
+    },
+    "BOTTLEDEXP_PERMISSION_EXCLUDE_GLOBS": {
+      "type": "string",
+      "description": "Comma-separated exclude globs for the permission profile.",
+      "x-value-type": "relative-glob-list",
+      "x-sensitivity": "public"
+    }
+  },
+  "required": [
+    "DISCORD_TOKEN",
+    "DISCORD_APPLICATION_ID",
+    "DISCORD_GUILD_ID",
+    "DISCORD_ALLOWED_CHANNEL_IDS",
+    "ALLOWED_ROLE_IDS",
+    "ADMIN_ROLE_IDS"
+  ],
+  "additionalProperties": true,
+  "x-plugin-profiles": [
+    {
+      "id": "cmilib",
+      "label": "Shared CMILib",
+      "shared": true,
+      "profiles": [
+        {
+          "id": "config",
+          "sourceType": "yaml",
+          "includeVariable": "CMILIB_LOOKUP_INCLUDE_GLOBS",
+          "excludeVariable": "CMILIB_LOOKUP_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "language",
+          "sourceType": "yaml",
+          "includeVariable": "CMILIB_LANGUAGE_INCLUDE_GLOBS",
+          "excludeVariable": "CMILIB_LANGUAGE_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "placeholder",
+          "sourceType": "log",
+          "includeVariable": "CMILIB_PLACEHOLDER_INCLUDE_GLOBS",
+          "excludeVariable": "CMILIB_PLACEHOLDER_EXCLUDE_GLOBS"
+        }
+      ]
+    },
+    {
+      "id": "cmi",
+      "label": "CMI",
+      "shared": false,
+      "profiles": [
+        {
+          "id": "config",
+          "sourceType": "yaml",
+          "includeVariable": "LOOKUP_INCLUDE_GLOBS",
+          "excludeVariable": "LOOKUP_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "language",
+          "sourceType": "yaml",
+          "includeVariable": "LANGLOOKUP_INCLUDE_GLOBS",
+          "excludeVariable": "LANGLOOKUP_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "placeholder",
+          "sourceType": "log",
+          "includeVariable": "PLACEHOLDER_INCLUDE_GLOBS",
+          "excludeVariable": "PLACEHOLDER_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "material",
+          "sourceType": "log",
+          "includeVariable": "MATERIAL_INCLUDE_GLOBS",
+          "excludeVariable": "MATERIAL_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "command",
+          "sourceType": "log",
+          "includeVariable": "COMMAND_INCLUDE_GLOBS",
+          "excludeVariable": "COMMAND_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "permission",
+          "sourceType": "log",
+          "includeVariable": "PERMISSION_INCLUDE_GLOBS",
+          "excludeVariable": "PERMISSION_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "faq",
+          "sourceType": "log",
+          "includeVariable": "FAQ_INCLUDE_GLOBS",
+          "excludeVariable": "FAQ_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "tabcomplete",
+          "sourceType": "log",
+          "includeVariable": "TABCOMPLETE_INCLUDE_GLOBS",
+          "excludeVariable": "TABCOMPLETE_EXCLUDE_GLOBS"
+        }
+      ]
+    },
+    {
+      "id": "jobs",
+      "label": "Jobs",
+      "shared": false,
+      "profiles": [
+        {
+          "id": "config",
+          "sourceType": "yaml",
+          "includeVariable": "JOBS_LOOKUP_INCLUDE_GLOBS",
+          "excludeVariable": "JOBS_LOOKUP_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "language",
+          "sourceType": "yaml",
+          "includeVariable": "JOBS_LANGUAGE_INCLUDE_GLOBS",
+          "excludeVariable": "JOBS_LANGUAGE_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "placeholder",
+          "sourceType": "log",
+          "includeVariable": "JOBS_PLACEHOLDER_INCLUDE_GLOBS",
+          "excludeVariable": "JOBS_PLACEHOLDER_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "command",
+          "sourceType": "log",
+          "includeVariable": "JOBS_COMMAND_INCLUDE_GLOBS",
+          "excludeVariable": "JOBS_COMMAND_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "permission",
+          "sourceType": "log",
+          "includeVariable": "JOBS_PERMISSION_INCLUDE_GLOBS",
+          "excludeVariable": "JOBS_PERMISSION_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "faq",
+          "sourceType": "log",
+          "includeVariable": "JOBS_FAQ_INCLUDE_GLOBS",
+          "excludeVariable": "JOBS_FAQ_EXCLUDE_GLOBS"
+        }
+      ]
+    },
+    {
+      "id": "svis",
+      "label": "SVIS",
+      "shared": false,
+      "profiles": [
+        {
+          "id": "config",
+          "sourceType": "yaml",
+          "includeVariable": "SVIS_LOOKUP_INCLUDE_GLOBS",
+          "excludeVariable": "SVIS_LOOKUP_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "language",
+          "sourceType": "yaml",
+          "includeVariable": "SVIS_LANGUAGE_INCLUDE_GLOBS",
+          "excludeVariable": "SVIS_LANGUAGE_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "command",
+          "sourceType": "log",
+          "includeVariable": "SVIS_COMMAND_INCLUDE_GLOBS",
+          "excludeVariable": "SVIS_COMMAND_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "permission",
+          "sourceType": "log",
+          "includeVariable": "SVIS_PERMISSION_INCLUDE_GLOBS",
+          "excludeVariable": "SVIS_PERMISSION_EXCLUDE_GLOBS"
+        }
+      ]
+    },
+    {
+      "id": "residence",
+      "label": "Residence",
+      "shared": false,
+      "profiles": [
+        {
+          "id": "config",
+          "sourceType": "yaml",
+          "includeVariable": "RESIDENCE_LOOKUP_INCLUDE_GLOBS",
+          "excludeVariable": "RESIDENCE_LOOKUP_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "language",
+          "sourceType": "yaml",
+          "includeVariable": "RESIDENCE_LANGUAGE_INCLUDE_GLOBS",
+          "excludeVariable": "RESIDENCE_LANGUAGE_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "placeholder",
+          "sourceType": "log",
+          "includeVariable": "RESIDENCE_PLACEHOLDER_INCLUDE_GLOBS",
+          "excludeVariable": "RESIDENCE_PLACEHOLDER_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "command",
+          "sourceType": "log",
+          "includeVariable": "RESIDENCE_COMMAND_INCLUDE_GLOBS",
+          "excludeVariable": "RESIDENCE_COMMAND_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "permission",
+          "sourceType": "log",
+          "includeVariable": "RESIDENCE_PERMISSION_INCLUDE_GLOBS",
+          "excludeVariable": "RESIDENCE_PERMISSION_EXCLUDE_GLOBS"
+        }
+      ]
+    },
+    {
+      "id": "mfm",
+      "label": "MFM",
+      "shared": false,
+      "profiles": [
+        {
+          "id": "config",
+          "sourceType": "yaml",
+          "includeVariable": "MFM_LOOKUP_INCLUDE_GLOBS",
+          "excludeVariable": "MFM_LOOKUP_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "language",
+          "sourceType": "yaml",
+          "includeVariable": "MFM_LANGUAGE_INCLUDE_GLOBS",
+          "excludeVariable": "MFM_LANGUAGE_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "command",
+          "sourceType": "log",
+          "includeVariable": "MFM_COMMAND_INCLUDE_GLOBS",
+          "excludeVariable": "MFM_COMMAND_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "permission",
+          "sourceType": "log",
+          "includeVariable": "MFM_PERMISSION_INCLUDE_GLOBS",
+          "excludeVariable": "MFM_PERMISSION_EXCLUDE_GLOBS"
+        }
+      ]
+    },
+    {
+      "id": "tryme",
+      "label": "TryMe",
+      "shared": false,
+      "profiles": [
+        {
+          "id": "config",
+          "sourceType": "yaml",
+          "includeVariable": "TRYME_LOOKUP_INCLUDE_GLOBS",
+          "excludeVariable": "TRYME_LOOKUP_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "language",
+          "sourceType": "yaml",
+          "includeVariable": "TRYME_LANGUAGE_INCLUDE_GLOBS",
+          "excludeVariable": "TRYME_LANGUAGE_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "placeholder",
+          "sourceType": "log",
+          "includeVariable": "TRYME_PLACEHOLDER_INCLUDE_GLOBS",
+          "excludeVariable": "TRYME_PLACEHOLDER_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "command",
+          "sourceType": "log",
+          "includeVariable": "TRYME_COMMAND_INCLUDE_GLOBS",
+          "excludeVariable": "TRYME_COMMAND_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "permission",
+          "sourceType": "log",
+          "includeVariable": "TRYME_PERMISSION_INCLUDE_GLOBS",
+          "excludeVariable": "TRYME_PERMISSION_EXCLUDE_GLOBS"
+        }
+      ]
+    },
+    {
+      "id": "trademe",
+      "label": "TradeMe",
+      "shared": false,
+      "profiles": [
+        {
+          "id": "config",
+          "sourceType": "yaml",
+          "includeVariable": "TRADEME_LOOKUP_INCLUDE_GLOBS",
+          "excludeVariable": "TRADEME_LOOKUP_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "language",
+          "sourceType": "yaml",
+          "includeVariable": "TRADEME_LANGUAGE_INCLUDE_GLOBS",
+          "excludeVariable": "TRADEME_LANGUAGE_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "placeholder",
+          "sourceType": "log",
+          "includeVariable": "TRADEME_PLACEHOLDER_INCLUDE_GLOBS",
+          "excludeVariable": "TRADEME_PLACEHOLDER_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "command",
+          "sourceType": "log",
+          "includeVariable": "TRADEME_COMMAND_INCLUDE_GLOBS",
+          "excludeVariable": "TRADEME_COMMAND_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "permission",
+          "sourceType": "log",
+          "includeVariable": "TRADEME_PERMISSION_INCLUDE_GLOBS",
+          "excludeVariable": "TRADEME_PERMISSION_EXCLUDE_GLOBS"
+        }
+      ]
+    },
+    {
+      "id": "bottledexp",
+      "label": "BottledExp",
+      "shared": false,
+      "profiles": [
+        {
+          "id": "config",
+          "sourceType": "yaml",
+          "includeVariable": "BOTTLEDEXP_LOOKUP_INCLUDE_GLOBS",
+          "excludeVariable": "BOTTLEDEXP_LOOKUP_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "language",
+          "sourceType": "yaml",
+          "includeVariable": "BOTTLEDEXP_LANGUAGE_INCLUDE_GLOBS",
+          "excludeVariable": "BOTTLEDEXP_LANGUAGE_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "command",
+          "sourceType": "log",
+          "includeVariable": "BOTTLEDEXP_COMMAND_INCLUDE_GLOBS",
+          "excludeVariable": "BOTTLEDEXP_COMMAND_EXCLUDE_GLOBS"
+        },
+        {
+          "id": "permission",
+          "sourceType": "log",
+          "includeVariable": "BOTTLEDEXP_PERMISSION_INCLUDE_GLOBS",
+          "excludeVariable": "BOTTLEDEXP_PERMISSION_EXCLUDE_GLOBS"
+        }
+      ]
+    }
+  ]
+}

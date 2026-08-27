@@ -1,3 +1,4 @@
+import { performance } from "node:perf_hooks";
 import OpenAI from "openai";
 import { serviceLogger } from "./logger.js";
 
@@ -12,9 +13,21 @@ function extractFirstJsonObject(value) {
 }
 
 export class AiReranker {
-  constructor({ apiKey, model }) {
+  constructor({ apiKey, model }, { metrics } = {}) {
     this.model = model;
     this.client = new OpenAI({ apiKey });
+    this.metrics = metrics;
+  }
+
+  recordUsage(operation, startedAt, outcome, usage = {}) {
+    this.metrics?.recordAi({
+      operation,
+      durationMs: performance.now() - startedAt,
+      outcome,
+      inputTokens: usage.input_tokens,
+      outputTokens: usage.output_tokens,
+      totalTokens: usage.total_tokens,
+    });
   }
 
   async rerank(query, candidateItems) {
@@ -22,6 +35,8 @@ export class AiReranker {
       return candidateItems;
     }
 
+    const startedAt = performance.now();
+    let usage;
     try {
       const payload = {
         query,
@@ -55,16 +70,19 @@ export class AiReranker {
           },
         ],
       });
+      usage = response.usage;
 
       const rawText = response.output_text?.trim() || "";
       const jsonText = extractFirstJsonObject(rawText);
       if (!jsonText) {
+        this.recordUsage("rerank", startedAt, "success", usage);
         return candidateItems;
       }
 
       const parsed = JSON.parse(jsonText);
       const rankedIds = Array.isArray(parsed.ranked_ids) ? parsed.ranked_ids.map(String) : [];
       if (!rankedIds.length) {
+        this.recordUsage("rerank", startedAt, "success", usage);
         return candidateItems;
       }
 
@@ -79,8 +97,10 @@ export class AiReranker {
         }
       }
 
+      this.recordUsage("rerank", startedAt, "success", usage);
       return [...ranked, ...itemById.values()];
     } catch (error) {
+      this.recordUsage("rerank", startedAt, "error", usage);
       serviceLogger.warn("ai.rerank_failed", { error });
       return candidateItems;
     }
@@ -91,6 +111,8 @@ export class AiReranker {
       return null;
     }
 
+    const startedAt = performance.now();
+    let usage;
     try {
       const payload = {
         profileName,
@@ -121,10 +143,13 @@ export class AiReranker {
           },
         ],
       });
+      usage = response.usage;
 
       const summary = response.output_text?.trim() || "";
+      this.recordUsage("summary", startedAt, "success", usage);
       return summary || null;
     } catch (error) {
+      this.recordUsage("summary", startedAt, "error", usage);
       serviceLogger.warn("ai.summary_failed", { error });
       return null;
     }

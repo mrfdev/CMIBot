@@ -32,6 +32,62 @@ function projectRoot() {
   return process.env.CMIBOT_PROJECT_ROOT || path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 }
 
+function xmlEscape(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+async function renderServiceDefinition() {
+  const root = path.resolve(projectRoot());
+  const currentRelease = path.join(root, ".deploy", "current");
+  const node = process.env.CMIBOT_NODE || process.execPath;
+  if (!path.isAbsolute(node)) {
+    throw new Error("The configured Node executable must be absolute.");
+  }
+  const executablePath = [...new Set([path.dirname(node), "/usr/bin", "/bin", "/usr/sbin", "/sbin"])]
+    .join(path.delimiter);
+  const templatePath = path.join(root, "operations", `${label}.plist`);
+  let template = await fs.readFile(templatePath, "utf8");
+  const replacements = {
+    __NODE_EXECUTABLE__: node,
+    __SERVICE_RUNNER__: path.join(root, "scripts", "service-runner.mjs"),
+    __WORKING_DIRECTORY__: currentRelease,
+    __EXECUTABLE_PATH__: executablePath,
+  };
+
+  for (const [placeholder, value] of Object.entries(replacements)) {
+    if (!template.includes(placeholder)) {
+      throw new Error("The service definition template is incomplete.");
+    }
+    template = template.replaceAll(placeholder, xmlEscape(value));
+  }
+  if (/__[A-Z0-9_]+__/.test(template)) {
+    throw new Error("The service definition template contains an unresolved placeholder.");
+  }
+  return template;
+}
+
+async function installServiceDefinition({ announce = true } = {}) {
+  const destination = installedPlistPath();
+  const temporary = `${destination}.tmp-${process.pid}`;
+  const definition = await renderServiceDefinition();
+  await fs.mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
+  try {
+    await fs.writeFile(temporary, definition, { encoding: "utf8", mode: 0o600 });
+    await fs.rename(temporary, destination);
+    await fs.chmod(destination, 0o600);
+  } finally {
+    await fs.rm(temporary, { force: true }).catch(() => {});
+  }
+  if (announce) {
+    console.log("LookupBot service definition installed.");
+  }
+}
+
 function configuredMilliseconds(name, fallback) {
   const raw = process.env[name];
   if (raw === undefined) {
@@ -151,6 +207,7 @@ async function stopService({ announce = true } = {}) {
 }
 
 async function restartService() {
+  await installServiceDefinition({ announce: false });
   await stopService({ announce: false });
   await startService({ announce: false });
   console.log("LookupBot restarted.");
@@ -240,8 +297,10 @@ async function main() {
     await restartService();
   } else if (command === "logs") {
     await displayLogs(process.argv.slice(3));
+  } else if (command === "install") {
+    await installServiceDefinition();
   } else {
-    console.error("Usage: cmibot-ops.mjs <logs|restart|start|status|stop>");
+    console.error("Usage: cmibot-ops.mjs <install|logs|restart|start|status|stop>");
     process.exitCode = 64;
   }
 }

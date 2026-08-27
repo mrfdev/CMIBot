@@ -19,6 +19,8 @@
     "refresh:data": "node scripts/refresh-clean-server.mjs",
     "refresh:indexes": "node scripts/plugin-jar-indexes.mjs",
     "refresh:versions": "node scripts/refresh-versions.mjs",
+    "docs:generate": "node scripts/generate-config-docs.mjs",
+    "docs:check": "node scripts/generate-config-docs.mjs --check",
     "smoke:java25": "node scripts/smoke-paper-runtime.mjs --expect 25 --label java25",
     "smoke:java26": "node scripts/smoke-paper-runtime.mjs --expect 26 --label java26",
     "check:paper": "node scripts/verify-paper-compatibility.mjs",
@@ -27,7 +29,7 @@
     "update:check": "node scripts/safe-update.mjs --check",
     "update:safe": "node scripts/safe-update.mjs",
     "check:syntax": "for file in src/*.js src/discord/*.js scripts/*.mjs; do node --check \"$file\" || exit 1; done",
-    "check:bot": "npm run check:syntax && node --test",
+    "check:bot": "npm run check:syntax && npm run docs:check && node --test",
     "check": "npm run check:bot && node scripts/verify-paper-compatibility.mjs --offline"
   },
   "engines": {

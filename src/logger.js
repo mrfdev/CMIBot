@@ -1,7 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
 const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]+/g;
-const AUTHORIZATION_TOKEN = /\b(Bot|Bearer)\s+[A-Za-z0-9._~-]+/gi;
+const AUTHORIZATION_TOKEN =
+  /\b(Bot|Bearer)\s+(?=[A-Za-z0-9._~-]{8,}\b)(?=[A-Za-z0-9._~-]*[0-9._~-])[A-Za-z0-9._~-]+/gi;
 const COMMON_API_TOKEN = /\b(?:sk-[A-Za-z0-9_-]{8,}|AIza[A-Za-z0-9_-]{12,})\b/g;
 const DISCORD_TOKEN = /\b[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{20,}\b/g;
 const ABSOLUTE_PATH = /(?:\/(?:Users|home|private|var|etc|opt|tmp)(?:\/[^\s"'`]+)+|[A-Za-z]:\\[^\s"'`]+)/g;
@@ -87,6 +88,9 @@ export function createServiceLogger({
   stderr = (line) => console.error(line),
 } = {}) {
   const contextStorage = new AsyncLocalStorage();
+  let writeInfo = stdout;
+  let writeError = stderr;
+  let observe = null;
 
   function emit(level, event, fields = {}) {
     const timestamp = now();
@@ -98,7 +102,12 @@ export function createServiceLogger({
       ...normalizeFields(fields),
     };
     const line = JSON.stringify(record);
-    (level === "info" ? stdout : stderr)(line);
+    (level === "info" ? writeInfo : writeError)(line);
+    try {
+      observe?.(record);
+    } catch {
+      // Metrics and other observers must never break service logging.
+    }
     return record;
   }
 
@@ -114,6 +123,17 @@ export function createServiceLogger({
     },
     withContext(fields, callback) {
       return contextStorage.run(normalizeFields(fields), callback);
+    },
+    configure({ stdout: nextStdout, stderr: nextStderr, observer } = {}) {
+      if (typeof nextStdout === "function") {
+        writeInfo = nextStdout;
+      }
+      if (typeof nextStderr === "function") {
+        writeError = nextStderr;
+      }
+      if (observer === null || typeof observer === "function") {
+        observe = observer;
+      }
     },
   };
 }

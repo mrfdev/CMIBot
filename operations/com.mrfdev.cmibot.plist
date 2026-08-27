@@ -7,19 +7,19 @@
 
   <key>ProgramArguments</key>
   <array>
-    <string>/opt/homebrew/bin/node</string>
-    <string>/Users/floris/Projects/Codex/CMIBot/.deploy/current/src/index.js</string>
+    <string>__NODE_EXECUTABLE__</string>
+    <string>__SERVICE_RUNNER__</string>
   </array>
 
   <key>WorkingDirectory</key>
-  <string>/Users/floris/Projects/Codex/CMIBot/.deploy/current</string>
+  <string>__WORKING_DIRECTORY__</string>
 
   <key>EnvironmentVariables</key>
   <dict>
     <key>NODE_ENV</key>
     <string>production</string>
     <key>PATH</key>
-    <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <string>__EXECUTABLE_PATH__</string>
   </dict>
 
   <key>RunAtLoad</key>
@@ -44,9 +44,9 @@
   <integer>63</integer>
 
   <key>StandardOutPath</key>
-  <string>/Users/floris/Projects/Codex/CMIBot/logs/cmibot-service.log</string>
+  <string>/dev/null</string>
 
   <key>StandardErrorPath</key>
-  <string>/Users/floris/Projects/Codex/CMIBot/logs/cmibot-service.error.log</string>
+  <string>/dev/null</string>
 </dict>
 </plist>

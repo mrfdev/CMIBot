@@ -46,11 +46,31 @@ test("health output reports readiness without infrastructure identifiers", () =>
       isReady: () => true,
       ws: { ping: 42 },
     },
+    metrics: {
+      getSnapshot() {
+        return {
+          commands: { count: 4, p95Ms: 50, outcomes: { error: 1 } },
+          searches: { count: 3, p95Ms: 25, results: { returned: 7 } },
+          reloads: { count: 1, p95Ms: 500 },
+          ai: { count: 1, tokens: { total: 30 } },
+          memory: { rssBytes: 10 * 1024 * 1024, heapUsedBytes: 4 * 1024 * 1024 },
+        };
+      },
+    },
     runtimeInfo: {
       startedAt: new Date("2026-08-27T09:00:00.000Z"),
       release: "0.1.0 (abcdef123456)",
     },
     startupState: { ready: true },
+    serviceLogs: {
+      getSnapshot() {
+        return {
+          maxBytesPerFile: 10 * 1024 * 1024,
+          maxArchivesPerStream: 5,
+          droppedWrites: 0,
+        };
+      },
+    },
     now: new Date("2026-08-27T10:00:00.000Z").getTime(),
   });
 
@@ -59,6 +79,8 @@ test("health output reports readiness without infrastructure identifiers", () =>
   assert.match(message, /Discord: `connected \(42 ms gateway latency\)`/);
   assert.match(message, /Search cache: `ready, 100 entries from 4 files`/);
   assert.match(message, /Upstream checks: `healthy`/);
+  assert.match(message, /Commands: `4 observed, p95 50 ms, 1 errors`/);
+  assert.match(message, /Service logs: `bounded to 10 MiB per stream with 5 archives; 0 writes dropped`/);
   for (const privateValue of privateValues) {
     assert.doesNotMatch(message, new RegExp(privateValue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }

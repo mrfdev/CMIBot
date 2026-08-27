@@ -1,16 +1,21 @@
 import "dotenv/config";
+import { performance } from "node:perf_hooks";
 import { Client, GatewayIntentBits } from "discord.js";
 import { createSearchCache } from "./cache.js";
 import { loadConfig, validateBotConfig } from "./config.js";
 import { createInteractionHandler, registerCommands } from "./discordBot.js";
 import { serviceLogger } from "./logger.js";
+import { createMetricsRegistry } from "./metrics.js";
 import { installGracefulShutdown } from "./processLifecycle.js";
 import { createRuntimeInfo } from "./runtimeInfo.js";
+import { getActiveServiceLogManager } from "./serviceLog.js";
 import { validateStartupState } from "./startupValidation.js";
 import { createVersionService } from "./versionCatalog.js";
 
 const activeResources = {
   client: null,
+  metrics: null,
+  serviceLogs: null,
   versionService: null,
 };
 let stopPromise = null;
@@ -22,6 +27,7 @@ async function stopLookupBot() {
 
   stopPromise = (async () => {
     activeResources.versionService?.stop();
+    activeResources.metrics?.stop();
     activeResources.client?.destroy();
     await activeResources.versionService?.flushPersistence();
   })();
@@ -29,17 +35,46 @@ async function stopLookupBot() {
 }
 
 async function main() {
+  const serviceLogs = getActiveServiceLogManager();
+  if (serviceLogs) {
+    activeResources.serviceLogs = serviceLogs;
+    serviceLogger.configure({ stdout: serviceLogs.stdout, stderr: serviceLogs.stderr });
+  }
   const config = loadConfig();
+  const metrics = createMetricsRegistry();
+  activeResources.serviceLogs = serviceLogs;
+  activeResources.metrics = metrics;
+  serviceLogger.configure({
+    ...(serviceLogs ? { stdout: serviceLogs.stdout, stderr: serviceLogs.stderr } : {}),
+    observer: (record) => metrics.observeLogRecord(record),
+  });
   validateBotConfig(config);
+  metrics.start(serviceLogger, config.metrics.logIntervalMs);
   const runtimeInfo = await createRuntimeInfo(config.workspaceRoot);
   const searchCache = createSearchCache(config);
-  const warmSummary = await searchCache.warm();
+  const warmStartedAt = performance.now();
+  let warmSummary;
+  try {
+    warmSummary = await searchCache.warm();
+    metrics.recordReload({
+      durationMs: performance.now() - warmStartedAt,
+      outcome: "success",
+      scope: "startup",
+    });
+  } catch (error) {
+    metrics.recordReload({
+      durationMs: performance.now() - warmStartedAt,
+      outcome: "error",
+      scope: "startup",
+    });
+    throw error;
+  }
   serviceLogger.info("cache.startup_loaded", {
     totalEntries: warmSummary.totalEntries,
     totalFiles: warmSummary.totalFiles,
     pluginCount: warmSummary.pluginSummaries.length,
   });
-  const versionService = createVersionService(config, { logger: serviceLogger });
+  const versionService = createVersionService(config, { logger: serviceLogger, metrics });
   activeResources.versionService = versionService;
   const versionSnapshot = await versionService.start();
   serviceLogger.info("versions.startup_loaded", {
@@ -81,7 +116,9 @@ async function main() {
     "interactionCreate",
     createInteractionHandler(config, searchCache, versionService, {
       client,
+      metrics,
       runtimeInfo,
+      serviceLogs,
       startupState,
     }),
   );

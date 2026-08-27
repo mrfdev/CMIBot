@@ -38,12 +38,29 @@ function getVersionCheckState(snapshot) {
   return "healthy";
 }
 
+function formatBytes(value) {
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes) || bytes < 0) {
+    return "unknown";
+  }
+  const units = ["B", "KiB", "MiB", "GiB"];
+  let amount = bytes;
+  let unitIndex = 0;
+  while (amount >= 1024 && unitIndex < units.length - 1) {
+    amount /= 1024;
+    unitIndex += 1;
+  }
+  return `${amount >= 10 || unitIndex === 0 ? Math.round(amount) : amount.toFixed(1)} ${units[unitIndex]}`;
+}
+
 export function formatHealthMessage({
   config,
   searchCache,
   versionService,
   client,
+  metrics,
   runtimeInfo,
+  serviceLogs,
   startupState,
   now = Date.now(),
 }) {
@@ -57,6 +74,8 @@ export function formatHealthMessage({
       cacheSummary.pluginSummaries?.length === Object.keys(config.plugins).length,
   );
   const versionState = getVersionCheckState(versionSnapshot);
+  const metricsSnapshot = metrics?.getSnapshot?.();
+  const serviceLogSnapshot = serviceLogs?.getSnapshot?.();
   const overall = !cacheReady || discordState === "not ready"
     ? "unhealthy"
     : versionState.startsWith("degraded") || versionState === "pending"
@@ -64,7 +83,7 @@ export function formatHealthMessage({
       : "healthy";
   const startedAt = runtimeInfo?.startedAt ?? new Date(now - process.uptime() * 1000);
 
-  return [
+  const lines = [
     "### Lookup Health",
     `Overall: \`${overall}\``,
     `Release: \`${runtimeInfo?.release ?? "unknown"}\``,
@@ -75,5 +94,23 @@ export function formatHealthMessage({
     `Version catalog: \`${versionSnapshot.catalog?.plugins.length ?? 0} plugins, generated ${formatTimestamp(versionSnapshot.catalog?.generatedAt)}\``,
     `Upstream checks: \`${versionState}\``,
     `Startup validation: \`${startupState?.ready ? "passed" : "not confirmed"}\``,
-  ].join("\n");
+  ];
+
+  if (metricsSnapshot) {
+    lines.push(
+      `Commands: \`${metricsSnapshot.commands.count} observed, p95 ${metricsSnapshot.commands.p95Ms} ms, ${metricsSnapshot.commands.outcomes.error} errors\``,
+      `Search: \`${metricsSnapshot.searches.count} observed, p95 ${metricsSnapshot.searches.p95Ms} ms, ${metricsSnapshot.searches.results.returned} results returned\``,
+      `Reloads: \`${metricsSnapshot.reloads.count} observed, p95 ${metricsSnapshot.reloads.p95Ms} ms\``,
+      `AI: \`${metricsSnapshot.ai.count} requests, ${metricsSnapshot.ai.tokens.total} tokens reported\``,
+      `Process memory: \`${formatBytes(metricsSnapshot.memory.rssBytes)} RSS, ${formatBytes(metricsSnapshot.memory.heapUsedBytes)} heap used\``,
+    );
+  }
+
+  if (serviceLogSnapshot) {
+    lines.push(
+      `Service logs: \`bounded to ${formatBytes(serviceLogSnapshot.maxBytesPerFile)} per stream with ${serviceLogSnapshot.maxArchivesPerStream} archives; ${serviceLogSnapshot.droppedWrites} writes dropped\``,
+    );
+  }
+
+  return lines.join("\n");
 }

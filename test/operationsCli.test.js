@@ -236,6 +236,33 @@ test("restart replaces the running launchd process with a new one", async () => 
   }
 });
 
+test("install renders a private local service definition without printing its paths", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-operations-"));
+
+  try {
+    const fixture = await createLaunchctlFixture(temporaryRoot);
+    const result = await runOperation("install", {
+      ...fixture.environment,
+      CMIBOT_NODE: "/test-runtime/bin/node",
+    });
+    const plistPath = path.join(temporaryRoot, "LaunchAgents", "com.mrfdev.cmibot.plist");
+    const installed = await fs.readFile(plistPath, "utf8");
+    const mode = (await fs.stat(plistPath)).mode & 0o777;
+
+    assert.match(result.stdout, /^LookupBot service definition installed\.\n$/);
+    assert.doesNotMatch(result.stdout, /\/test-runtime|Users|home/i);
+    assert.match(installed, /\/test-runtime\/bin\/node/);
+    assert.match(installed, /scripts\/service-runner\.mjs/);
+    const expectedCurrent = path.join(repositoryRoot, ".deploy", "current");
+    assert.match(installed, new RegExp(expectedCurrent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.doesNotMatch(installed, /__[A-Z0-9_]+__/);
+    assert.match(installed, /<string>\/dev\/null<\/string>/);
+    assert.equal(mode, 0o600);
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
 test("logs displays only the requested tail of both service logs", async () => {
   const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-operations-"));
 

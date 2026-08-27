@@ -1,5 +1,6 @@
 import path from "node:path";
 import { loadSearchSynonyms, parseSearchSynonymDocument } from "./searchSynonyms.js";
+import { parseServiceLogOptions } from "./serviceLog.js";
 
 const SUPPORTED_PROFILE_SOURCE_TYPES = new Set(["log", "yaml"]);
 const SUPPORTED_LOG_PARSER_TYPES = new Set([
@@ -845,6 +846,13 @@ export function loadConfig() {
       paperVersion: process.env.PAPER_VERSION?.trim() || "26.2",
       paperChannels: parseCsv(process.env.PAPER_VERSION_CHANNELS ?? "STABLE").map((item) => item.toUpperCase()),
     },
+    logging: parseServiceLogOptions(process.env),
+    metrics: {
+      logIntervalMs:
+        Math.max(0, Math.min(1_440, parseInteger(process.env.METRICS_LOG_INTERVAL_MINUTES, 5))) *
+        60 *
+        1000,
+    },
     sharedDebugRoots: [
       {
         label: "Shared CMILib",
@@ -1002,7 +1010,15 @@ export function loadConfig() {
 }
 
 export function validateBotConfig(config) {
-  if (!config?.discord || !config.openai || !config.search || !config.security || !config.versions) {
+  if (
+    !config?.discord ||
+    !config.openai ||
+    !config.search ||
+    !config.security ||
+    !config.versions ||
+    !config.logging ||
+    !config.metrics
+  ) {
     throw new Error("Bot configuration is incomplete.");
   }
   requireConfigValue(config.discord.token, "DISCORD_TOKEN");
@@ -1038,5 +1054,17 @@ export function validateBotConfig(config) {
   }
   if (!Number.isSafeInteger(config.versions.requestTimeoutMs) || config.versions.requestTimeoutMs <= 0) {
     throw new Error("The version-check timeout must be a positive integer.");
+  }
+  if (!Number.isSafeInteger(config.logging.maxBytes) || config.logging.maxBytes <= 0) {
+    throw new Error("The service log size limit must be a positive integer.");
+  }
+  if (!Number.isSafeInteger(config.logging.maxFiles) || config.logging.maxFiles <= 0) {
+    throw new Error("The service log archive limit must be a positive integer.");
+  }
+  if (!Number.isSafeInteger(config.logging.minFreeBytes) || config.logging.minFreeBytes <= 0) {
+    throw new Error("The service log disk reserve must be a positive integer.");
+  }
+  if (!Number.isSafeInteger(config.metrics.logIntervalMs) || config.metrics.logIntervalMs < 0) {
+    throw new Error("The metrics log interval must be a non-negative integer.");
   }
 }

@@ -52,12 +52,14 @@ export {
 
 export function createInteractionHandler(config, searchCache, versionService, dependencies = {}) {
   const logger = dependencies.logger ?? serviceLogger;
+  const metrics = dependencies.metrics;
   const createRequestId = dependencies.createRequestId ?? randomUUID;
   const monotonicNow = dependencies.monotonicNow ?? (() => performance.now());
   const aiEnabled = isAiEnabled(config.openai);
   const resolveAiReranker = createLazyAiResolver(config.openai, {
     loadAiModule: dependencies.loadAiModule,
     logger,
+    metrics,
   });
   const cooldowns = createCooldownManager();
   const rateLimiter = createSlidingWindowRateLimiter();
@@ -249,7 +251,9 @@ export function createInteractionHandler(config, searchCache, versionService, de
             searchCache,
             versionService,
             client: dependencies.client ?? interaction.client,
+            metrics,
             runtimeInfo: dependencies.runtimeInfo,
+            serviceLogs: dependencies.serviceLogs,
             startupState: dependencies.startupState,
           }),
         ),
@@ -362,9 +366,20 @@ export function createInteractionHandler(config, searchCache, versionService, de
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         let reloadResult;
+        const reloadStartedAt = monotonicNow();
+        const reloadScopeType = reloadScope.pluginId
+          ? reloadScope.profileName
+            ? "profile"
+            : "plugin"
+          : "all";
         try {
           reloadResult = await reloadServicesAtomically(searchCache, versionService, reloadScope);
         } catch (error) {
+          metrics?.recordReload({
+            durationMs: monotonicNow() - reloadStartedAt,
+            outcome: "error",
+            scope: reloadScopeType,
+          });
           const message = error instanceof Error ? error.message : "Unknown error";
           const requestId = requestMetadata.get(interaction)?.requestId ?? "untracked";
           await logEvent(interaction, {
@@ -387,6 +402,11 @@ export function createInteractionHandler(config, searchCache, versionService, de
         }
 
         const { summary, versionSnapshot, scope } = reloadResult;
+        metrics?.recordReload({
+          durationMs: monotonicNow() - reloadStartedAt,
+          outcome: "success",
+          scope: scope.type,
+        });
         await logEvent(interaction, {
           subcommand,
           outcome: "success",
@@ -669,6 +689,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
       cooldowns,
       logEvent,
       logRateLimitEvent,
+      metrics,
     });
   }
 
@@ -708,12 +729,14 @@ export function createInteractionHandler(config, searchCache, versionService, de
       metadata.outcome = "unexpected-error";
       throw error;
     } finally {
+      const durationMs = Math.max(0, Math.round(monotonicNow() - metadata.startedAt));
+      metrics?.recordCommand({ durationMs, outcome: metadata.outcome });
       logger.info("discord.command.completed", {
         requestId: metadata.requestId,
         commandName: interaction.commandName,
         subcommand: metadata.subcommand,
         outcome: metadata.outcome,
-        durationMs: Math.max(0, Math.round(monotonicNow() - metadata.startedAt)),
+        durationMs,
       });
     }
   }

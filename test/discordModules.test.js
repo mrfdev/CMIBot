@@ -212,6 +212,7 @@ test("the extracted search lifecycle applies context synonyms and audits a forma
   );
   const responses = [];
   const auditEvents = [];
+  const searchMetrics = [];
   const plugin = makePlugin();
   plugin.profiles.config = {
     defaultResultLimit: 3,
@@ -278,6 +279,11 @@ test("the extracted search lifecycle applies context synonyms and audits a forma
     },
     logEvent: async (_interaction, payload) => auditEvents.push(payload),
     logRateLimitEvent: async () => {},
+    metrics: {
+      recordSearch(payload) {
+        searchMetrics.push(payload);
+      },
+    },
   });
 
   assert.equal(responses.length, 1);
@@ -287,4 +293,8 @@ test("the extracted search lifecycle applies context synonyms and audits a forma
   assert.equal(auditEvents.at(-1).totalMentions, 1);
   assert.equal(auditEvents.at(-1).synonymApplied, true);
   assert.equal(auditEvents.at(-1).queryVariantCount, 2);
+  assert.equal(searchMetrics.length, 1);
+  assert.equal(searchMetrics[0].outcome, "success");
+  assert.equal(searchMetrics[0].resultCount, 1);
+  assert.equal("query" in searchMetrics[0], false);
 });

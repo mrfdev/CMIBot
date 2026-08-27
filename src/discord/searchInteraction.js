@@ -1,3 +1,4 @@
+import { performance } from "node:perf_hooks";
 import { MessageFlags } from "discord.js";
 import { lexicalSearchWithStats, orderMatchesForDisplay } from "../search.js";
 import { resolveFileFilter, sanitizeForDisplay, validateQuery } from "../security.js";
@@ -45,6 +46,7 @@ export async function handleSearchInteraction({
   cooldowns,
   logEvent,
   logRateLimitEvent,
+  metrics,
 }) {
   const availability = getCommandAvailability(context.plugin, canonicalSubcommand);
   if (availability !== "ready") {
@@ -198,7 +200,23 @@ export async function handleSearchInteraction({
   try {
     const entries = fileFilter.filteredEntries;
     const synonyms = config.search.synonymsByPlugin?.[context.plugin.id] ?? {};
-    const searchResult = lexicalSearchWithStats(keyword, entries, { limit: 25, mode, synonyms });
+    const searchStartedAt = performance.now();
+    let searchResult;
+    try {
+      searchResult = lexicalSearchWithStats(keyword, entries, { limit: 25, mode, synonyms });
+      metrics?.recordSearch({
+        durationMs: performance.now() - searchStartedAt,
+        outcome: searchResult.matches.length ? "success" : "empty",
+        resultCount: Math.min(searchResult.matches.length, limit),
+        candidateCount: searchResult.totalMatches,
+      });
+    } catch (error) {
+      metrics?.recordSearch({
+        durationMs: performance.now() - searchStartedAt,
+        outcome: "error",
+      });
+      throw error;
+    }
     const lexicalMatches = searchResult.matches;
     const reranker = aiEnabled && canUseAi ? await resolveAiReranker() : null;
     const rerankedMatches = reranker ? await reranker.rerank(keyword, lexicalMatches) : lexicalMatches;

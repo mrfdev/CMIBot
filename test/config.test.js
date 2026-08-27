@@ -35,6 +35,14 @@ function makeConfig(openai, aiRoleIds = []) {
       checkIntervalMs: 60_000,
       requestTimeoutMs: 1_000,
     },
+    logging: {
+      maxBytes: 1024,
+      maxFiles: 2,
+      minFreeBytes: 1024,
+    },
+    metrics: {
+      logIntervalMs: 60_000,
+    },
     plugins: {
       cmi: {
         id: "cmi",

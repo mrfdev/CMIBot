@@ -6,7 +6,7 @@ export function isAiEnabled(config) {
 
 export function createLazyAiResolver(
   config,
-  { loadAiModule = () => import("./ai.js"), logger = serviceLogger } = {},
+  { loadAiModule = () => import("./ai.js"), logger = serviceLogger, metrics } = {},
 ) {
   let rerankerPromise = null;
 
@@ -17,7 +17,7 @@ export function createLazyAiResolver(
 
     if (!rerankerPromise) {
       rerankerPromise = loadAiModule()
-        .then(({ AiReranker }) => new AiReranker(config))
+        .then(({ AiReranker }) => new AiReranker(config, { metrics }))
         .catch((error) => {
           logger.warn("ai.module_load_failed", { error });
           return null;

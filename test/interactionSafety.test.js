@@ -421,6 +421,7 @@ test("authorized commands share a channel-wide request window", async () => {
 test("commands emit a request ID and completion timing", async () => {
   const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-request-logging-"));
   const records = [];
+  const commandMetrics = [];
   let tick = 100;
   const logger = {
     info(event, fields) {
@@ -453,6 +454,11 @@ test("commands emit a request ID and completion timing", async () => {
         logger,
         createRequestId: () => "request-fixed",
         monotonicNow: () => ++tick,
+        metrics: {
+          recordCommand(payload) {
+            commandMetrics.push(payload);
+          },
+        },
       },
     );
     const interaction = {
@@ -482,6 +488,7 @@ test("commands emit a request ID and completion timing", async () => {
     assert.equal(completed.requestId, "request-fixed");
     assert.equal(completed.outcome, "success");
     assert.ok(completed.durationMs > 0);
+    assert.deepEqual(commandMetrics, [{ durationMs: completed.durationMs, outcome: "success" }]);
 
     const auditText = await fs.readFile(path.join(workspaceRoot, "logs/test-interactions.jsonl"), "utf8");
     const auditEntry = JSON.parse(auditText.trim());
@@ -592,6 +599,7 @@ test("an admin can reload one profile without refreshing version data", async ()
   const responses = [];
   let receivedScope;
   let versionPreparations = 0;
+  const reloadMetrics = [];
   const searchCache = {
     async prepareReload(scope) {
       receivedScope = scope;
@@ -628,7 +636,14 @@ test("an admin can reload one profile without refreshing version data", async ()
   };
 
   try {
-    const handler = createTestInteractionHandler(config, searchCache, versionService);
+    const handler = createTestInteractionHandler(config, searchCache, versionService, {
+      metrics: {
+        recordCommand() {},
+        recordReload(payload) {
+          reloadMetrics.push(payload);
+        },
+      },
+    });
     const interaction = {
       isChatInputCommand: () => true,
       isRepliable: () => true,
@@ -662,6 +677,9 @@ test("an admin can reload one profile without refreshing version data", async ()
     assert.deepEqual(receivedScope, { pluginId: "cmi", profileName: "config" });
     assert.equal(versionPreparations, 0);
     assert.match(responses[0].content, /Only the CMI config profile was refreshed/i);
+    assert.equal(reloadMetrics.length, 1);
+    assert.equal(reloadMetrics[0].outcome, "success");
+    assert.equal(reloadMetrics[0].scope, "profile");
   } finally {
     await fs.rm(workspaceRoot, { recursive: true, force: true });
   }

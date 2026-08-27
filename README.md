@@ -19,7 +19,9 @@ The repository is still named `CMIBot`, but `/lookup` is the only registered sla
 - Paper 26.2 stable/API drift checks plus Java 25 and Java 26 smoke commands
 - One canonical CMILib cache composed into every supporting plugin context
 - Fail-closed startup validation for configuration, routes, indexes, cache summaries, and version-catalog drift
-- Layered user/channel/global rate limits, input validation, disabled mentions, role-ID access checks, JSONL audit logs, and privacy-aware structured service logs
+- Layered user/channel/global rate limits, input validation, disabled mentions, role-ID access checks, JSONL audit logs, and bounded privacy-aware structured service logs
+- Privacy-safe aggregate metrics for commands, searches, reloads, AI usage, upstream checks, errors, and memory
+- Generated environment schema, blank-safe examples, and plugin-profile documentation
 - Context-aware help, stats, language stats, latest versions, health, and debug output
 
 ## Plugin Contexts
@@ -134,7 +136,7 @@ Only IDs listed in `DISCORD_ALLOWED_CHANNEL_IDS` can use the bot. The active plu
 - `DISCORD_RESIDENCE_CHANNEL_IDS`
 - `DISCORD_BOTTLEDEXP_CHANNEL_IDS`
 
-Current default routes, including the BottledExp production channel, are documented in `.env.example`.
+Route values belong only in the ignored `.env` file. The generated `.env.example` documents every route variable but deliberately leaves Discord IDs blank.
 
 Configured test channels can switch context without restarting the bot:
 
@@ -326,7 +328,7 @@ Reload reports are private. If the global per-plugin breakdown exceeds one Disco
 
 ## Health Output
 
-`/lookup health` is admin-only and ephemeral. It reports the release, uptime, Discord readiness, cache readiness and freshness, clean-data generation time, upstream version-check state, and startup-validation state. It intentionally omits channel and role IDs, routes, hostnames, usernames, and filesystem paths.
+`/lookup health` is admin-only and ephemeral. It reports the release, uptime, Discord readiness, cache readiness and freshness, clean-data generation time, upstream version-check state, startup-validation state, bounded command/search/reload/AI aggregates, process memory, and service-log protection state. It intentionally omits query text, channel and role IDs, routes, hostnames, usernames, and filesystem paths.
 
 ## Debug Output
 
@@ -360,6 +362,9 @@ Reload reports are private. If the global per-plugin breakdown exceeds one Disco
 - Repeated rate-limit audit events are coalesced to prevent JSONL log flooding.
 - Usage is written as JSON lines to `logs/cmibot-usage.jsonl`. Before the active log would exceed `AUDIT_LOG_MAX_SIZE_MB`, it rotates to numbered archives and retains at most `AUDIT_LOG_MAX_FILES` archives.
 - Service output is one JSON object per line. Discord commands receive random request IDs, completion records include elapsed milliseconds, and service error serialization omits stacks, sensitive fields, absolute paths, common credential forms, and Discord snowflakes.
+- Info and error service streams rotate independently before `SERVICE_LOG_MAX_SIZE_MB`, retain at most `SERVICE_LOG_MAX_FILES` archives each, and prune only their own archives when the `SERVICE_LOG_MIN_FREE_MB` reserve is threatened. If the reserve remains low, new service records are dropped instead of consuming it.
+- Metrics use fixed low-cardinality buckets and counters. They never retain query terms, user/channel IDs, file paths, host data, or dynamic labels.
+- `.env.example`, the JSON schema, and configuration/profile references are generated only from static metadata. The generator never reads `.env` or process environment values, and all secret and Discord-ID fields remain blank.
 - Every interaction runs behind a top-level rejection boundary. Unexpected command and fallback-response errors are logged without terminating the bot.
 - Discord client and shard errors have explicit listeners so an emitted runtime error cannot become an unhandled `error` event.
 
@@ -378,7 +383,22 @@ RATE_LIMIT_AUDIT_COOLDOWN_SECONDS=30
 AUDIT_LOG_PATH=logs/cmibot-usage.jsonl
 AUDIT_LOG_MAX_SIZE_MB=10
 AUDIT_LOG_MAX_FILES=5
+SERVICE_LOG_MAX_SIZE_MB=10
+SERVICE_LOG_MAX_FILES=5
+SERVICE_LOG_MIN_FREE_MB=256
+METRICS_LOG_INTERVAL_MINUTES=5
 ```
+
+## Generated Configuration Reference
+
+`src/configMetadata.js` is the canonical documentation metadata for bot environment variables and plugin profiles. Regenerate the blank-safe example, JSON schema, and Markdown references after changing configuration:
+
+```bash
+npm run docs:generate
+npm run docs:check
+```
+
+Generated references are committed under `docs/generated/`. `npm run check:bot` fails when they drift from the metadata. Runtime configuration validation remains authoritative for operational behavior.
 
 ## Install
 
@@ -403,13 +423,14 @@ Fill in the Discord token, application ID, guild ID, channel IDs, and role IDs i
 
 OpenAI support is optional and disabled by default with `OPENAI_ENABLED=false`. In disabled mode, the bot stays lexical-only: it does not import the OpenAI SDK, construct an API client, or require `AI_ROLE_IDS`/`OPENAI_API_KEY`. This avoids the SDK's runtime memory overhead until AI is explicitly enabled.
 
-## Managed Mac mini Service
+## Managed macOS Service
 
-The production Mac mini can run LookupBot as the per-user LaunchAgent `com.mrfdev.cmibot`. The tracked source plist is `operations/com.mrfdev.cmibot.plist`; it runs only in Floris's logged-in user session, uses `/opt/homebrew/bin/node`, and writes stdout and stderr to the shared `logs/` directory. It contains no Discord, OpenAI, or other credentials. Installing or loading this plist is an explicit host-administration step and is never performed by `npm ci`.
+The production host can run LookupBot as the per-user LaunchAgent `com.mrfdev.cmibot`. The tracked `operations/com.mrfdev.cmibot.plist` is a sanitized template with no username, home path, executable path, Discord ID, or credential. `./scripts/install` renders an owner-readable host-local definition from the current project and Node executable. Installing or loading it is an explicit host-administration step and is never performed by `npm ci`.
 
 Operator commands:
 
 ```bash
+./scripts/install
 ./scripts/status
 ./scripts/start
 ./scripts/stop
@@ -418,7 +439,7 @@ Operator commands:
 ./scripts/logs --follow
 ```
 
-`status` exits `0` when launchd reports a running process and `3` when the job is stopped or waiting. `start` bootstraps an unloaded job or kickstarts a loaded-but-waiting job. `stop` uses `launchctl bootout`, which gives the Node process time to handle `SIGTERM`; `restart` unloads and bootstraps the job so launchd remains the only process owner.
+`status` exits `0` when launchd reports a running process and `3` when the job is stopped or waiting. `start` bootstraps an unloaded job or kickstarts a loaded-but-waiting job. `stop` uses `launchctl bootout`, which gives the Node process time to handle `SIGTERM`; `restart` safely refreshes the installed definition, then unloads and bootstraps the job so launchd remains the only process owner. A same-process managed entrypoint captures both current structured records and legacy release output into the bounded streams. It does not spawn a second bot process, and it keeps health-checked rollback compatible with older releases.
 
 From an authorized operator workstation, create the private configuration once:
 
@@ -459,7 +480,7 @@ The LaunchAgent points at `.deploy/current`. Each release is assembled with its 
 
 ## Continuous Integration
 
-GitHub Actions runs on pushes to `main`, pull requests, and manual dispatches. The macOS test matrix runs `npm ci` followed by `npm run check:bot` on Node.js 22 LTS, 24 LTS, and 26 Current, including validation of the launchd service definition. A separate Node.js 24 Ubuntu job installs the locked dependency tree without lifecycle scripts and runs the production dependency audit.
+GitHub Actions runs on pushes to `main`, pull requests, and manual dispatches. The macOS test matrix runs `npm ci` followed by `npm run check:bot` on Node.js 22 LTS, 24 LTS, and 26 Current, including generated-document drift, privacy checks, and validation of the launchd service definition. A separate Node.js 24 Ubuntu job installs the locked dependency tree without lifecycle scripts and runs the production dependency audit.
 
 The workflow has read-only repository permissions, receives no repository secrets, disables checkout credential persistence and automatic package-manager caching, and pins official actions to immutable commit SHAs. Dependabot monitors both npm packages and GitHub Actions references.
 

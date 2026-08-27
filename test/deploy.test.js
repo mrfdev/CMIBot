@@ -28,11 +28,16 @@ async function createSourceRepository(temporaryRoot) {
   await runGit(sourceRoot, ["config", "user.name", "LookupBot Test"]);
   await runGit(sourceRoot, ["config", "user.email", "lookupbot@example.invalid"]);
   await fs.mkdir(path.join(sourceRoot, "src"));
+  await fs.mkdir(path.join(sourceRoot, "operations"));
   await fs.writeFile(path.join(sourceRoot, ".gitignore"), ".deploy/\n.env\nlogs/\n", "utf8");
   await fs.writeFile(path.join(sourceRoot, "package.json"), '{"name":"deployment-fixture","version":"1.0.0"}\n', "utf8");
   await fs.writeFile(path.join(sourceRoot, "package-lock.json"), '{"name":"deployment-fixture","version":"1.0.0","lockfileVersion":3,"packages":{}}\n', "utf8");
   await fs.writeFile(path.join(sourceRoot, "src/index.js"), 'console.log("fixture");\n', "utf8");
-  await runGit(sourceRoot, ["add", ".gitignore", "package.json", "package-lock.json", "src/index.js"]);
+  await fs.copyFile(
+    path.join(repositoryRoot, "operations", "com.mrfdev.cmibot.plist"),
+    path.join(sourceRoot, "operations", "com.mrfdev.cmibot.plist"),
+  );
+  await runGit(sourceRoot, ["add", ".gitignore", "operations", "package.json", "package-lock.json", "src/index.js"]);
   await runGit(sourceRoot, ["commit", "-m", "Initial fixture"]);
 
   await fs.writeFile(path.join(sourceRoot, ".env"), "shared environment sentinel\n", { mode: 0o600 });
