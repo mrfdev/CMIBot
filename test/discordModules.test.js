@@ -390,9 +390,53 @@ test("result formatting labels safe cross-profile references compactly", () => {
     { layout: "command" },
   );
 
-  assert.match(message, /Related: \*\*permission:\*\* `cmi\.command\.balance` \(line 20\)/);
-  assert.match(message, /\*\*FAQ:\*\* `CMI Economy Manager` \(\[open\]/);
+  assert.match(message, /Related:\n- \*\*permission:\*\* `cmi\.command\.balance` \(line 20\)/);
+  assert.match(message, /\n- \*\*FAQ:\*\* `CMI Economy Manager` \(\[open\]/);
+  assert.doesNotMatch(message, /Related:.* · /);
   assert.doesNotMatch(message, /private-command-index/);
+});
+
+test("long related command output retains only complete source links when trimmed", () => {
+  const revision = "abcdef1234567890abcdef1234567890abcdef12";
+  const makeSourceUrl = (file, line) =>
+    `https://github.com/mrfdev/CMIBot/blob/${revision}/CMIPlugin/data/${file}#L${line}`;
+  const results = Array.from({ length: 3 }, (_, resultIndex) => ({
+    displayPath: "private-command-index.log",
+    yamlPath: `/cmi balance example ${resultIndex + 1}`,
+    lineNumber: 100 + resultIndex,
+    snippet: `/cmi balance example ${resultIndex + 1}\n${"description ".repeat(18)}`,
+    codeLanguage: "text",
+    sourceType: "log",
+    sourceUrl: makeSourceUrl("commands.log", 100 + resultIndex),
+    related: Array.from({ length: 4 }, (_, referenceIndex) => ({
+      profileName: referenceIndex % 2 === 0 ? "permission" : "config",
+      yamlPath: `cmi.command.balance.example.${resultIndex + 1}.${referenceIndex + 1}`,
+      lineNumber: 200 + referenceIndex,
+      sourceUrl: makeSourceUrl(
+        referenceIndex % 2 === 0 ? "permissions.log" : "config.yml",
+        200 + referenceIndex,
+      ),
+    })),
+  }));
+  const formatted = formatResultsMessage(
+    "balance",
+    results,
+    results.length,
+    1,
+    "",
+    ["CMIPlugin/data/commands.log"],
+    { layout: "command" },
+  );
+  const truncated = truncateDiscordMessage(formatted);
+
+  assert.ok(formatted.length > 2000);
+  assert.ok(truncated.length <= 2000);
+  assert.match(truncated, /Related:\n- \*\*permission:/);
+  assert.doesNotMatch(truncated, /<https?:\/\/[^\s>]*(?:\s|$)/);
+  assert.equal(
+    (truncated.match(/\]\(<https?:\/\//g) ?? []).length,
+    (truncated.match(/>\)/g) ?? []).length,
+  );
 });
 
 test("material result formatting includes opt-in related references", () => {
@@ -418,7 +462,7 @@ test("material result formatting includes opt-in related references", () => {
   );
 
   assert.match(message, /- `STONE`/);
-  assert.match(message, /Related: \*\*language:\*\* `STONE` \(line 42\)/);
+  assert.match(message, /Related:\n    - \*\*language:\*\* `STONE` \(line 42\)/);
 });
 
 test("Discord output helpers enforce message-size boundaries", () => {
@@ -431,6 +475,26 @@ test("Discord output helpers enforce message-size boundaries", () => {
   assert.match(truncateDiscordMessage("x".repeat(2100)), /Trimmed to fit Discord message limits/);
   assert.equal(formatBytes(1024), "1.00 KB");
   assert.equal(formatDuration(90_000), "1m 30s");
+});
+
+test("Discord truncation never leaves a partial hidden link that can create an embed", () => {
+  const sourceUrl =
+    "https://github.com/mrfdev/CMIBot/blob/abcdef1234567890abcdef1234567890abcdef12/CMIPlugin/data/commands.log#L154";
+  const message = `source line 154\n${"x".repeat(1859)}[source](<${sourceUrl}>)\n${"y".repeat(300)}`;
+  const truncated = truncateDiscordMessage(message);
+
+  assert.ok(truncated.length <= 2000);
+  assert.match(truncated, /Trimmed to fit Discord message limits/);
+  assert.match(truncated, /^source line 154/);
+  assert.doesNotMatch(truncated, /<https?:\/\/[^\s>]*(?:\s|$)/);
+});
+
+test("Discord truncation closes an open code fence before the trim notice", () => {
+  const message = `### Result\n\`\`\`text\n${"x".repeat(2100)}\n\`\`\``;
+  const truncated = truncateDiscordMessage(message);
+
+  assert.equal((truncated.match(/```/g) ?? []).length, 2);
+  assert.match(truncated, /```\n\n_\(Trimmed to fit Discord message limits\.\)_$/);
 });
 
 test("the extracted search lifecycle applies context synonyms and audits a formatted result", async () => {

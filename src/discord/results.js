@@ -2,6 +2,9 @@ import path from "node:path";
 import { formatCacheSummary } from "../cache.js";
 import { sanitizeForDisplay } from "../security.js";
 
+const DISCORD_MESSAGE_LIMIT = 2000;
+const TRIM_NOTICE = "_(Trimmed to fit Discord message limits.)_";
+
 function pluralize(count, singular, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
 }
@@ -306,6 +309,10 @@ function formatRelatedReference(entry) {
   return `${profilePrefix}${identity}${location}`;
 }
 
+function formatRelatedReferenceList(entries, indentation = "") {
+  return entries.map((entry) => `${indentation}- ${formatRelatedReference(entry)}`).join("\n");
+}
+
 function formatPaginationFooter(pagination, totalMentions) {
   if (!pagination) {
     return "";
@@ -327,7 +334,7 @@ function formatMaterialResultsMessage(keyword, results, totalMentions, options) 
         ? `- \`${sanitizeForDisplay(result.yamlPath)}\` ([source](<${result.sourceUrl}>))`
         : `- \`${sanitizeForDisplay(result.yamlPath)}\``;
       const relatedLine = result.related?.length
-        ? `\n  - Related: ${result.related.map(formatRelatedReference).join(" · ")}`
+        ? `\n  - Related:\n${formatRelatedReferenceList(result.related, "    ")}`
         : "";
       return `${value}${relatedLine}`;
     })
@@ -382,7 +389,7 @@ export function formatResultsMessage(
       const leadLine = formatResultLead(result, options);
       const snippet = formatResultSnippet(result, options);
       const relatedLine = result.related?.length
-        ? `Related: ${result.related.map(formatRelatedReference).join(" · ")}\n`
+        ? `Related:\n${formatRelatedReferenceList(result.related)}\n`
         : "";
       blocks.push([leadLine, `${relatedLine}\`\`\`${result.codeLanguage}\n${snippet}\n\`\`\``].filter(Boolean).join("\n"));
     }
@@ -418,11 +425,31 @@ export function formatResultsMessage(
 }
 
 export function truncateDiscordMessage(message) {
-  if (message.length <= 2000) {
+  if (message.length <= DISCORD_MESSAGE_LIMIT) {
     return message;
   }
 
-  return `${message.slice(0, 1900)}\n\n_(Trimmed to fit Discord message limits.)_`;
+  let body = "";
+  let codeFenceOpen = false;
+  for (const line of message.split("\n")) {
+    const nextBody = body ? `${body}\n${line}` : line;
+    const fenceCount = line.match(/```/g)?.length ?? 0;
+    const nextFenceOpen = fenceCount % 2 === 1 ? !codeFenceOpen : codeFenceOpen;
+    const closedBody = `${nextBody.trimEnd()}${nextFenceOpen ? "\n```" : ""}`;
+    const candidate = `${closedBody}\n\n${TRIM_NOTICE}`;
+    if (candidate.length > DISCORD_MESSAGE_LIMIT) {
+      break;
+    }
+    body = nextBody;
+    codeFenceOpen = nextFenceOpen;
+  }
+
+  const retained = body.trimEnd();
+  if (!retained) {
+    return TRIM_NOTICE;
+  }
+  const closed = `${retained}${codeFenceOpen ? "\n```" : ""}`;
+  return `${closed}\n\n${TRIM_NOTICE}`;
 }
 
 export function splitDiscordMessages(message, maxLength = 1900) {

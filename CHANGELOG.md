@@ -13,6 +13,7 @@ This file records material LookupBot changes by ship date. User-facing examples 
 - Added private `/lookup files` and `/lookup categories` navigation over the safe indexed view.
 - Added private expandable YAML results with the complete matched block, bounded surrounding context, generic attachments for long output, and credential-value redaction.
 - Extended `related:true` from nearby YAML entries to deterministic references across commands, permissions, configuration, placeholders, FAQs, tab-complete data, and language entries.
+- Rendered related references one per line and made Discord-limit trimming preserve complete links and balanced code fences, preventing partial source URLs from producing unwanted embeds.
 - Added validated, plugin-scoped synonyms and aliases while preserving direct-match priority.
 
 ### Versions and tracked data

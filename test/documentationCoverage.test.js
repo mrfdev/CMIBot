@@ -21,6 +21,7 @@ test("current documentation covers the shipped August feature set without privat
     /\/lookup files.*\/lookup categories/i,
     /expandable YAML/i,
     /related:true.*commands.*permissions/i,
+    /Discord-limit trimming.*complete links.*balanced code fences/i,
     /plugin-scoped synonyms/i,
     /latest changes:true/i,
     /exponential backoff.*circuit breakers/i,
