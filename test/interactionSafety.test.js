@@ -27,10 +27,22 @@ function createTestInteractionHandler(config, searchCache, versionService, depen
 function makeConfig(workspaceRoot) {
   return {
     workspaceRoot,
-    openai: {
+    ai: {
       enabled: false,
-      apiKey: "",
-      model: "gpt-5-mini",
+      maxQuestionLength: 320,
+      maxEvidenceItems: 6,
+      maxEvidenceChars: 1_000,
+      usageStatePath: "logs/ai-usage.json",
+      dailyRequestLimit: 50,
+      monthlyRequestLimit: 1_000,
+      requestTimeoutMs: 1_000,
+      statusTimeoutMs: 500,
+      maxOutputTokens: 200,
+      ollama: {
+        enabled: true,
+        baseUrl: "http://127.0.0.1:11434",
+        model: "qwen3:8b",
+      },
     },
     security: {
       auditLogPath: "logs/test-interactions.jsonl",
@@ -41,6 +53,7 @@ function makeConfig(workspaceRoot) {
       debugCooldownSeconds: 0,
       reloadCooldownSeconds: 0,
       rateLimitAuditCooldownSeconds: 30,
+      aiQuestionCooldownSeconds: 0,
     },
     discord: {
       guildId: "expected-guild",
@@ -51,6 +64,7 @@ function makeConfig(workspaceRoot) {
         cmi: ["channel-1"],
       },
       adminRoleIds: ["admin-role"],
+      aiRoleIds: ["admin-role"],
       allowedRoleIds: ["support-role"],
     },
     plugins: {
@@ -1322,4 +1336,159 @@ test("a selective reload leaves the version service untouched", async () => {
   assert.equal(versionPreparations, 0);
   assert.strictEqual(result.versionSnapshot, versionSnapshot);
   assert.equal(result.scope.type, "profile");
+});
+
+test("grounded answers are private, role-gated, cited, and never audit the question", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-grounded-answer-"));
+  const responses = [];
+  const deferrals = [];
+  let providerCalls = 0;
+
+  try {
+    const config = makeConfig(workspaceRoot);
+    config.ai.enabled = true;
+    config.search = {
+      defaultResultLimit: 3,
+      maxResultLimit: 15,
+      sourceLinksEnabled: true,
+      sourceRepositoryUrl: "https://github.com/example/project",
+      synonymsByPlugin: {},
+    };
+    config.sharedDebugRoots = [];
+    config.plugins.cmi = {
+      id: "cmi",
+      label: "CMI",
+      debugRoots: ["CMIPlugin"],
+      profiles: { config: { name: "config" } },
+      commandAvailability: { config: "ready" },
+    };
+    const entries = extractEntriesFromText(
+      "Economy:\n  Enabled: true\n  Password: must-never-leak",
+      "CMIPlugin/CMI/config.yml",
+    );
+    const handler = createTestInteractionHandler(config, {
+      getEntries: () => entries,
+      getGeneration: () => 1,
+    }, {}, {
+      runtimeInfo: { fullRevision: "a".repeat(40) },
+      aiProvider: {
+        async generate({ question, evidence }) {
+          providerCalls += 1;
+          assert.equal(question, "How do I enable the economy?");
+          assert.doesNotMatch(JSON.stringify(evidence), /sourceUrl|github\.com|must-never-leak/);
+          return {
+            answer: "Enable the indexed economy setting.",
+            citations: ["E1"],
+            confidence: "high",
+            usage: { inputTokens: 20, outputTokens: 8 },
+          };
+        },
+        async status() {
+          return { ready: true, reason: "ready" };
+        },
+      },
+      aiUsageLedger: {
+        async canRequest() {
+          return { allowed: true };
+        },
+        async record() {},
+        async getSnapshot() {
+          return null;
+        },
+      },
+    });
+    const interaction = {
+      isChatInputCommand: () => true,
+      isRepliable: () => true,
+      commandName: "lookup",
+      guildId: "expected-guild",
+      channelId: "channel-1",
+      user: { id: "user-1", tag: "tester" },
+      member: { roles: { cache: [{ id: "support-role" }, { id: "admin-role" }] } },
+      options: {
+        getSubcommand: () => "ask",
+        getString(name) {
+          return name === "question" ? "How do I enable the economy?" : null;
+        },
+      },
+      replied: false,
+      deferred: false,
+      async deferReply(payload) {
+        this.deferred = true;
+        deferrals.push(payload);
+      },
+      async editReply(payload) {
+        responses.push(payload);
+      },
+      async reply(payload) {
+        responses.push(payload);
+      },
+    };
+
+    await handler(interaction);
+
+    assert.equal(providerCalls, 1);
+    assert.ok(deferrals[0].flags);
+    assert.match(responses[0].content, /Local Grounded Answer/);
+    assert.match(responses[0].content, /Enable the indexed economy setting/);
+    assert.match(responses[0].content, /source line/);
+    assert.doesNotMatch(responses[0].content, /must-never-leak/);
+    const auditText = await fs.readFile(path.join(workspaceRoot, "logs/test-interactions.jsonl"), "utf8");
+    assert.doesNotMatch(auditText, /How do I enable|must-never-leak|CMIPlugin/);
+    const auditEntry = JSON.parse(auditText.trim());
+    assert.equal(auditEntry.questionLength, 28);
+    assert.equal(auditEntry.aiProvider, "ollama");
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("unsafe grounded questions are rejected before local generation", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-grounded-reject-"));
+  const responses = [];
+  let providerCalls = 0;
+  try {
+    const config = makeConfig(workspaceRoot);
+    config.ai.enabled = true;
+    config.plugins.cmi = {
+      id: "cmi",
+      label: "CMI",
+      profiles: { config: { name: "config" } },
+      commandAvailability: { config: "ready" },
+    };
+    const handler = createTestInteractionHandler(config, {}, {}, {
+      aiProvider: {
+        async generate() {
+          providerCalls += 1;
+        },
+      },
+    });
+    const interaction = {
+      isChatInputCommand: () => true,
+      isRepliable: () => true,
+      commandName: "lookup",
+      guildId: "expected-guild",
+      channelId: "channel-1",
+      user: { id: "user-1", tag: "tester" },
+      member: { roles: { cache: [{ id: "support-role" }, { id: "admin-role" }] } },
+      options: {
+        getSubcommand: () => "ask",
+        getString: () => "password=must-not-be-sent",
+      },
+      replied: false,
+      deferred: false,
+      async reply(payload) {
+        responses.push(payload);
+      },
+    };
+
+    await handler(interaction);
+
+    assert.equal(providerCalls, 0);
+    assert.match(responses[0].content, /may contain a secret/i);
+    const auditText = await fs.readFile(path.join(workspaceRoot, "logs/test-interactions.jsonl"), "utf8");
+    assert.doesNotMatch(auditText, /must-not-be-sent/);
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
 });

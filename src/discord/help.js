@@ -11,7 +11,7 @@ export function formatHelpMessage(config, member, context, commandName) {
   const canLookup = hasRole(member, { roleIds: config.discord.allowedRoleIds });
   const canReload = hasRole(member, { roleIds: config.discord.adminRoleIds });
   const canUseAi = hasRole(member, { roleIds: config.discord.aiRoleIds });
-  const aiEnabled = isAiEnabled(config.openai);
+  const aiEnabled = isAiEnabled(config.ai);
   const prefix = `/${PRIMARY_COMMAND_NAME}`;
   const currentCommand = `/${commandName}`;
   const lines = ["### Lookup Help"];
@@ -66,9 +66,13 @@ export function formatHelpMessage(config, member, context, commandName) {
   lines.push(`- \`${prefix} latest public:true\` publicly shows only the latest plugin and CMILib releases`);
   lines.push(`- \`${prefix} latest scope:all\` shows every tracked resource and CMI companion`);
   lines.push(`- \`${prefix} latest changes:true\` privately shows what changed in pending updates`);
+  if (aiEnabled && canUseAi) {
+    lines.push(`- \`${prefix} ask question:<text>\` privately answers from indexed evidence using zero-cost local AI`);
+  }
   if (canReload) {
     lines.push(`- \`${prefix} alerts-test\` sends a clearly marked test to the private admin alert channel`);
     lines.push(`- \`${prefix} health\` shows private service health and data freshness`);
+    lines.push(`- \`${prefix} ai-status\` shows private local AI readiness and aggregate usage`);
     lines.push(`- \`${prefix} debug\` shows the current channel context and runtime diagnostics`);
     lines.push(`- \`${prefix} reload\` refreshes the cache for every plugin context`);
     lines.push(`- \`${prefix} reload plugin:current\` refreshes only this plugin context`);
@@ -117,7 +121,7 @@ export function formatHelpMessage(config, member, context, commandName) {
 
   lines.push(
     aiEnabled
-      ? "- `summary: true|false` adds an optional AI-generated summary (admin-only for now)"
+      ? "- `summary: true|false` privately adds an optional locally generated, evidence-grounded summary"
       : "- `summary: true|false` is currently disabled in bot config",
   );
 
@@ -137,6 +141,9 @@ export function formatHelpMessage(config, member, context, commandName) {
     lines.push(`- \`${prefix} cmd balance related:true\``);
     lines.push(`- \`${prefix} perm cmi.command.balance\``);
     lines.push(`- \`${prefix} faq refund\``);
+    if (aiEnabled && canUseAi) {
+      lines.push(`- \`${prefix} ask question:How do I configure the balance command?\``);
+    }
   } else if (plugin.id === "jobs") {
     lines.push(`- \`${prefix} language exp\``);
     lines.push(`- \`${prefix} placeholder points\``);
@@ -193,15 +200,15 @@ export function formatHelpMessage(config, member, context, commandName) {
   if (!canLookup) {
     lines.push(
       "",
-      "Notice: search commands and stats are limited to configured support role IDs. `/lookup alerts-test`, `/lookup health`, `/lookup debug`, and `/lookup reload` are admin-only.",
+      "Notice: search commands and stats are limited to configured support role IDs. `/lookup alerts-test`, `/lookup ai-status`, `/lookup health`, `/lookup debug`, and `/lookup reload` are admin-only.",
     );
   } else if (aiEnabled && !canReload && !canUseAi) {
     lines.push(
       "",
-      "Notice: you can use search commands here, but `/lookup alerts-test`, `/lookup health`, `/lookup debug`, `/lookup reload`, and AI-backed options like `summary:true` are restricted.",
+      "Notice: you can use search commands here, but `/lookup alerts-test`, `/lookup ai-status`, `/lookup health`, `/lookup debug`, `/lookup reload`, and local AI options are restricted.",
     );
   } else if (!canReload) {
-    lines.push("", "Notice: you can use search commands here, but `/lookup alerts-test`, `/lookup health`, `/lookup debug`, and `/lookup reload` are admin-only.");
+    lines.push("", "Notice: you can use search commands here, but `/lookup alerts-test`, `/lookup ai-status`, `/lookup health`, `/lookup debug`, and `/lookup reload` are admin-only.");
   } else {
     lines.push("", `Notice: ${currentCommand} is available here.`);
   }

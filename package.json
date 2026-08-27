@@ -6,9 +6,11 @@
   "description": "Channel-aware Discord lookup bot for Zrips plugin support data.",
   "scripts": {
     "start": "node src/index.js",
+    "ai:status": "node scripts/cmibot-ops.mjs ai-status",
     "dev": "node --watch src/index.js",
     "remote": "node scripts/cmibot-remote.mjs",
     "remote:status": "node scripts/cmibot-remote.mjs status",
+    "remote:ai-status": "node scripts/cmibot-remote.mjs ai-status",
     "remote:restart": "node scripts/cmibot-remote.mjs restart",
     "remote:configure-alert-channel": "node scripts/cmibot-remote.mjs configure-alert-channel",
     "remote:configure-test-channel": "node scripts/cmibot-remote.mjs configure-test-channel",
@@ -40,7 +42,6 @@
   "dependencies": {
     "discord.js": "^14.20.0",
     "dotenv": "^16.6.1",
-    "fast-glob": "^3.3.3",
-    "openai": "^6.49.0"
+    "fast-glob": "^3.3.3"
   }
 }

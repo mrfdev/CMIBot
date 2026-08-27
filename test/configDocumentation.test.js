@@ -15,7 +15,7 @@ test("generated configuration artifacts never read or expose live environment va
     CMIBOT_DOCUMENTATION_CANARY: canaryValue,
     DISCORD_TOKEN: canaryValue,
     DISCORD_GUILD_ID: "987654321098765432",
-    OPENAI_API_KEY: canaryValue,
+    OLLAMA_MODEL: canaryValue,
   };
   const previous = Object.fromEntries(
     Object.keys(overrides).map((name) => [name, process.env[name]]),
@@ -28,7 +28,7 @@ test("generated configuration artifacts never read or expose live environment va
     assert.doesNotMatch(combined, /\b\d{17,20}\b|\/(?:Users|home)\/|\.\.\/etc|Bearer\s+\S{16,}/i);
     assert.match(artifacts[".env.example"], /^DISCORD_TOKEN=$/m);
     assert.match(artifacts[".env.example"], /^DISCORD_GUILD_ID=$/m);
-    assert.match(artifacts[".env.example"], /^OPENAI_API_KEY=$/m);
+    assert.match(artifacts[".env.example"], /^OLLAMA_MODEL=qwen3:8b$/m);
 
     const schema = JSON.parse(artifacts["docs/generated/environment.schema.json"]);
     assert.equal("default" in schema.properties.DISCORD_TOKEN, false);

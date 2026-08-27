@@ -110,8 +110,10 @@ export function createMetricsRegistry({
   const ai = createLatencySeries();
   const upstream = createLatencySeries();
   const reloadScopes = { startup: 0, all: 0, plugin: 0, profile: 0 };
-  const aiOperations = { rerank: 0, summary: 0 };
+  const aiOperations = { answer: 0, summary: 0 };
+  const aiProviders = { ollama: 0, lexical: 0 };
   const aiTokens = { input: 0, output: 0, total: 0 };
+  let aiEstimatedCostMicrousd = 0;
   const searchResults = { returned: 0, candidates: 0 };
   const searchCache = { hits: 0, misses: 0, evictions: 0 };
   const upstreamChecks = {
@@ -152,7 +154,9 @@ export function createMetricsRegistry({
       ai: {
         ...ai.snapshot(),
         operations: { ...aiOperations },
+        providers: { ...aiProviders },
         tokens: { ...aiTokens },
+        estimatedCostMicrousd: aiEstimatedCostMicrousd,
       },
       upstream: {
         ...upstream.snapshot(),
@@ -221,14 +225,27 @@ export function createMetricsRegistry({
       const normalizedScope = Object.hasOwn(reloadScopes, scope) ? scope : "all";
       reloadScopes[normalizedScope] += 1;
     },
-    recordAi({ durationMs, outcome, operation, inputTokens = 0, outputTokens = 0, totalTokens = 0 } = {}) {
+    recordAi({
+      durationMs,
+      outcome,
+      operation,
+      provider,
+      inputTokens = 0,
+      outputTokens = 0,
+      totalTokens = 0,
+      estimatedCostMicrousd = 0,
+    } = {}) {
       ai.record(durationMs, outcome);
       if (Object.hasOwn(aiOperations, operation)) {
         aiOperations[operation] += 1;
       }
+      if (Object.hasOwn(aiProviders, provider)) {
+        aiProviders[provider] += 1;
+      }
       aiTokens.input += integerNonNegative(inputTokens);
       aiTokens.output += integerNonNegative(outputTokens);
       aiTokens.total += integerNonNegative(totalTokens || Number(inputTokens) + Number(outputTokens));
+      aiEstimatedCostMicrousd += integerNonNegative(estimatedCostMicrousd);
     },
     recordUpstream({ durationMs, outcome, resourceCount = 0, errorCount = 0, retainedCount = 0 } = {}) {
       upstream.record(durationMs, outcome);

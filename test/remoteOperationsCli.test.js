@@ -100,6 +100,21 @@ test("remote status uses the private configuration without splitting the remote 
   }
 });
 
+test("remote ai-status uses only the narrow operator command", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-remote-"));
+  try {
+    const fixture = await createFixture(temporaryRoot);
+    await runRemote(["ai-status"], fixture.environment);
+
+    assert.deepEqual(await readArguments(fixture.argumentsPath), [
+      ...sshPrefix,
+      "'/runtime/node' '/srv/lookupbot/scripts/cmibot-ops.mjs' 'ai-status'",
+    ]);
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
 test("remote configure-alert-channel forwards private input only through stdin", async () => {
   const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-remote-"));
   const testChannelId = "3".repeat(18);

@@ -25,6 +25,7 @@ test("metrics retain bounded aggregates without query or identity labels", () =>
     durationMs: 900,
     outcome: "success",
     operation: "summary",
+    provider: "ollama",
     inputTokens: 20,
     outputTokens: 10,
     totalTokens: 30,
@@ -46,6 +47,8 @@ test("metrics retain bounded aggregates without query or identity labels", () =>
   assert.deepEqual(snapshot.searches.cache, { hits: 0, misses: 1, evictions: 1 });
   assert.equal(snapshot.reloads.scopes.profile, 1);
   assert.deepEqual(snapshot.ai.tokens, { input: 20, output: 10, total: 30 });
+  assert.deepEqual(snapshot.ai.providers, { ollama: 1, lexical: 0 });
+  assert.equal(snapshot.ai.estimatedCostMicrousd, 0);
   assert.deepEqual(snapshot.upstream.checks, {
     resources: 9,
     failures: 1,

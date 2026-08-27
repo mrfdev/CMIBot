@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+exec /usr/bin/env node "$script_dir/cmibot-ops.mjs" ai-status "$@"

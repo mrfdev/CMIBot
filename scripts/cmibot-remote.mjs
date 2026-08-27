@@ -42,6 +42,7 @@ function validateLogArguments(args) {
 function parseOperation(command, args) {
   if (
     command === "status" ||
+    command === "ai-status" ||
     command === "restart" ||
     command === "configure-alert-channel" ||
     command === "configure-test-channel"
@@ -68,7 +69,7 @@ function parseOperation(command, args) {
   }
 
   throw new UsageError(
-    "Usage: remote <configure-alert-channel|configure-test-channel|deploy [--rollback]|logs [--lines N] [--follow]|restart|status|update>",
+    "Usage: remote <ai-status|configure-alert-channel|configure-test-channel|deploy [--rollback]|logs [--lines N] [--follow]|restart|status|update>",
   );
 }
 

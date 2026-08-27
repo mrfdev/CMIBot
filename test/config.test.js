@@ -2,10 +2,27 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { validateBotConfig } from "../src/config.js";
 
-function makeConfig(openai, aiRoleIds = []) {
+function makeAi(overrides = {}) {
+  const { ollama = {}, ...rest } = overrides;
+  return {
+    enabled: false,
+    externalProvidersEnabled: false,
+    paidBudgetUsd: 0,
+    usageStatePath: "logs/ai-usage.json",
+    ollama: {
+      enabled: true,
+      baseUrl: "http://127.0.0.1:11434",
+      model: "qwen3:8b",
+      ...ollama,
+    },
+    ...rest,
+  };
+}
+
+function makeConfig(ai, aiRoleIds = []) {
   return {
     workspaceRoot: "/unused",
-    openai,
+    ai: makeAi(ai),
     discord: {
       token: "test-token",
       applicationId: "test-application",
@@ -63,7 +80,7 @@ function makeConfig(openai, aiRoleIds = []) {
   };
 }
 
-test("disabled AI does not require an API key or AI role IDs", () => {
+test("disabled local AI does not require AI role IDs", () => {
   assert.doesNotThrow(() =>
     validateBotConfig(
       makeConfig({
@@ -75,20 +92,19 @@ test("disabled AI does not require an API key or AI role IDs", () => {
   );
 });
 
-test("enabled AI requires an API key", () => {
+test("external AI providers fail closed", () => {
   assert.throws(
     () =>
       validateBotConfig(
         makeConfig(
           {
             enabled: true,
-            apiKey: "",
-            model: "gpt-5-mini",
+            externalProvidersEnabled: true,
           },
           ["ai-role"],
         ),
       ),
-    /OPENAI_API_KEY/,
+    /AI_EXTERNAL_PROVIDERS_ENABLED/,
   );
 });
 
@@ -98,11 +114,31 @@ test("enabled AI requires an allowed AI role", () => {
       validateBotConfig(
         makeConfig({
           enabled: true,
-          apiKey: "test-key",
-          model: "gpt-5-mini",
         }),
       ),
     /AI_ROLE_IDS/,
+  );
+});
+
+test("zero-cost mode rejects any nonzero paid budget", () => {
+  assert.throws(
+    () => validateBotConfig(makeConfig({ paidBudgetUsd: 0.01 }, ["ai-role"])),
+    /AI_PAID_BUDGET_USD/,
+  );
+});
+
+test("local AI rejects remote endpoints and cloud model names", () => {
+  assert.throws(
+    () => validateBotConfig(makeConfig({
+      ollama: { baseUrl: "https://example.com", model: "qwen3:8b", enabled: true },
+    }, ["ai-role"])),
+    /loopback-only/,
+  );
+  assert.throws(
+    () => validateBotConfig(makeConfig({
+      ollama: { baseUrl: "http://127.0.0.1:11434", model: "gpt-oss:20b-cloud", enabled: true },
+    }, ["ai-role"])),
+    /non-cloud/,
   );
 });
 

@@ -54,7 +54,7 @@ function addCommonLookupOptions(
   }
 
   return builder.addBooleanOption((option) =>
-    option.setName("summary").setDescription("Include an optional AI-generated summary. Defaults to false."),
+    option.setName("summary").setDescription("Privately add an optional local grounded summary. Defaults to false."),
   );
 }
 
@@ -215,6 +215,23 @@ export function buildCommandTree(commandName, config) {
             .setName("changes")
             .setDescription("Privately include bounded release notes for pending updates. Defaults to false."),
         ),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("ask")
+        .setDescription("Privately answer from safe indexed evidence using zero-cost local AI.")
+        .addStringOption((option) =>
+          option
+            .setName("question")
+            .setDescription("A plugin support question without secrets, IDs, or private paths.")
+            .setRequired(true)
+            .setMaxLength(config.ai.maxQuestionLength),
+        ),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("ai-status")
+        .setDescription("Show private zero-cost local AI readiness and aggregate usage."),
     )
     .addSubcommand((subcommand) =>
       subcommand.setName("health").setDescription("Show private service health and data freshness diagnostics."),

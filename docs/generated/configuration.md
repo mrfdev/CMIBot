@@ -27,16 +27,30 @@ Identifiers are intentionally blank in generated examples.
 | `DISCORD_TEST_DEFAULT_CONTEXT` | string | no | public | `cmi` | Plugin context used by test channels until overridden. |
 | `ALLOWED_ROLE_IDS` | discord-id-list | yes | private | (blank) | Comma-separated role IDs allowed to use lookup commands. |
 | `ADMIN_ROLE_IDS` | discord-id-list | yes | private | (blank) | Comma-separated role IDs allowed to use admin commands. |
-| `AI_ROLE_IDS` | discord-id-list | no | private | (blank) | Comma-separated role IDs allowed to use AI-backed options. Required when OPENAI_ENABLED=true; otherwise falls back to ADMIN_ROLE_IDS. |
+| `AI_ROLE_IDS` | discord-id-list | no | private | (blank) | Comma-separated role IDs allowed to use AI-backed options. Required when AI_ENABLED=true; otherwise falls back to ADMIN_ROLE_IDS. |
 | `DISCORD_ADMIN_ALERT_CHANNEL_ID` | discord-id | no | private | (blank) | Private channel that receives aggregate data-health alerts. |
 
-## AI
+## Zero-cost local AI
+
+Only a loopback Ollama service and local model are supported. External and paid providers fail closed.
 
 | Variable | Type | Required | Exposure | Default | Description |
 | --- | --- | --- | --- | --- | --- |
-| `OPENAI_ENABLED` | boolean | no | public | `false` | Hard switch for OpenAI-backed features. |
-| `OPENAI_API_KEY` | secret | no | secret | (blank) | OpenAI API key. Required when OPENAI_ENABLED=true. |
-| `OPENAI_MODEL` | string | no | public | `gpt-5-mini` | OpenAI model used for reranking and summaries. |
+| `AI_ENABLED` | boolean | no | public | `true` | Enable grounded local answers and summaries with deterministic fallback. |
+| `AI_EXTERNAL_PROVIDERS_ENABLED` | boolean | no | public | `false` | External AI providers are unsupported and must remain disabled. |
+| `AI_PAID_BUDGET_USD` | number | no | public | `0` | Hard paid-provider budget; this release requires exactly zero. |
+| `OLLAMA_ENABLED` | boolean | no | public | `true` | Use the configured local Ollama model when available. |
+| `OLLAMA_BASE_URL` | url | no | public | `http://127.0.0.1:11434` | Loopback-only Ollama HTTP address. Remote addresses are rejected. |
+| `OLLAMA_MODEL` | string | no | public | `qwen3:8b` | Installed local Ollama model; cloud model names are rejected. |
+| `AI_USAGE_STATE_PATH` | relative-path | no | public | `logs/ai-usage.json` | Private aggregate-only local AI usage state. |
+| `AI_DAILY_REQUEST_LIMIT` | integer | no | public | `50` | Maximum local generation attempts per UTC day; zero disables this resource limit. |
+| `AI_MONTHLY_REQUEST_LIMIT` | integer | no | public | `1000` | Maximum local generation attempts per UTC month; zero disables this resource limit. |
+| `AI_MAX_QUESTION_LENGTH` | integer | no | public | `320` | Maximum private grounded-answer question length. |
+| `AI_MAX_EVIDENCE_ITEMS` | integer | no | public | `6` | Maximum safe indexed evidence snippets sent to the local model. |
+| `AI_MAX_EVIDENCE_CHARS` | integer | no | public | `1000` | Maximum characters retained per redacted evidence snippet. |
+| `AI_MAX_OUTPUT_TOKENS` | integer | no | public | `350` | Maximum local model output tokens per request. |
+| `AI_REQUEST_TIMEOUT_SECONDS` | integer | no | public | `90` | Hard timeout for local answer generation. |
+| `AI_STATUS_TIMEOUT_SECONDS` | integer | no | public | `2` | Hard timeout for local readiness checks. |
 
 ## Search and display
 
@@ -80,6 +94,7 @@ Identifiers are intentionally blank in generated examples.
 | `COMMAND_RATE_WINDOW_SECONDS` | integer | no | public | `30` | Sliding command-rate window in seconds. |
 | `LOOKUP_COOLDOWN_SECONDS` | integer | no | public | `3` | Per-user lookup cooldown. |
 | `SUMMARY_COOLDOWN_SECONDS` | integer | no | public | `15` | Per-user AI summary cooldown. |
+| `AI_QUESTION_COOLDOWN_SECONDS` | integer | no | public | `20` | Per-user grounded-answer cooldown. |
 | `DEBUG_COOLDOWN_SECONDS` | integer | no | public | `10` | Global admin debug cooldown. |
 | `RELOAD_COOLDOWN_SECONDS` | integer | no | public | `30` | Global admin reload cooldown. |
 | `RATE_LIMIT_AUDIT_COOLDOWN_SECONDS` | integer | no | public | `30` | Coalescing window for repeated rate-limit audit entries. |

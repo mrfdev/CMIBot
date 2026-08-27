@@ -26,10 +26,11 @@ See [CHANGELOG.md](CHANGELOG.md) for dated summaries of shipped changes.
 - Fail-closed startup validation for configuration, routes, indexes, cache summaries, and version-catalog drift
 - Layered user/channel/global rate limits, input validation, disabled mentions, role-ID access checks, JSONL audit logs, and bounded privacy-aware structured service logs
 - Privacy-safe aggregate metrics for commands, searches, reloads, AI usage, upstream checks, errors, and memory
+- Zero-cost local Ollama answers grounded in redacted indexed evidence, with validated citations and deterministic fallback
 - Optional aggregate admin alerts for stale snapshots, upstream failures, and tracked updates
 - Owner-bound pagination and private full-block YAML context with commit-pinned public source links
 - Generated environment schema, blank-safe examples, and plugin-profile documentation
-- Context-aware help, stats, language stats, latest versions, health, and debug output
+- Context-aware help, stats, language stats, latest versions, local AI status, health, and debug output
 
 ## Plugin Contexts
 
@@ -44,7 +45,7 @@ See [CHANGELOG.md](CHANGELOG.md) for dated summaries of shipped changes.
 | TradeMe | config, language, generated placeholder, generated command, generated permission |
 | BottledExp | config, language, generated command, generated permission |
 
-All contexts also support `help`, `stats`, `langstats`, `files`, `categories`, and `latest`. The global `health`, `debug`, and `reload` commands are admin-only. Unsupported search features are hidden from the context-specific available list and are reported clearly if called directly.
+All contexts also support `help`, `stats`, `langstats`, `files`, `categories`, `latest`, and private `ask`. The global `ai-status`, `health`, `debug`, and `reload` commands are admin-only. Unsupported search features are hidden from the context-specific available list and are reported clearly if called directly.
 
 CMILib config and English locale files are shared with every plugin context.
 
@@ -72,6 +73,8 @@ CMILib config and English locale files are shared with every plugin context.
 /lookup latest public:true
 /lookup latest scope:all
 /lookup latest changes:true
+/lookup ask question:<plugin support question>  # private, AI role only
+/lookup ai-status              # admin only
 /lookup health                # admin only
 /lookup alerts-test           # admin only; sends a clearly marked private test alert
 /lookup debug                 # admin only
@@ -97,7 +100,7 @@ CMILib config and English locale files are shared with every plugin context.
 - Source links point to the full commit deployed when the response was generated. A later deployment uses its new commit, while links in older Discord messages remain stable.
 - `related:true` keeps the normal matches intact and adds up to six deterministic cross-references from the active plugin context. Commands can link to matching permissions, config settings, placeholders, FAQs, tab-complete tokens, and language entries; other search profiles use the same cached relationship index. Config and language results still include their nearby same-file YAML entries first. The index never searches other plugin contexts, reads arbitrary files, calls an external service, or exposes a reference outside the configured safe roots.
 - Related references render one per line. If a search-result response reaches Discord's message limit, the formatter retains complete lines only, closes an open code fence, and never emits a partial source-link URL.
-- `summary:true` requests an AI summary only when OpenAI support and the configured AI role are enabled.
+- `summary:true` makes the complete lookup private and requests a local evidence-grounded summary for the configured AI role. Ordinary searches never invoke AI or change their deterministic ranking.
 - Configured aliases are expanded automatically only inside the active plugin context. Direct matches for the original term remain first.
 - Discord suggests up to 25 context-specific values while `keyword:` or the config `file:` option is focused. Suggestions are derived only from safe cached key metadata for the active plugin profile.
 
@@ -113,6 +116,7 @@ CMILib config and English locale files are shared with every plugin context.
 /lookup material shulker
 /lookup cmd balance
 /lookup cmd balance related:true
+/lookup ask question:"How do I configure the balance command?"
 /lookup perm cmi.command.balance
 /lookup faq refund
 /lookup cmd bottle
@@ -371,6 +375,30 @@ Aggregate alerts are disabled unless `DISCORD_ADMIN_ALERT_CHANNEL_ID` names a te
 
 `/lookup health` is admin-only and ephemeral. It reports the release, uptime, Discord readiness, cache readiness and freshness, clean-data generation time, upstream version-check state, startup-validation state, bounded command/search/reload/AI aggregates, process memory, and service-log protection state. It intentionally omits query text, channel and role IDs, routes, hostnames, usernames, and filesystem paths.
 
+## Zero-cost Local AI
+
+`/lookup ask question:<text>` is private and restricted to `AI_ROLE_IDS`, which defaults to the admin-role list. It retrieves a bounded set of matches only from the active plugin's existing in-memory indexes, removes unsafe paths, redacts credential-like values, and sends only an evidence ID, profile name, entry name, and snippet to a local Ollama model. Discord identities, channel or role IDs, hostnames, source URLs, repository paths, arbitrary files, conversation history, and audit metadata are never included in the model request.
+
+The model must return a bounded JSON object whose citations refer only to supplied evidence IDs. The bot validates those IDs and adds commit-pinned source links itself, so the model cannot invent or alter links. Evidence is explicitly treated as untrusted data rather than instructions. Responses containing external URLs, private paths, private-key material, invalid citations, malformed JSON, or unexpected model identity are rejected.
+
+The only supported provider is a non-cloud Ollama model over an IPv4 or IPv6 loopback HTTP address. Remote endpoints, `localhost` name resolution, cloud model names, external providers, and any nonzero paid budget fail startup validation. There are no API-key variables or paid SDK dependency. `AI_EXTERNAL_PROVIDERS_ENABLED` must remain `false`, and `AI_PAID_BUDGET_USD` must remain exactly `0`.
+
+If Ollama is stopped, busy, times out, exceeds its local daily/monthly resource limit, returns unsafe output, or does not have the configured model installed, the command returns the nearest cited lexical evidence instead. It never falls through to an internet provider. Ordinary lookups remain deterministic and never load or call the model; local generation happens only for `/lookup ask` or an authorized `summary:true` request.
+
+The default local model is `qwen3:8b`. Ollama and model downloads are deliberately not installed or pulled by LookupBot. On the service machine, install the [official Ollama distribution](https://ollama.com/download), set `OLLAMA_NO_CLOUD=1` in the Ollama service environment as described in the [Ollama FAQ](https://docs.ollama.com/faq), restart Ollama, then explicitly download the model:
+
+```bash
+ollama pull qwen3:8b
+```
+
+The default bot settings already enable local AI and Ollama, use a loopback-only Ollama address, and select `qwen3:8b`. The generated `.env.example` contains the exact defaults. Use `/lookup ai-status` from Discord or the private operator wrapper to verify readiness without revealing operational details:
+
+```bash
+npm run remote:ai-status
+```
+
+`/lookup ai-status` reports local readiness, deterministic fallback readiness, the `$0.00` hard limit, and UTC day/month aggregate request and token counters. The owner-only `logs/ai-usage.json` state contains only those bounded counters. It never stores questions, prompts, evidence, answers, Discord identities, routes, endpoints, hostnames, or paths.
+
 ## Debug Output
 
 `/lookup debug` is admin-only, ephemeral, and reports:
@@ -389,8 +417,10 @@ Aggregate alerts are disabled unless `DISCORD_ADMIN_ALERT_CHANNEL_ID` names a te
 ## Security
 
 - Access is matched by immutable Discord role IDs, never role names.
-- Health, debug, reload, and test-context changes are admin-only.
-- When enabled, AI features use their own role-ID list and hard enable switch; disabled installations do not require AI credentials or roles.
+- AI status, health, debug, reload, and test-context changes are admin-only.
+- Local AI features use their own role-ID list and hard enable switch. They have no API credentials or paid-provider path.
+- AI questions reject likely secrets, authorization tokens, private keys, Discord IDs, traversal, and private absolute paths before retrieval or generation.
+- Only redacted, safe indexed evidence can reach the loopback model. Model output citations, links, length, structure, and safety are revalidated before display.
 - Queries have configurable length, filler-word, and character validation.
 - Short valid terms such as `rt`, `rtp`, `tp`, and placeholders can be allowlisted.
 - Discord mentions are disabled on all bot responses.
@@ -402,7 +432,7 @@ Aggregate alerts are disabled unless `DISCORD_ADMIN_ALERT_CHANNEL_ID` names a te
 - Pinned source links require a full deployed commit and a safe path beneath the active plugin or shared root; short revisions, mutable branches, private hosts, traversal, and credential-like targets produce no link.
 - A sliding-window limit follows each user across every subcommand, so switching commands cannot bypass throttling.
 - Authorized support commands also share per-channel and process-wide windows to contain coordinated bursts.
-- Lookup and AI-summary operations retain separate per-user cooldowns; lookup throttling runs before cache filtering.
+- Lookup, AI-summary, and grounded-question operations retain separate per-user cooldowns; lookup throttling runs before cache filtering.
 - Debug has a global cooldown, while reload has both a global cooldown and a single-flight guard.
 - Rate-limit state is memory-bounded and expired buckets are pruned automatically.
 - Repeated rate-limit audit events are coalesced to prevent JSONL log flooding.
@@ -467,7 +497,7 @@ npm start
 
 Fill in the Discord token, application ID, guild ID, channel IDs, and role IDs in `.env`. The real `.env` is ignored and must be created independently on each machine.
 
-OpenAI support is optional and disabled by default with `OPENAI_ENABLED=false`. In disabled mode, the bot stays lexical-only: it does not import the OpenAI SDK, construct an API client, or require `AI_ROLE_IDS`/`OPENAI_API_KEY`. This avoids the SDK's runtime memory overhead until AI is explicitly enabled.
+Local Ollama support is enabled by default but remains safe when Ollama or the configured model is absent because cited lexical fallback stays active. No API key is accepted or required. Set `AI_ENABLED=false` to disable model generation entirely while keeping normal lookup commands deterministic.
 
 ## Managed macOS Service
 
@@ -478,6 +508,7 @@ Operator commands:
 ```bash
 ./scripts/install
 ./scripts/status
+./scripts/ai-status
 ./scripts/start
 ./scripts/stop
 ./scripts/restart
@@ -498,6 +529,7 @@ Fill in the private SSH destination and absolute remote paths in `.cmibot-remote
 
 ```bash
 ./scripts/remote status
+./scripts/remote ai-status
 ./scripts/remote restart
 ./scripts/remote configure-alert-channel
 ./scripts/remote configure-test-channel
@@ -508,7 +540,7 @@ Fill in the private SSH destination and absolute remote paths in `.cmibot-remote
 ./scripts/remote deploy --rollback
 ```
 
-The wrapper reads its destination only from the owner-readable local configuration, uses non-interactive SSH authentication, and accepts only the documented operations and options. `update` runs the fail-closed source updater remotely with a minimal executable path derived from the configured Node location; it does not restart or activate a release. It is an operator tool and is never exposed through Discord. Do not put host aliases, usernames, private paths, credentials, or other infrastructure identifiers in tracked files or public tickets.
+The wrapper reads its destination only from the owner-readable local configuration, uses non-interactive SSH authentication, and accepts only the documented operations and options. `ai-status` checks only the loopback Ollama service and configured local model, then emits a generic readiness result plus the zero-cost safety locks. `update` runs the fail-closed source updater remotely with a minimal executable path derived from the configured Node location; it does not restart or activate a release. The wrapper is an operator tool and is never exposed through Discord. Do not put host aliases, usernames, private paths, credentials, or other infrastructure identifiers in tracked files or public tickets.
 
 The two `configure-*` operations read exactly one Discord channel ID from standard input and never accept it as a command-line argument. `configure-alert-channel` replaces the private admin-alert destination. `configure-test-channel` adds a channel to both the allowed-channel and test-channel lists, while refusing a channel already assigned to a plugin route. Both operations validate the existing private configuration, replace it atomically with owner-only permissions, and omit the identifier from output and remote command arguments. They do not restart the bot, so use the normal guarded restart or deployment afterward to load the new setting.
 

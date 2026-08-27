@@ -60,8 +60,9 @@ function makeConfig() {
     search: {
       defaultResultLimit: 3,
     },
-    openai: {
+    ai: {
       enabled: false,
+      maxQuestionLength: 320,
     },
     discord: {
       allowedRoleIds: ["support-role"],
@@ -90,6 +91,8 @@ test("slash command schema keeps aliases, limits, and safe config filters", () =
   assert.ok(subcommands.has("permission"));
   assert.ok(subcommands.has("perm"));
   assert.ok(subcommands.has("health"));
+  assert.ok(subcommands.has("ask"));
+  assert.ok(subcommands.has("ai-status"));
   assert.ok(subcommands.has("alerts-test"));
   assert.ok(subcommands.has("files"));
   assert.ok(subcommands.has("categories"));
@@ -565,7 +568,7 @@ test("the extracted search lifecycle applies context synonyms and audits a forma
       getEntries: () => entries,
     },
     aiEnabled: false,
-    resolveAiReranker: async () => null,
+    resolveAiService: async () => null,
     cooldowns: {
       check: () => ({ allowed: true, retryAfterSeconds: 0 }),
     },
@@ -653,7 +656,7 @@ test("Discord related searches resolve safe cross-profile references only", asyn
     },
     searchCache: { getEntries: () => commandEntries },
     aiEnabled: false,
-    resolveAiReranker: async () => null,
+    resolveAiService: async () => null,
     cooldowns: { check: () => ({ allowed: true, retryAfterSeconds: 0 }) },
     logEvent: async (_interaction, payload) => auditEvents.push(payload),
     logRateLimitEvent: async () => {},
@@ -762,7 +765,7 @@ test("Discord search offers YAML expansion only for safe indexed paths", async (
         getGeneration: () => 3,
       },
       aiEnabled: false,
-      resolveAiReranker: async () => null,
+      resolveAiService: async () => null,
       cooldowns: { check: () => ({ allowed: true, retryAfterSeconds: 0 }) },
       logEvent: async () => {},
       logRateLimitEvent: async () => {},
@@ -857,7 +860,7 @@ test("an empty Discord search offers scoped suggestions without auditing their t
       getEntries: () => entries,
     },
     aiEnabled: false,
-    resolveAiReranker: async () => null,
+    resolveAiService: async () => null,
     cooldowns: {
       check: () => ({ allowed: true, retryAfterSeconds: 0 }),
     },
@@ -880,7 +883,6 @@ test("Discord search retains bounded matches behind opaque pagination controls",
     "CMIPlugin/CMI/config.yml",
   );
   const responses = [];
-  const rerankSizes = [];
   const plugin = makePlugin();
   plugin.debugRoots = ["CMIPlugin"];
   plugin.profiles.config = {
@@ -942,12 +944,9 @@ test("Discord search retains bounded matches behind opaque pagination controls",
       getGeneration: () => 9,
     },
     aiEnabled: true,
-    resolveAiReranker: async () => ({
-      async rerank(_keyword, matches) {
-        rerankSizes.push(matches.length);
-        return matches;
-      },
-    }),
+    resolveAiService: async () => {
+      assert.fail("ordinary searches must not load or call local AI");
+    },
     cooldowns: { check: () => ({ allowed: true, retryAfterSeconds: 0 }) },
     logEvent: async () => {},
     logRateLimitEvent: async () => {},
@@ -955,7 +954,6 @@ test("Discord search retains bounded matches behind opaque pagination controls",
     pagination,
   });
 
-  assert.deepEqual(rerankSizes, [5]);
   assert.equal(responses.length, 1);
   assert.match(responses[0].content, /Page 1\/3/);
   const nextCustomId = responses[0].components[0].components[2].custom_id;

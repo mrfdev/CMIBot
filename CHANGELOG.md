@@ -4,6 +4,16 @@ This file records material LookupBot changes by ship date. User-facing examples 
 
 ## 2026-08-27
 
+### Zero-cost local AI
+
+- Added private `/lookup ask` answers grounded only in bounded, redacted evidence from the active plugin's existing indexes.
+- Added local Ollama generation over a loopback-only address with structured output, citation allowlisting, output safety checks, one-request concurrency, hard timeouts, and local resource limits.
+- Locked the paid budget to `$0.00`, rejected external providers and cloud model names, removed the paid OpenAI SDK dependency, and prevented silent provider fallback.
+- Added deterministic cited evidence fallback whenever local generation is disabled, busy, unsafe, unavailable, or missing its configured model.
+- Added admin-only `/lookup ai-status`, aggregate-only owner-readable day/month usage state, and a privacy-safe operator readiness command.
+- Removed automatic AI reranking from ordinary searches. AI runs only for an authorized private `ask` or `summary:true` request.
+- Added secret, token, private-key, Discord-ID, traversal, and private-path rejection before AI retrieval, plus credential-value redaction before local prompts.
+
 ### Search and result experience
 
 - Added owner-bound Previous/Next pagination with bounded, expiring sessions and safe invalidation after cache changes.

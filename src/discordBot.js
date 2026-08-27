@@ -27,6 +27,10 @@ import {
 } from "./discord/browse.js";
 import { formatHelpMessage } from "./discord/help.js";
 import { formatHealthMessage } from "./discord/health.js";
+import {
+  formatAiStatusMessage,
+  handleAskInteraction,
+} from "./discord/aiInteraction.js";
 import { createExpandedYamlContextPayload } from "./discord/expandedContext.js";
 import { createResultPagination } from "./discord/pagination.js";
 import {
@@ -69,11 +73,15 @@ export function createInteractionHandler(config, searchCache, versionService, de
   const metrics = dependencies.metrics;
   const createRequestId = dependencies.createRequestId ?? randomUUID;
   const monotonicNow = dependencies.monotonicNow ?? (() => performance.now());
-  const aiEnabled = isAiEnabled(config.openai);
-  const resolveAiReranker = createLazyAiResolver(config.openai, {
+  const aiEnabled = isAiEnabled(config.ai);
+  const resolveAiService = createLazyAiResolver(config.ai, {
     loadAiModule: dependencies.loadAiModule,
     logger,
     metrics,
+    workspaceRoot: config.workspaceRoot,
+    fetchImpl: dependencies.aiFetch,
+    provider: dependencies.aiProvider,
+    usageLedger: dependencies.aiUsageLedger,
   });
   const cooldowns = createCooldownManager();
   const rateLimiter = createSlidingWindowRateLimiter();
@@ -463,6 +471,50 @@ export function createInteractionHandler(config, searchCache, versionService, de
       return;
     }
 
+    if (canonicalSubcommand === "ai-status") {
+      if (!hasRole(interaction.member, { roleIds: config.discord.adminRoleIds })) {
+        await logEvent(interaction, {
+          subcommand,
+          outcome: "denied",
+          reason: "ai-status-role",
+          detectedContext: context.pluginId || "unknown",
+        });
+        await interaction.reply({
+          content: "Only the configured admin role can use the local AI status command.",
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+        return;
+      }
+
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      const service = await resolveAiService();
+      const status = service
+        ? await service.getStatus()
+        : {
+            mode: "zero-cost-local-only",
+            enabled: false,
+            providerReady: false,
+            providerReason: "disabled",
+            fallbackReady: true,
+            externalProvidersEnabled: false,
+            paidBudgetUsd: 0,
+            busy: false,
+            usage: null,
+          };
+      await logEvent(interaction, {
+        subcommand,
+        outcome: "success",
+        aiReady: status.providerReady,
+        detectedContext: context.pluginId || "unknown",
+      });
+      await interaction.editReply({
+        content: formatAiStatusMessage(status),
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
     if (canonicalSubcommand === "alerts-test") {
       if (!hasRole(interaction.member, { roleIds: config.discord.adminRoleIds })) {
         await logEvent(interaction, {
@@ -718,7 +770,9 @@ export function createInteractionHandler(config, searchCache, versionService, de
       return;
     }
 
-    if (!hasRole(interaction.member, { roleIds: config.discord.allowedRoleIds })) {
+    const hasLookupRole = hasRole(interaction.member, { roleIds: config.discord.allowedRoleIds });
+    const hasAiRole = hasRole(interaction.member, { roleIds: config.discord.aiRoleIds });
+    if (!hasLookupRole && !(canonicalSubcommand === "ask" && hasAiRole)) {
       await logEvent(interaction, {
         subcommand,
         outcome: "denied",
@@ -906,6 +960,22 @@ export function createInteractionHandler(config, searchCache, versionService, de
       return;
     }
 
+    if (canonicalSubcommand === "ask") {
+      await handleAskInteraction({
+        interaction,
+        subcommand,
+        context,
+        config,
+        searchCache,
+        runtimeInfo: dependencies.runtimeInfo,
+        resolveAiService,
+        cooldowns,
+        logEvent,
+        logRateLimitEvent,
+      });
+      return;
+    }
+
     if (canonicalSubcommand === "stats") {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
@@ -1066,7 +1136,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
       config,
       searchCache,
       aiEnabled,
-      resolveAiReranker,
+      resolveAiService,
       cooldowns,
       logEvent,
       logRateLimitEvent,

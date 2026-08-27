@@ -1,5 +1,7 @@
 import { performance } from "node:perf_hooks";
 import { MessageFlags } from "discord.js";
+import { prepareGroundedEvidence } from "../aiSafety.js";
+import { createFallbackGroundedAnswer } from "../groundedAi.js";
 import {
   lexicalSearchWithStats,
   orderMatchesForDisplay,
@@ -50,7 +52,7 @@ export async function handleSearchInteraction({
   config,
   searchCache,
   aiEnabled,
-  resolveAiReranker,
+  resolveAiService,
   cooldowns,
   logEvent,
   logRateLimitEvent,
@@ -180,6 +182,25 @@ export async function handleSearchInteraction({
     return;
   }
 
+  if (summary && !aiEnabled) {
+    await logEvent(interaction, {
+      subcommand,
+      keyword,
+      mode,
+      related,
+      summary,
+      outcome: "rejected",
+      reason: "ai-disabled",
+      detectedContext: context.pluginId,
+    });
+    await interaction.reply({
+      content: "Local AI summaries are currently disabled in bot config.",
+      flags: MessageFlags.Ephemeral,
+      allowedMentions: NO_MENTIONS,
+    });
+    return;
+  }
+
   if (summary && aiEnabled) {
     const summaryCooldown = cooldowns.check(
       interaction.user.id,
@@ -206,7 +227,11 @@ export async function handleSearchInteraction({
     }
   }
 
-  await interaction.deferReply();
+  if (summary) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  } else {
+    await interaction.deferReply();
+  }
 
   try {
     const entries = fileFilter.filteredEntries;
@@ -253,15 +278,7 @@ export async function handleSearchInteraction({
       throw error;
     }
     const lexicalMatches = searchResult.matches;
-    const reranker = aiEnabled && canUseAi ? await resolveAiReranker() : null;
-    const rerankCandidates = lexicalMatches.slice(0, 25);
-    const rerankedMatches = reranker
-      ? await reranker.rerank(keyword, rerankCandidates)
-      : rerankCandidates;
-    const orderedMatches = [
-      ...orderMatchesForDisplay(rerankedMatches),
-      ...orderMatchesForDisplay(lexicalMatches.slice(25)),
-    ];
+    const orderedMatches = orderMatchesForDisplay(lexicalMatches);
     const retainedMatches = orderedMatches.slice(
       0,
       pagination?.getMaxResults?.() ?? config.search.paginationMaxResults ?? 100,
@@ -357,11 +374,18 @@ export async function handleSearchInteraction({
     const totalMentions = searchResult.totalMatches;
     const fileCount = searchResult.matchedFiles.length;
     let aiSummary = "";
-    if (summary && reranker && canUseAi) {
-      aiSummary =
-        (await reranker.summarize(keyword, initialMatches, {
-          profileName: `${context.plugin.id}:${canonicalSubcommand}`,
-        })) || "";
+    if (summary && canUseAi) {
+      const evidence = prepareGroundedEvidence(
+        initialMatches.map((item) => ({ ...item, profileName: canonicalSubcommand })),
+        { config, plugin: context.plugin, runtimeInfo },
+      );
+      const service = await resolveAiService();
+      const result = service
+        ? await service.answer({ question: keyword, evidence, operation: "summary" })
+        : createFallbackGroundedAnswer(evidence, "disabled");
+      aiSummary = result.generated
+        ? result.answer
+        : "";
     }
     const allMatchedFiles = searchResult.matchedFiles;
     const formatOptions = {
@@ -412,7 +436,7 @@ export async function handleSearchInteraction({
       summary,
       synonymApplied: searchResult.synonymApplied,
       queryVariantCount: searchResult.queryVariantCount,
-      aiEnabled: canUseAi,
+      aiRequested: summary,
       outcome: "success",
       detectedContext: context.pluginId,
       resultCount: initialMatches.length,

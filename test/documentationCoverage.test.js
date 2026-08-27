@@ -33,6 +33,9 @@ test("current documentation covers the shipped August feature set without privat
     /GitHub Actions checks/i,
     /generated documentation drifts/i,
     /Paper `26\.2 build 119`.*LuckPerms `5\.5\.79`/i,
+    /zero-cost local AI/i,
+    /paid budget to `\$0\.00`/i,
+    /deterministic cited evidence fallback/i,
   ]) {
     assert.match(changelog, pattern);
   }
@@ -40,6 +43,8 @@ test("current documentation covers the shipped August feature set without privat
   assert.match(readme, /configure-alert-channel/);
   assert.match(readme, /configure-test-channel/);
   assert.match(readme, /never accept it as a command-line argument/i);
+  assert.match(readme, /loopback.*Ollama/i);
+  assert.match(readme, /never falls through to an internet provider/i);
   assert.match(discordHelp, /related: true\|false.*matching references across supported profiles/i);
 
   const publicDocumentation = `${readme}\n${changelog}`;

@@ -552,3 +552,39 @@ test("logs displays only the requested tail of both service logs", async () => {
     await fs.rm(temporaryRoot, { recursive: true, force: true });
   }
 });
+
+test("ai-status reports local unavailability without exposing endpoint or model details", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-ai-status-"));
+  try {
+    await fs.writeFile(
+      path.join(temporaryRoot, ".env"),
+      [
+        "AI_ENABLED=true",
+        "AI_EXTERNAL_PROVIDERS_ENABLED=false",
+        "AI_PAID_BUDGET_USD=0",
+        "OLLAMA_ENABLED=true",
+        "OLLAMA_BASE_URL=http://127.0.0.1:1",
+        "OLLAMA_MODEL=qwen3:8b",
+        "",
+      ].join("\n"),
+      { mode: 0o600 },
+    );
+    await assert.rejects(
+      runOperation(
+        "cmibot-ops.mjs",
+        { ...process.env, CMIBOT_PROJECT_ROOT: temporaryRoot },
+        ["ai-status"],
+      ),
+      (error) => {
+        assert.equal(error.code, 3);
+        assert.match(error.stdout, /zero-cost and local-only/);
+        assert.match(error.stdout, /Local generation: unavailable/);
+        assert.match(error.stdout, /External providers: disabled/);
+        assert.doesNotMatch(error.stdout, /127\.0\.0\.1|qwen3|11434|\.env|lookupbot-ai-status/);
+        return true;
+      },
+    );
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});

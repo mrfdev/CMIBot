@@ -2,6 +2,7 @@ import path from "node:path";
 import { loadSearchSynonyms, parseSearchSynonymDocument } from "./searchSynonyms.js";
 import { parseServiceLogOptions } from "./serviceLog.js";
 import { normalizePublicGitHubRepositoryUrl } from "./sourceLinks.js";
+import { isLocalOllamaModelName, normalizeLoopbackOllamaBaseUrl } from "./ollama.js";
 
 const SUPPORTED_PROFILE_SOURCE_TYPES = new Set(["log", "yaml"]);
 const SUPPORTED_LOG_PARSER_TYPES = new Set([
@@ -38,6 +39,14 @@ function parseCsvWithRequired(value, fallback, required = []) {
 function parseInteger(value, fallback) {
   const parsed = Number.parseInt(value ?? "", 10);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function parseDecimal(value, fallback) {
+  if (value == null || value === "") {
+    return fallback;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
 }
 
 function parseBoolean(value, fallback = false) {
@@ -802,6 +811,7 @@ export function loadConfig() {
   const configuredTestChannelIds = parseCsv(process.env.DISCORD_TEST_CHANNEL_IDS);
   const fallbackLegacyTestChannelIds = parseCsv(process.env.DISCORD_CMI_TEST_CHANNEL_IDS);
   const testChannelIds = configuredTestChannelIds.length ? configuredTestChannelIds : fallbackLegacyTestChannelIds;
+  const configuredAiRoleIds = parseCsv(process.env.AI_ROLE_IDS);
   const testDefaultContext = process.env.DISCORD_TEST_DEFAULT_CONTEXT?.trim().toLowerCase() || "cmi";
   const pluginChannelIds = {
     cmi: parseCsv(process.env.DISCORD_CMI_CHANNEL_IDS),
@@ -835,13 +845,31 @@ export function loadConfig() {
       testDefaultContext,
       allowedRoleIds: parseCsv(process.env.ALLOWED_ROLE_IDS),
       adminRoleIds: parseCsv(process.env.ADMIN_ROLE_IDS),
-      aiRoleIds: parseCsv(process.env.AI_ROLE_IDS ?? process.env.ADMIN_ROLE_IDS),
+      aiRoleIds: configuredAiRoleIds.length
+        ? configuredAiRoleIds
+        : parseCsv(process.env.ADMIN_ROLE_IDS),
       adminAlertChannelId: process.env.DISCORD_ADMIN_ALERT_CHANNEL_ID?.trim() || "",
     },
-    openai: {
-      enabled: parseBoolean(process.env.OPENAI_ENABLED, false),
-      apiKey: process.env.OPENAI_API_KEY?.trim() || "",
-      model: process.env.OPENAI_MODEL?.trim() || "gpt-5-mini",
+    ai: {
+      enabled: parseBoolean(process.env.AI_ENABLED, true),
+      externalProvidersEnabled: parseBoolean(process.env.AI_EXTERNAL_PROVIDERS_ENABLED, false),
+      paidBudgetUsd: parseDecimal(process.env.AI_PAID_BUDGET_USD, 0),
+      usageStatePath: process.env.AI_USAGE_STATE_PATH?.trim() || "logs/ai-usage.json",
+      dailyRequestLimit: Math.max(0, Math.min(10_000, parseInteger(process.env.AI_DAILY_REQUEST_LIMIT, 50))),
+      monthlyRequestLimit: Math.max(0, Math.min(100_000, parseInteger(process.env.AI_MONTHLY_REQUEST_LIMIT, 1_000))),
+      maxQuestionLength: Math.max(80, Math.min(1_000, parseInteger(process.env.AI_MAX_QUESTION_LENGTH, 320))),
+      maxEvidenceItems: Math.max(1, Math.min(8, parseInteger(process.env.AI_MAX_EVIDENCE_ITEMS, 6))),
+      maxEvidenceChars: Math.max(200, Math.min(2_000, parseInteger(process.env.AI_MAX_EVIDENCE_CHARS, 1_000))),
+      maxOutputTokens: Math.max(64, Math.min(1_024, parseInteger(process.env.AI_MAX_OUTPUT_TOKENS, 350))),
+      requestTimeoutMs:
+        Math.max(1, Math.min(120, parseInteger(process.env.AI_REQUEST_TIMEOUT_SECONDS, 90))) * 1_000,
+      statusTimeoutMs:
+        Math.max(1, Math.min(10, parseInteger(process.env.AI_STATUS_TIMEOUT_SECONDS, 2))) * 1_000,
+      ollama: {
+        enabled: parseBoolean(process.env.OLLAMA_ENABLED, true),
+        baseUrl: process.env.OLLAMA_BASE_URL?.trim() || "http://127.0.0.1:11434",
+        model: process.env.OLLAMA_MODEL?.trim() || "qwen3:8b",
+      },
     },
     search: {
       defaultResultLimit: Math.max(1, Math.min(15, parseInteger(process.env.DEFAULT_RESULT_LIMIT, 3))),
@@ -1046,6 +1074,7 @@ export function loadConfig() {
       commandRateWindowSeconds: Math.max(0, parseInteger(process.env.COMMAND_RATE_WINDOW_SECONDS, 30)),
       lookupCooldownSeconds: Math.max(0, parseInteger(process.env.LOOKUP_COOLDOWN_SECONDS, 3)),
       summaryCooldownSeconds: Math.max(0, parseInteger(process.env.SUMMARY_COOLDOWN_SECONDS, 15)),
+      aiQuestionCooldownSeconds: Math.max(0, parseInteger(process.env.AI_QUESTION_COOLDOWN_SECONDS, 20)),
       debugCooldownSeconds: Math.max(0, parseInteger(process.env.DEBUG_COOLDOWN_SECONDS, 10)),
       reloadCooldownSeconds: Math.max(0, parseInteger(process.env.RELOAD_COOLDOWN_SECONDS, 30)),
       rateLimitAuditCooldownSeconds: Math.max(
@@ -1076,7 +1105,7 @@ export function loadConfig() {
 export function validateBotConfig(config) {
   if (
     !config?.discord ||
-    !config.openai ||
+    !config.ai ||
     !config.search ||
     !config.security ||
     !config.versions ||
@@ -1102,11 +1131,22 @@ export function validateBotConfig(config) {
   if (!config.discord.adminRoleIds.length) {
     throw new Error("Define ADMIN_ROLE_IDS so the bot can guard the reload command.");
   }
-  if (config.openai.enabled && !config.openai.apiKey) {
-    throw new Error("Define OPENAI_API_KEY when OPENAI_ENABLED=true.");
-  }
-  if (config.openai.enabled && !config.discord.aiRoleIds.length) {
+  if (config.ai.enabled && !config.discord.aiRoleIds.length) {
     throw new Error("Define AI_ROLE_IDS so the bot can guard AI-backed features.");
+  }
+  if (config.ai.externalProvidersEnabled) {
+    throw new Error("AI_EXTERNAL_PROVIDERS_ENABLED must remain false in zero-cost local-only mode.");
+  }
+  if (config.ai.paidBudgetUsd !== 0) {
+    throw new Error("AI_PAID_BUDGET_USD must remain exactly 0 in zero-cost local-only mode.");
+  }
+  if (config.ai.ollama.enabled) {
+    if (!normalizeLoopbackOllamaBaseUrl(config.ai.ollama.baseUrl)) {
+      throw new Error("OLLAMA_BASE_URL must use a loopback-only HTTP address.");
+    }
+    if (!isLocalOllamaModelName(config.ai.ollama.model)) {
+      throw new Error("OLLAMA_MODEL must name a local, non-cloud Ollama model.");
+    }
   }
   if (
     config.search.sourceLinksEnabled === true &&
@@ -1118,6 +1158,7 @@ export function validateBotConfig(config) {
   validateRelativePath(config.versions.catalogPath, "VERSION_CATALOG_PATH");
   validateRelativePath(config.versions.statePath, "VERSION_STATE_PATH");
   validateRelativePath(config.search.synonymsPath, "SEARCH_SYNONYMS_PATH");
+  validateRelativePath(config.ai.usageStatePath, "AI_USAGE_STATE_PATH");
   validateRelativePath(config.security.auditLogPath, "AUDIT_LOG_PATH");
   if (!Number.isSafeInteger(config.versions.checkIntervalMs) || config.versions.checkIntervalMs <= 0) {
     throw new Error("The version-check interval must be a positive integer.");

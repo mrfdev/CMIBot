@@ -420,7 +420,7 @@ export function formatResultsMessage(
     footer = `_Showing top ${shownCount} results, but there are more._`;
   }
 
-  const summaryBlock = aiSummary ? `AI summary (generated): ${aiSummary}` : "";
+  const summaryBlock = aiSummary ? `Local grounded summary: ${aiSummary}` : "";
   return [header, ...blocks, summaryBlock, footer].filter(Boolean).join("\n");
 }
 

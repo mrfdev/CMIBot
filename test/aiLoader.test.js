@@ -2,14 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createLazyAiResolver, isAiEnabled } from "../src/aiLoader.js";
 
-test("disabled AI never loads its module", async () => {
+test("disabled local AI never loads its module", async () => {
   let loadCount = 0;
-  const resolveAiReranker = createLazyAiResolver(
-    {
-      enabled: false,
-      apiKey: "unused-key",
-      model: "unused-model",
-    },
+  const resolveAiService = createLazyAiResolver(
+    { enabled: false },
     {
       loadAiModule: async () => {
         loadCount += 1;
@@ -18,58 +14,36 @@ test("disabled AI never loads its module", async () => {
     },
   );
 
-  assert.equal(isAiEnabled({ enabled: false, apiKey: "unused-key" }), false);
-  assert.equal(await resolveAiReranker(), null);
-  assert.equal(await resolveAiReranker(), null);
+  assert.equal(isAiEnabled({ enabled: false }), false);
+  assert.equal(await resolveAiService(), null);
+  assert.equal(await resolveAiService(), null);
   assert.equal(loadCount, 0);
 });
 
-test("AI without an API key remains disabled", async () => {
-  let loadCount = 0;
-  const resolveAiReranker = createLazyAiResolver(
-    {
-      enabled: true,
-      apiKey: "",
-      model: "unused-model",
-    },
-    {
-      loadAiModule: async () => {
-        loadCount += 1;
-        return { AiReranker: class {} };
-      },
-    },
-  );
-
-  assert.equal(isAiEnabled({ enabled: true, apiKey: "" }), false);
-  assert.equal(await resolveAiReranker(), null);
-  assert.equal(loadCount, 0);
-});
-
-test("enabled AI loads and constructs its module once on first use", async () => {
+test("enabled local AI needs no API key and constructs its service once", async () => {
   let loadCount = 0;
   let constructionCount = 0;
-  const config = {
-    enabled: true,
-    apiKey: "test-key",
-    model: "test-model",
-  };
-  const resolveAiReranker = createLazyAiResolver(config, {
+  const config = { enabled: true };
+  const resolveAiService = createLazyAiResolver(config, {
+    workspaceRoot: "/private/workspace",
     loadAiModule: async () => {
       loadCount += 1;
       return {
-        AiReranker: class {
-          constructor(receivedConfig) {
+        GroundedAiService: class {
+          constructor(receivedConfig, options) {
             constructionCount += 1;
             assert.equal(receivedConfig, config);
+            assert.equal(options.workspaceRoot, "/private/workspace");
           }
         },
       };
     },
   });
 
+  assert.equal(isAiEnabled({ enabled: true }), true);
   assert.equal(loadCount, 0);
-  const first = await resolveAiReranker();
-  const second = await resolveAiReranker();
+  const first = await resolveAiService();
+  const second = await resolveAiService();
 
   assert.equal(first, second);
   assert.equal(loadCount, 1);

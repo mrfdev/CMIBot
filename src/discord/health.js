@@ -102,7 +102,7 @@ export function formatHealthMessage({
       `Commands: \`${metricsSnapshot.commands.count} observed, p95 ${metricsSnapshot.commands.p95Ms} ms, ${metricsSnapshot.commands.outcomes.error} errors\``,
       `Search: \`${metricsSnapshot.searches.count} observed, p95 ${metricsSnapshot.searches.p95Ms} ms, ${metricsSnapshot.searches.results.returned} results returned\``,
       `Reloads: \`${metricsSnapshot.reloads.count} observed, p95 ${metricsSnapshot.reloads.p95Ms} ms\``,
-      `AI: \`${metricsSnapshot.ai.count} requests, ${metricsSnapshot.ai.tokens.total} tokens reported\``,
+      `AI: \`${metricsSnapshot.ai.count} local/fallback requests, ${metricsSnapshot.ai.tokens.total} tokens reported, $0 paid budget\``,
       `Process memory: \`${formatBytes(metricsSnapshot.memory.rssBytes)} RSS, ${formatBytes(metricsSnapshot.memory.heapUsedBytes)} heap used\``,
     );
     if (metricsSnapshot.upstream?.checks) {

@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { createLazyAiResolver } from "./aiLoader.js";
+import { prepareGroundedEvidence } from "./aiSafety.js";
 import { createSearchCache, formatCacheSummary } from "./cache.js";
 import { loadConfig } from "./config.js";
 import { isSafeIndexedRelativePath } from "./discord/browse.js";
@@ -15,7 +16,9 @@ const MAX_RELATED_REFERENCES = 6;
 
 async function main() {
   const config = loadConfig();
-  const resolveAiReranker = createLazyAiResolver(config.openai);
+  const resolveAiService = createLazyAiResolver(config.ai, {
+    workspaceRoot: config.workspaceRoot,
+  });
   const args = process.argv.slice(2);
   const requestedPlugin = args[0] && config.plugins[args[0]] ? args.shift() : "cmi";
   const plugin = config.plugins[requestedPlugin];
@@ -134,9 +137,7 @@ async function main() {
   const entries = fileFilter.filteredEntries;
   const synonyms = config.search.synonymsByPlugin?.[plugin.id] ?? {};
   const lexicalMatches = lexicalSearch(keyword, entries, { limit: 25, mode, synonyms });
-  const reranker = await resolveAiReranker();
-  const rerankedMatches = reranker ? await reranker.rerank(keyword, lexicalMatches) : lexicalMatches;
-  const matches = orderMatchesForDisplay(rerankedMatches);
+  const matches = orderMatchesForDisplay(lexicalMatches);
   const profile = plugin.profiles[subcommand];
   const visibleLimit = profile.defaultResultLimit ?? config.search.defaultResultLimit;
   const relatedIndex = related
@@ -202,12 +203,19 @@ async function main() {
     console.log("");
   }
 
-  if (summary && reranker) {
-    const aiSummary =
-      (await reranker.summarize(keyword, matches.slice(0, visibleLimit), { profileName: `${plugin.id}:${subcommand}` })) ||
-      "";
-    if (aiSummary) {
-      console.log(`AI summary (generated): ${aiSummary}`);
+  if (summary) {
+    const service = await resolveAiService();
+    const evidence = prepareGroundedEvidence(
+      matches.slice(0, visibleLimit).map((item) => ({ ...item, profileName: subcommand })),
+      { config, plugin, runtimeInfo: null },
+    );
+    const result = service
+      ? await service.answer({ question: keyword, evidence, operation: "summary" })
+      : null;
+    if (result?.generated) {
+      console.log(`Local grounded summary: ${result.answer}`);
+    } else {
+      console.log("Local AI summary unavailable; deterministic results were shown above.");
     }
   }
 }

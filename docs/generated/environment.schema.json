@@ -141,7 +141,7 @@
     },
     "AI_ROLE_IDS": {
       "type": "string",
-      "description": "Comma-separated role IDs allowed to use AI-backed options. Required when OPENAI_ENABLED=true; otherwise falls back to ADMIN_ROLE_IDS.",
+      "description": "Comma-separated role IDs allowed to use AI-backed options. Required when AI_ENABLED=true; otherwise falls back to ADMIN_ROLE_IDS.",
       "x-value-type": "discord-id-list",
       "x-sensitivity": "private",
       "pattern": "^[0-9]{17,20}(,[0-9]{17,20})*$",
@@ -155,9 +155,20 @@
       "pattern": "^[0-9]{17,20}$",
       "writeOnly": true
     },
-    "OPENAI_ENABLED": {
+    "AI_ENABLED": {
       "type": "string",
-      "description": "Hard switch for OpenAI-backed features.",
+      "description": "Enable grounded local answers and summaries with deterministic fallback.",
+      "x-value-type": "boolean",
+      "x-sensitivity": "public",
+      "enum": [
+        "true",
+        "false"
+      ],
+      "default": "true"
+    },
+    "AI_EXTERNAL_PROVIDERS_ENABLED": {
+      "type": "string",
+      "description": "External AI providers are unsupported and must remain disabled.",
       "x-value-type": "boolean",
       "x-sensitivity": "public",
       "enum": [
@@ -166,19 +177,108 @@
       ],
       "default": "false"
     },
-    "OPENAI_API_KEY": {
+    "AI_PAID_BUDGET_USD": {
       "type": "string",
-      "description": "OpenAI API key. Required when OPENAI_ENABLED=true.",
-      "x-value-type": "secret",
-      "x-sensitivity": "secret",
-      "writeOnly": true
+      "description": "Hard paid-provider budget; this release requires exactly zero.",
+      "x-value-type": "number",
+      "x-sensitivity": "public",
+      "default": "0"
     },
-    "OPENAI_MODEL": {
+    "OLLAMA_ENABLED": {
       "type": "string",
-      "description": "OpenAI model used for reranking and summaries.",
+      "description": "Use the configured local Ollama model when available.",
+      "x-value-type": "boolean",
+      "x-sensitivity": "public",
+      "enum": [
+        "true",
+        "false"
+      ],
+      "default": "true"
+    },
+    "OLLAMA_BASE_URL": {
+      "type": "string",
+      "description": "Loopback-only Ollama HTTP address. Remote addresses are rejected.",
+      "x-value-type": "url",
+      "x-sensitivity": "public",
+      "default": "http://127.0.0.1:11434"
+    },
+    "OLLAMA_MODEL": {
+      "type": "string",
+      "description": "Installed local Ollama model; cloud model names are rejected.",
       "x-value-type": "string",
       "x-sensitivity": "public",
-      "default": "gpt-5-mini"
+      "default": "qwen3:8b"
+    },
+    "AI_USAGE_STATE_PATH": {
+      "type": "string",
+      "description": "Private aggregate-only local AI usage state.",
+      "x-value-type": "relative-path",
+      "x-sensitivity": "public",
+      "default": "logs/ai-usage.json"
+    },
+    "AI_DAILY_REQUEST_LIMIT": {
+      "type": "string",
+      "description": "Maximum local generation attempts per UTC day; zero disables this resource limit.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "50"
+    },
+    "AI_MONTHLY_REQUEST_LIMIT": {
+      "type": "string",
+      "description": "Maximum local generation attempts per UTC month; zero disables this resource limit.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "1000"
+    },
+    "AI_MAX_QUESTION_LENGTH": {
+      "type": "string",
+      "description": "Maximum private grounded-answer question length.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "320"
+    },
+    "AI_MAX_EVIDENCE_ITEMS": {
+      "type": "string",
+      "description": "Maximum safe indexed evidence snippets sent to the local model.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "6"
+    },
+    "AI_MAX_EVIDENCE_CHARS": {
+      "type": "string",
+      "description": "Maximum characters retained per redacted evidence snippet.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "1000"
+    },
+    "AI_MAX_OUTPUT_TOKENS": {
+      "type": "string",
+      "description": "Maximum local model output tokens per request.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "350"
+    },
+    "AI_REQUEST_TIMEOUT_SECONDS": {
+      "type": "string",
+      "description": "Hard timeout for local answer generation.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "90"
+    },
+    "AI_STATUS_TIMEOUT_SECONDS": {
+      "type": "string",
+      "description": "Hard timeout for local readiness checks.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "2"
     },
     "DISPLAY_PATH_PREFIX": {
       "type": "string",
@@ -402,6 +502,14 @@
       "x-sensitivity": "public",
       "pattern": "^[0-9]+$",
       "default": "15"
+    },
+    "AI_QUESTION_COOLDOWN_SECONDS": {
+      "type": "string",
+      "description": "Per-user grounded-answer cooldown.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "20"
     },
     "DEBUG_COOLDOWN_SECONDS": {
       "type": "string",

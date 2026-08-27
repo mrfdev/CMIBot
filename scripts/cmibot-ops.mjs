@@ -8,6 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { isLocalOllamaModelName, normalizeLoopbackOllamaBaseUrl } from "../src/ollama.js";
 
 const execFileAsync = promisify(execFile);
 const label = "com.mrfdev.cmibot";
@@ -313,6 +314,102 @@ function replaceEnvironmentAssignment(contents, key, value) {
   return `${lines.join(newline)}${newline}`;
 }
 
+function parsePrivateEnvironmentScalar(contents, key, fallback = "") {
+  const assignment = findEnvironmentAssignment(contents, key);
+  if (!assignment) {
+    return fallback;
+  }
+  let value = assignment.value.trim();
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    value = value.slice(1, -1);
+  }
+  if (/\r|\n|[\u0000-\u001f\u007f]/.test(value) || value.length > 512) {
+    throw new Error("The private local AI configuration is invalid.");
+  }
+  return value;
+}
+
+function parsePrivateBoolean(value, fallback) {
+  if (value == null || value === "") {
+    return fallback;
+  }
+  const normalized = String(value).trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) return true;
+  if (["0", "false", "no", "off"].includes(normalized)) return false;
+  throw new Error("The private local AI configuration is invalid.");
+}
+
+async function reportAiStatus() {
+  const environmentPath = path.join(projectRoot(), ".env");
+  const contents = await readPrivateEnvironmentFile(environmentPath);
+  const aiEnabled = parsePrivateBoolean(parsePrivateEnvironmentScalar(contents, "AI_ENABLED", "true"), true);
+  const ollamaEnabled = parsePrivateBoolean(parsePrivateEnvironmentScalar(contents, "OLLAMA_ENABLED", "true"), true);
+  const externalEnabled = parsePrivateBoolean(
+    parsePrivateEnvironmentScalar(contents, "AI_EXTERNAL_PROVIDERS_ENABLED", "false"),
+    false,
+  );
+  const paidBudget = Number(parsePrivateEnvironmentScalar(contents, "AI_PAID_BUDGET_USD", "0"));
+
+  console.log("Local AI mode: zero-cost and local-only.");
+  if (externalEnabled || paidBudget !== 0 || !Number.isFinite(paidBudget)) {
+    console.log("External providers and paid usage: rejected by the safety lock.");
+    console.log("Local generation: unavailable because the safety lock rejected its configuration.");
+    process.exitCode = 3;
+    return;
+  }
+  console.log("External providers: disabled.");
+  console.log("Paid budget: locked to zero.");
+  if (!aiEnabled || !ollamaEnabled) {
+    console.log("Local generation: disabled; cited fallback remains available.");
+    process.exitCode = 3;
+    return;
+  }
+
+  const baseUrl = normalizeLoopbackOllamaBaseUrl(
+    parsePrivateEnvironmentScalar(contents, "OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
+  );
+  const model = parsePrivateEnvironmentScalar(contents, "OLLAMA_MODEL", "qwen3:8b");
+  if (!baseUrl || !isLocalOllamaModelName(model)) {
+    console.log("Local generation: unavailable because the local configuration is invalid.");
+    process.exitCode = 3;
+    return;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2_000);
+  timeout.unref?.();
+  try {
+    const response = await fetch(`${baseUrl}/api/tags`, {
+      method: "GET",
+      redirect: "error",
+      signal: controller.signal,
+      headers: { accept: "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error("unavailable");
+    }
+    const text = await response.text();
+    if (Buffer.byteLength(text, "utf8") > 1024 * 1024) {
+      throw new Error("unavailable");
+    }
+    const body = JSON.parse(text);
+    const installed = Array.isArray(body.models) && body.models.some(
+      (item) => item?.name === model || item?.model === model,
+    );
+    if (installed) {
+      console.log("Local generation: ready with the configured local model.");
+      return;
+    }
+    console.log("Local generation: unavailable because the configured local model is not installed.");
+    process.exitCode = 3;
+  } catch {
+    console.log("Local generation: unavailable; cited fallback remains available.");
+    process.exitCode = 3;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function parsePrivateChannelList(contents, key) {
   const assignment = findEnvironmentAssignment(contents, key);
   if (!assignment) {
@@ -495,6 +592,8 @@ async function main() {
 
   if (command === "status") {
     await reportStatus();
+  } else if (command === "ai-status") {
+    await reportAiStatus();
   } else if (command === "start") {
     await startService();
   } else if (command === "stop") {
@@ -511,7 +610,7 @@ async function main() {
     await installServiceDefinition();
   } else {
     console.error(
-      "Usage: cmibot-ops.mjs <configure-alert-channel|configure-test-channel|install|logs|restart|start|status|stop>",
+      "Usage: cmibot-ops.mjs <ai-status|configure-alert-channel|configure-test-channel|install|logs|restart|start|status|stop>",
     );
     process.exitCode = 64;
   }

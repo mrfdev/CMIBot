@@ -431,7 +431,7 @@ const discordVariables = [
   variable("AI_ROLE_IDS", "Comma-separated role IDs allowed to use AI-backed options.", {
     type: "discord-id-list",
     sensitivity: "private",
-    condition: "Required when OPENAI_ENABLED=true; otherwise falls back to ADMIN_ROLE_IDS.",
+    condition: "Required when AI_ENABLED=true; otherwise falls back to ADMIN_ROLE_IDS.",
   }),
   variable("DISCORD_ADMIN_ALERT_CHANNEL_ID", "Private channel that receives aggregate data-health alerts.", {
     type: "discord-id",
@@ -446,19 +446,67 @@ const environmentSections = [
     variables: discordVariables,
   },
   {
-    title: "AI",
+    title: "Zero-cost local AI",
+    description: "Only a loopback Ollama service and local model are supported. External and paid providers fail closed.",
     variables: [
-      variable("OPENAI_ENABLED", "Hard switch for OpenAI-backed features.", {
+      variable("AI_ENABLED", "Enable grounded local answers and summaries with deterministic fallback.", {
+        type: "boolean",
+        defaultValue: "true",
+      }),
+      variable("AI_EXTERNAL_PROVIDERS_ENABLED", "External AI providers are unsupported and must remain disabled.", {
         type: "boolean",
         defaultValue: "false",
       }),
-      variable("OPENAI_API_KEY", "OpenAI API key.", {
-        type: "secret",
-        sensitivity: "secret",
-        condition: "Required when OPENAI_ENABLED=true.",
+      variable("AI_PAID_BUDGET_USD", "Hard paid-provider budget; this release requires exactly zero.", {
+        type: "number",
+        defaultValue: "0",
       }),
-      variable("OPENAI_MODEL", "OpenAI model used for reranking and summaries.", {
-        defaultValue: "gpt-5-mini",
+      variable("OLLAMA_ENABLED", "Use the configured local Ollama model when available.", {
+        type: "boolean",
+        defaultValue: "true",
+      }),
+      variable("OLLAMA_BASE_URL", "Loopback-only Ollama HTTP address. Remote addresses are rejected.", {
+        type: "url",
+        defaultValue: "http://127.0.0.1:11434",
+      }),
+      variable("OLLAMA_MODEL", "Installed local Ollama model; cloud model names are rejected.", {
+        defaultValue: "qwen3:8b",
+      }),
+      variable("AI_USAGE_STATE_PATH", "Private aggregate-only local AI usage state.", {
+        type: "relative-path",
+        defaultValue: "logs/ai-usage.json",
+      }),
+      variable("AI_DAILY_REQUEST_LIMIT", "Maximum local generation attempts per UTC day; zero disables this resource limit.", {
+        type: "integer",
+        defaultValue: "50",
+      }),
+      variable("AI_MONTHLY_REQUEST_LIMIT", "Maximum local generation attempts per UTC month; zero disables this resource limit.", {
+        type: "integer",
+        defaultValue: "1000",
+      }),
+      variable("AI_MAX_QUESTION_LENGTH", "Maximum private grounded-answer question length.", {
+        type: "integer",
+        defaultValue: "320",
+      }),
+      variable("AI_MAX_EVIDENCE_ITEMS", "Maximum safe indexed evidence snippets sent to the local model.", {
+        type: "integer",
+        defaultValue: "6",
+      }),
+      variable("AI_MAX_EVIDENCE_CHARS", "Maximum characters retained per redacted evidence snippet.", {
+        type: "integer",
+        defaultValue: "1000",
+      }),
+      variable("AI_MAX_OUTPUT_TOKENS", "Maximum local model output tokens per request.", {
+        type: "integer",
+        defaultValue: "350",
+      }),
+      variable("AI_REQUEST_TIMEOUT_SECONDS", "Hard timeout for local answer generation.", {
+        type: "integer",
+        defaultValue: "90",
+      }),
+      variable("AI_STATUS_TIMEOUT_SECONDS", "Hard timeout for local readiness checks.", {
+        type: "integer",
+        defaultValue: "2",
       }),
     ],
   },
@@ -573,6 +621,7 @@ const environmentSections = [
       variable("COMMAND_RATE_WINDOW_SECONDS", "Sliding command-rate window in seconds.", { type: "integer", defaultValue: "30" }),
       variable("LOOKUP_COOLDOWN_SECONDS", "Per-user lookup cooldown.", { type: "integer", defaultValue: "3" }),
       variable("SUMMARY_COOLDOWN_SECONDS", "Per-user AI summary cooldown.", { type: "integer", defaultValue: "15" }),
+      variable("AI_QUESTION_COOLDOWN_SECONDS", "Per-user grounded-answer cooldown.", { type: "integer", defaultValue: "20" }),
       variable("DEBUG_COOLDOWN_SECONDS", "Global admin debug cooldown.", { type: "integer", defaultValue: "10" }),
       variable("RELOAD_COOLDOWN_SECONDS", "Global admin reload cooldown.", { type: "integer", defaultValue: "30" }),
       variable("RATE_LIMIT_AUDIT_COOLDOWN_SECONDS", "Coalescing window for repeated rate-limit audit entries.", { type: "integer", defaultValue: "30" }),
