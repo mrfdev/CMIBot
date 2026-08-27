@@ -45,6 +45,11 @@ function parseOperation(command, args) {
     return { script: "operations", args: [command] };
   }
 
+  if (command === "update") {
+    assertNoArguments(command, args);
+    return { script: "update", args: [] };
+  }
+
   if (command === "logs") {
     validateLogArguments(args);
     return { script: "operations", args: ["logs", ...args] };
@@ -57,7 +62,7 @@ function parseOperation(command, args) {
     return { script: "deploy", args };
   }
 
-  throw new UsageError("Usage: remote <deploy [--rollback]|logs [--lines N] [--follow]|restart|status>");
+  throw new UsageError("Usage: remote <deploy [--rollback]|logs [--lines N] [--follow]|restart|status|update>");
 }
 
 function validateHost(value) {
@@ -154,9 +159,22 @@ function shellQuote(value) {
 }
 
 function buildRemoteCommand(configuration, operation) {
-  const scriptName = operation.script === "deploy" ? "deploy.mjs" : "cmibot-ops.mjs";
+  const scriptName =
+    operation.script === "deploy"
+      ? "deploy.mjs"
+      : operation.script === "update"
+        ? "safe-update.mjs"
+        : "cmibot-ops.mjs";
   const scriptPath = path.posix.join(configuration.projectRoot, "scripts", scriptName);
-  return [configuration.nodePath, scriptPath, ...operation.args].map(shellQuote).join(" ");
+  const command = [configuration.nodePath, scriptPath, ...operation.args].map(shellQuote).join(" ");
+  if (operation.script !== "update") {
+    return command;
+  }
+
+  const remotePath = [path.posix.dirname(configuration.nodePath), "/usr/bin", "/bin", "/usr/sbin", "/sbin"]
+    .filter((directory, index, entries) => entries.indexOf(directory) === index)
+    .join(":");
+  return `PATH=${shellQuote(remotePath)} ${command}`;
 }
 
 async function runRemote(configuration, remoteCommand) {

@@ -10,6 +10,7 @@
     "remote": "node scripts/cmibot-remote.mjs",
     "remote:status": "node scripts/cmibot-remote.mjs status",
     "remote:restart": "node scripts/cmibot-remote.mjs restart",
+    "remote:update": "node scripts/cmibot-remote.mjs update",
     "remote:deploy": "node scripts/cmibot-remote.mjs deploy",
     "remote:logs": "node scripts/cmibot-remote.mjs logs",
     "test": "node --test",

@@ -180,6 +180,21 @@ test("remote deploy supports only deploy and rollback", async () => {
   }
 });
 
+test("remote update uses the safe updater with a minimal Node-aware path", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-remote-"));
+  try {
+    const fixture = await createFixture(temporaryRoot);
+    await runRemote(["update"], fixture.environment);
+
+    assert.deepEqual(await readArguments(fixture.argumentsPath), [
+      ...sshPrefix,
+      "PATH='/runtime:/usr/bin:/bin:/usr/sbin:/sbin' '/runtime/node' '/srv/lookupbot/scripts/safe-update.mjs'",
+    ]);
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
 test("remote operations preserve the ssh command exit status", async () => {
   const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-remote-"));
   try {

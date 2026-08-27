@@ -411,13 +411,14 @@ Fill in the private SSH destination and absolute remote paths in `.cmibot-remote
 ```bash
 ./scripts/remote status
 ./scripts/remote restart
+./scripts/remote update
 ./scripts/remote logs --lines 100
 ./scripts/remote logs --follow
 ./scripts/remote deploy
 ./scripts/remote deploy --rollback
 ```
 
-The wrapper reads its destination only from the owner-readable local configuration, uses non-interactive SSH authentication, and accepts only the documented operations and options. It is an operator tool and is never exposed through Discord. Do not put host aliases, usernames, private paths, credentials, or other infrastructure identifiers in tracked files or public tickets.
+The wrapper reads its destination only from the owner-readable local configuration, uses non-interactive SSH authentication, and accepts only the documented operations and options. `update` runs the fail-closed source updater remotely with a minimal executable path derived from the configured Node location; it does not restart or activate a release. It is an operator tool and is never exposed through Discord. Do not put host aliases, usernames, private paths, credentials, or other infrastructure identifiers in tracked files or public tickets.
 
 Deploy the currently committed, clean Git revision with:
 
