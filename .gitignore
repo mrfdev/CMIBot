@@ -4,6 +4,7 @@ node_modules/
 .env.local
 .env.*.local
 !.env.example
+.cmibot-remote.json
 npm-debug.log*
 logs/
 servers/

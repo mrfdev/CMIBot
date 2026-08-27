@@ -350,7 +350,7 @@ AUDIT_LOG_MAX_FILES=5
 
 Requirements:
 
-- Node.js 20 or newer
+- Node.js 22 or newer
 - Java 25 for Paper and Java 25 exporter bytecode
 - Java 26 for the optional forward-runtime smoke test
 - `unzip` for reading plugin metadata from jars
@@ -386,6 +386,26 @@ Operator commands:
 
 `status` exits `0` when launchd reports a running process and `3` when the job is stopped or waiting. `start` bootstraps an unloaded job or kickstarts a loaded-but-waiting job. `stop` uses `launchctl bootout`, which gives the Node process time to handle `SIGTERM`; `restart` unloads and bootstraps the job so launchd remains the only process owner.
 
+From an authorized operator workstation, create the private configuration once:
+
+```bash
+cp .cmibot-remote.example.json .cmibot-remote.json
+chmod 600 .cmibot-remote.json
+```
+
+Fill in the private SSH destination and absolute remote paths in `.cmibot-remote.json`. The file is ignored by Git and must remain local. Then use the remote wrapper instead of the host-local commands:
+
+```bash
+./scripts/remote status
+./scripts/remote restart
+./scripts/remote logs --lines 100
+./scripts/remote logs --follow
+./scripts/remote deploy
+./scripts/remote deploy --rollback
+```
+
+The wrapper reads its destination only from the owner-readable local configuration, uses non-interactive SSH authentication, and accepts only the documented operations and options. It is an operator tool and is never exposed through Discord. Do not put host aliases, usernames, private paths, credentials, or other infrastructure identifiers in tracked files or public tickets.
+
 Deploy the currently committed, clean Git revision with:
 
 ```bash
@@ -402,11 +422,17 @@ The last two verified releases can be swapped explicitly with:
 
 The LaunchAgent points at `.deploy/current`. Each release is assembled with its generated `node_modules` during staging and is left unchanged after activation; `.env`, usage logs, and upstream-version state remain shared at the project root across deploys and rollbacks.
 
+## Continuous Integration
+
+GitHub Actions runs on pushes to `main`, pull requests, and manual dispatches. The test matrix runs `npm ci` followed by `npm run check:bot` on Node.js 22 LTS, 24 LTS, and 26 Current. A separate Node.js 24 job installs the locked dependency tree without lifecycle scripts and runs the production dependency audit.
+
+The workflow has read-only repository permissions, receives no repository secrets, disables checkout credential persistence and automatic package-manager caching, and pins official actions to immutable commit SHAs. Dependabot monitors both npm packages and GitHub Actions references.
+
 ## Dependency Maintenance
 
 - `npm run audit:deps` checks production dependencies for moderate-or-higher security advisories.
 - `npm run outdated:deps` reports direct dependency drift. npm exits with status `1` when updates are available, which is expected for this informational command.
-- Weekly Dependabot checks group compatible minor and patch updates into a reviewable pull request. Major updates remain separate and are never merged automatically.
+- Weekly Dependabot checks group compatible npm and GitHub Actions minor and patch updates into reviewable pull requests. Major updates remain separate and are never merged automatically.
 - Keep `package-lock.json` committed, review dependency diffs, run `npm run check`, and rerun `npm run audit:deps` before deploying an update.
 
 ## Safe Source Updates

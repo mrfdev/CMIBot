@@ -7,6 +7,11 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
+    "remote": "node scripts/cmibot-remote.mjs",
+    "remote:status": "node scripts/cmibot-remote.mjs status",
+    "remote:restart": "node scripts/cmibot-remote.mjs restart",
+    "remote:deploy": "node scripts/cmibot-remote.mjs deploy",
+    "remote:logs": "node scripts/cmibot-remote.mjs logs",
     "test": "node --test",
     "lookup": "node src/cli.js",
     "build:exporter": "node scripts/build-runtime-exporter.mjs",
@@ -25,7 +30,7 @@
     "check": "npm run check:bot && node scripts/verify-paper-compatibility.mjs --offline"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
     "discord.js": "^14.20.0",

@@ -1,0 +1,5 @@
+{
+  "host": "your-private-host-alias",
+  "nodePath": "/absolute/path/to/node",
+  "projectRoot": "/absolute/path/to/CMIBot"
+}
