@@ -40,6 +40,11 @@ function validateLogArguments(args) {
 }
 
 function parseOperation(command, args) {
+  if (command === "ai-install") {
+    assertNoArguments(command, args);
+    return { script: "ai-install", args: [] };
+  }
+
   if (
     command === "status" ||
     command === "ai-status" ||
@@ -69,7 +74,7 @@ function parseOperation(command, args) {
   }
 
   throw new UsageError(
-    "Usage: remote <ai-status|configure-alert-channel|configure-test-channel|deploy [--rollback]|logs [--lines N] [--follow]|restart|status|update>",
+    "Usage: remote <ai-install|ai-status|configure-alert-channel|configure-test-channel|deploy [--rollback]|logs [--lines N] [--follow]|restart|status|update>",
   );
 }
 
@@ -168,7 +173,9 @@ function shellQuote(value) {
 
 function buildRemoteCommand(configuration, operation) {
   const scriptName =
-    operation.script === "deploy"
+    operation.script === "ai-install"
+      ? "install-local-ai.mjs"
+      : operation.script === "deploy"
       ? "deploy.mjs"
       : operation.script === "update"
         ? "safe-update.mjs"

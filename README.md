@@ -385,11 +385,13 @@ The only supported provider is a non-cloud Ollama model over an IPv4 or IPv6 loo
 
 If Ollama is stopped, busy, times out, exceeds its local daily/monthly resource limit, returns unsafe output, or does not have the configured model installed, the command returns the nearest cited lexical evidence instead. It never falls through to an internet provider. Ordinary lookups remain deterministic and never load or call the model; local generation happens only for `/lookup ask` or an authorized `summary:true` request.
 
-The default local model is `qwen3:8b`. Ollama and model downloads are deliberately not installed or pulled by LookupBot. On the service machine, install the [official Ollama distribution](https://ollama.com/download), set `OLLAMA_NO_CLOUD=1` in the Ollama service environment as described in the [Ollama FAQ](https://docs.ollama.com/faq), restart Ollama, then explicitly download the model:
+The default local model is `qwen3:8b`. LookupBot never installs software or downloads models during startup, dependency installation, source updates, or deployment. After an operator explicitly approves the substantial download, the narrow installer uses the official [Homebrew Ollama formula](https://formulae.brew.sh/formula/ollama), writes an owner-only local configuration, disables cloud features as described in the [Ollama FAQ](https://docs.ollama.com/faq), installs a loopback-only user LaunchAgent, pulls only the approved model, and verifies structured local generation:
 
 ```bash
-ollama pull qwen3:8b
+npm run remote:ai-install
 ```
+
+The operation is safe to repeat. It preserves unrelated Ollama server settings, never prints private paths or machine identifiers, and leaves the bot's cited fallback available if installation, startup, download, or verification fails. It does not sign in to Ollama, enable web search, configure network access, add API keys, or enable a paid provider.
 
 The default bot settings already enable local AI and Ollama, use a loopback-only Ollama address, and select `qwen3:8b`. The generated `.env.example` contains the exact defaults. Use `/lookup ai-status` from Discord or the private operator wrapper to verify readiness without revealing operational details:
 
@@ -507,6 +509,7 @@ Operator commands:
 
 ```bash
 ./scripts/install
+./scripts/ai-install
 ./scripts/status
 ./scripts/ai-status
 ./scripts/start
@@ -529,6 +532,7 @@ Fill in the private SSH destination and absolute remote paths in `.cmibot-remote
 
 ```bash
 ./scripts/remote status
+./scripts/remote ai-install
 ./scripts/remote ai-status
 ./scripts/remote restart
 ./scripts/remote configure-alert-channel
@@ -540,7 +544,7 @@ Fill in the private SSH destination and absolute remote paths in `.cmibot-remote
 ./scripts/remote deploy --rollback
 ```
 
-The wrapper reads its destination only from the owner-readable local configuration, uses non-interactive SSH authentication, and accepts only the documented operations and options. `ai-status` checks only the loopback Ollama service and configured local model, then emits a generic readiness result plus the zero-cost safety locks. `update` runs the fail-closed source updater remotely with a minimal executable path derived from the configured Node location; it does not restart or activate a release. The wrapper is an operator tool and is never exposed through Discord. Do not put host aliases, usernames, private paths, credentials, or other infrastructure identifiers in tracked files or public tickets.
+The wrapper reads its destination only from the owner-readable local configuration, uses non-interactive SSH authentication, and accepts only the documented operations and options. `ai-install` is the explicit, substantial-download operation described above and is never invoked by an ordinary update or deployment. `ai-status` checks only the loopback Ollama service and configured local model, then emits a generic readiness result plus the zero-cost safety locks. `update` runs the fail-closed source updater remotely with a minimal executable path derived from the configured Node location; it does not restart or activate a release. The wrapper is an operator tool and is never exposed through Discord. Do not put host aliases, usernames, private paths, credentials, or other infrastructure identifiers in tracked files or public tickets.
 
 The two `configure-*` operations read exactly one Discord channel ID from standard input and never accept it as a command-line argument. `configure-alert-channel` replaces the private admin-alert destination. `configure-test-channel` adds a channel to both the allowed-channel and test-channel lists, while refusing a channel already assigned to a plugin route. Both operations validate the existing private configuration, replace it atomically with owner-only permissions, and omit the identifier from output and remote command arguments. They do not restart the bot, so use the normal guarded restart or deployment afterward to load the new setting.
 

@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const plistPath = path.join(repositoryRoot, "operations", "com.mrfdev.cmibot.plist");
+const ollamaPlistPath = path.join(repositoryRoot, "operations", "com.mrfdev.cmibot.ollama.plist");
 
 test("the user LaunchAgent template is valid and contains no host-specific paths", async () => {
   await execFileAsync("/usr/bin/plutil", ["-lint", plistPath], { encoding: "utf8" });
@@ -33,5 +34,27 @@ test("the user LaunchAgent template is valid and contains no host-specific paths
   });
   assert.equal("UserName" in plist, false);
   assert.doesNotMatch(JSON.stringify(plist.EnvironmentVariables), /DISCORD|OPENAI|TOKEN|PASSWORD|SECRET/i);
+  assert.doesNotMatch(stdout, /\/(?:Users|home)\//i);
+});
+
+test("the local AI LaunchAgent template is loopback-only, cloud-off, and host-neutral", async () => {
+  await execFileAsync("/usr/bin/plutil", ["-lint", ollamaPlistPath], { encoding: "utf8" });
+  const { stdout } = await execFileAsync("/usr/bin/plutil", ["-convert", "json", "-o", "-", ollamaPlistPath], {
+    encoding: "utf8",
+  });
+  const plist = JSON.parse(stdout);
+
+  assert.equal(plist.Label, "com.mrfdev.cmibot.ollama");
+  assert.deepEqual(plist.ProgramArguments, ["__OLLAMA_EXECUTABLE__", "serve"]);
+  assert.equal(plist.WorkingDirectory, "__OLLAMA_STATE_DIRECTORY__");
+  assert.equal(plist.RunAtLoad, true);
+  assert.deepEqual(plist.KeepAlive, { SuccessfulExit: false });
+  assert.equal(plist.ExitTimeOut, 30);
+  assert.equal(plist.EnvironmentVariables.OLLAMA_HOST, "__OLLAMA_HOST__");
+  assert.equal(plist.EnvironmentVariables.OLLAMA_NO_CLOUD, "1");
+  assert.equal(plist.EnvironmentVariables.OLLAMA_MAX_LOADED_MODELS, "1");
+  assert.equal(plist.EnvironmentVariables.OLLAMA_NUM_PARALLEL, "1");
+  assert.equal("UserName" in plist, false);
+  assert.doesNotMatch(JSON.stringify(plist), /DISCORD|OPENAI|TOKEN|PASSWORD|SECRET/i);
   assert.doesNotMatch(stdout, /\/(?:Users|home)\//i);
 });

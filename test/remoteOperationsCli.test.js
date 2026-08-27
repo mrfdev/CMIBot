@@ -115,6 +115,36 @@ test("remote ai-status uses only the narrow operator command", async () => {
   }
 });
 
+test("remote ai-install uses only the fixed local AI installer", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-remote-"));
+  try {
+    const fixture = await createFixture(temporaryRoot);
+    await runRemote(["ai-install"], fixture.environment);
+
+    assert.deepEqual(await readArguments(fixture.argumentsPath), [
+      ...sshPrefix,
+      "'/runtime/node' '/srv/lookupbot/scripts/install-local-ai.mjs'",
+    ]);
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("remote ai-install rejects additional arguments before invoking ssh", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-remote-"));
+  try {
+    const fixture = await createFixture(temporaryRoot);
+    await assert.rejects(runRemote(["ai-install", "another-model"], fixture.environment), (error) => {
+      assert.equal(error.code, 64);
+      assert.match(error.stderr, /ai-install does not accept arguments/);
+      return true;
+    });
+    await assert.rejects(fs.access(fixture.argumentsPath), { code: "ENOENT" });
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
 test("remote configure-alert-channel forwards private input only through stdin", async () => {
   const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-remote-"));
   const testChannelId = "3".repeat(18);

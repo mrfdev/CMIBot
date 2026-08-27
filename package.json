@@ -10,6 +10,7 @@
     "dev": "node --watch src/index.js",
     "remote": "node scripts/cmibot-remote.mjs",
     "remote:status": "node scripts/cmibot-remote.mjs status",
+    "remote:ai-install": "node scripts/cmibot-remote.mjs ai-install",
     "remote:ai-status": "node scripts/cmibot-remote.mjs ai-status",
     "remote:restart": "node scripts/cmibot-remote.mjs restart",
     "remote:configure-alert-channel": "node scripts/cmibot-remote.mjs configure-alert-channel",
