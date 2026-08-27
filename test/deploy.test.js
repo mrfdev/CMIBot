@@ -53,6 +53,7 @@ async function createDeploymentBoundaries(temporaryRoot, sourceRoot) {
     [
       "#!/bin/sh",
       "set -eu",
+      "case \":$PATH:\" in *\":$CMIBOT_TEST_BIN:\"*) ;; *) exit 65 ;; esac",
       "case \"$*\" in",
       "  ci) exit 0 ;;",
       "  'run check:bot')",
@@ -109,6 +110,7 @@ async function createDeploymentBoundaries(temporaryRoot, sourceRoot) {
       CMIBOT_NPM: npmPath,
       CMIBOT_PROJECT_ROOT: sourceRoot,
       CMIBOT_TAR: "/usr/bin/tar",
+      CMIBOT_TEST_BIN: binDirectory,
       CMIBOT_TEST_HEALTH_LOG: path.join(sourceRoot, "logs", "cmibot-service.log"),
       CMIBOT_TEST_HEALTH_MODE: healthModePath,
       CMIBOT_TEST_LAUNCHCTL_STATE: launchctlState,

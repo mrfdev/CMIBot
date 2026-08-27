@@ -156,7 +156,18 @@ async function acquireDeploymentLock(lockPath) {
   }
 }
 
-async function stageRelease({ commit, deployRoot, git, npm, releasePath, sourceRoot, tar }) {
+function createNpmEnvironment(npm, node) {
+  const executableDirectories = [path.dirname(npm), path.dirname(node)];
+  const existingDirectories = (process.env.PATH || "")
+    .split(path.delimiter)
+    .filter(Boolean);
+  return {
+    ...process.env,
+    PATH: [...new Set([...executableDirectories, ...existingDirectories])].join(path.delimiter),
+  };
+}
+
+async function stageRelease({ commit, deployRoot, git, node, npm, releasePath, sourceRoot, tar }) {
   if (await pathExists(releasePath)) {
     return;
   }
@@ -170,8 +181,9 @@ async function stageRelease({ commit, deployRoot, git, npm, releasePath, sourceR
     await run(git, ["archive", "--format=tar", `--output=${archivePath}`, commit], { cwd: sourceRoot });
     await run(tar, ["-xf", archivePath, "-C", stagingPath], { cwd: sourceRoot });
     await fs.rm(archivePath, { force: true });
-    await run(npm, ["ci"], { cwd: stagingPath, env: process.env });
-    await run(npm, ["run", "check:bot"], { cwd: stagingPath, env: process.env });
+    const npmEnvironment = createNpmEnvironment(npm, node);
+    await run(npm, ["ci"], { cwd: stagingPath, env: npmEnvironment });
+    await run(npm, ["run", "check:bot"], { cwd: stagingPath, env: npmEnvironment });
     await fs.symlink(path.join(sourceRoot, ".env"), path.join(stagingPath, ".env"), "file");
     await fs.symlink(path.join(sourceRoot, "logs"), path.join(stagingPath, "logs"), "dir");
     await fs.rename(stagingPath, releasePath);
@@ -185,6 +197,7 @@ async function stageRelease({ commit, deployRoot, git, npm, releasePath, sourceR
 async function deploy() {
   const sourceRoot = projectRoot();
   const git = process.env.CMIBOT_GIT || "/usr/bin/git";
+  const node = process.env.CMIBOT_NODE || process.execPath;
   const npm = process.env.CMIBOT_NPM || "/opt/homebrew/bin/npm";
   const tar = process.env.CMIBOT_TAR || "/usr/bin/tar";
   const deployRoot = process.env.CMIBOT_DEPLOY_ROOT || path.join(sourceRoot, ".deploy");
@@ -213,7 +226,7 @@ async function deploy() {
   try {
     const releasePath = path.join(releasesRoot, commit);
     try {
-      await stageRelease({ commit, deployRoot, git, npm, releasePath, sourceRoot, tar });
+      await stageRelease({ commit, deployRoot, git, node, npm, releasePath, sourceRoot, tar });
     } catch (error) {
       throw new Error(`Release verification failed before activation; current release was not changed. ${error.message}`);
     }
