@@ -12,6 +12,19 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const label = "com.mrfdev.cmibot";
 const ADMIN_ALERT_CHANNEL_KEY = "DISCORD_ADMIN_ALERT_CHANNEL_ID";
+const ALLOWED_CHANNELS_KEY = "DISCORD_ALLOWED_CHANNEL_IDS";
+const TEST_CHANNELS_KEY = "DISCORD_TEST_CHANNEL_IDS";
+const LEGACY_TEST_CHANNELS_KEY = "DISCORD_CMI_TEST_CHANNEL_IDS";
+const PLUGIN_CHANNEL_KEYS = [
+  "DISCORD_CMI_CHANNEL_IDS",
+  "DISCORD_JOBS_CHANNEL_IDS",
+  "DISCORD_SVIS_CHANNEL_IDS",
+  "DISCORD_MFM_CHANNEL_IDS",
+  "DISCORD_TRYME_CHANNEL_IDS",
+  "DISCORD_TRADEME_CHANNEL_IDS",
+  "DISCORD_RESIDENCE_CHANNEL_IDS",
+  "DISCORD_BOTTLEDEXP_CHANNEL_IDS",
+];
 const MAX_PRIVATE_INPUT_BYTES = 128;
 const MAX_ENV_FILE_BYTES = 1024 * 1024;
 
@@ -261,28 +274,75 @@ async function readPrivateEnvironmentFile(environmentPath) {
   }
 }
 
-function replaceEnvironmentAssignment(contents, key, value) {
-  const newline = contents.includes("\r\n") ? "\r\n" : "\n";
+function environmentLines(contents) {
   const lines = contents.split(/\r?\n/);
   if (lines.at(-1) === "") {
     lines.pop();
   }
+  return lines;
+}
 
-  const assignmentPattern = new RegExp(`^\\s*(?:export\\s+)?${key}\\s*=`);
-  const matchingIndexes = lines
-    .map((line, index) => (assignmentPattern.test(line) ? index : -1))
-    .filter((index) => index !== -1);
-  if (matchingIndexes.length > 1) {
-    throw new Error("The private environment file contains a duplicate alert destination setting.");
+function findEnvironmentAssignment(contents, key) {
+  const lines = environmentLines(contents);
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const assignmentPattern = new RegExp(`^\\s*(?:export\\s+)?${escapedKey}\\s*=\\s*(.*)$`);
+  const matches = lines
+    .map((line, index) => {
+      const match = line.match(assignmentPattern);
+      return match ? { index, value: match[1] } : null;
+    })
+    .filter(Boolean);
+
+  if (matches.length > 1) {
+    throw new Error("The private environment file contains a duplicate private setting.");
   }
+  return matches[0] ?? null;
+}
+
+function replaceEnvironmentAssignment(contents, key, value) {
+  const newline = contents.includes("\r\n") ? "\r\n" : "\n";
+  const lines = environmentLines(contents);
+  const match = findEnvironmentAssignment(contents, key);
 
   const assignment = `${key}=${value}`;
-  if (matchingIndexes.length === 1) {
-    lines[matchingIndexes[0]] = assignment;
+  if (match) {
+    lines[match.index] = assignment;
   } else {
     lines.push(assignment);
   }
   return `${lines.join(newline)}${newline}`;
+}
+
+function parsePrivateChannelList(contents, key) {
+  const assignment = findEnvironmentAssignment(contents, key);
+  if (!assignment) {
+    return null;
+  }
+
+  let value = assignment.value.trim();
+  if (!value) {
+    return [];
+  }
+
+  if (value.startsWith('"') || value.startsWith("'")) {
+    const quote = value[0];
+    if (value.length < 2 || value.at(-1) !== quote) {
+      throw new Error("The existing private channel configuration is invalid.");
+    }
+    value = value.slice(1, -1);
+  }
+
+  const channelIds = value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (
+    !channelIds.every((channelId) => /^\d{17,20}$/.test(channelId)) ||
+    new Set(channelIds).size !== channelIds.length
+  ) {
+    throw new Error("The existing private channel configuration is invalid.");
+  }
+  return channelIds;
 }
 
 async function writePrivateEnvironmentFile(environmentPath, contents) {
@@ -317,6 +377,46 @@ async function configureAlertChannel() {
   const updated = replaceEnvironmentAssignment(current, ADMIN_ALERT_CHANNEL_KEY, value);
   await writePrivateEnvironmentFile(environmentPath, updated);
   console.log("LookupBot admin alert destination configured privately.");
+}
+
+async function configureTestChannel() {
+  const value = await readPrivateLine();
+  if (!/^\d{17,20}$/.test(value)) {
+    throw new Error("Private configuration input is invalid.");
+  }
+
+  const environmentPath = path.join(projectRoot(), ".env");
+  const current = await readPrivateEnvironmentFile(environmentPath);
+  const allowedChannelIds = parsePrivateChannelList(current, ALLOWED_CHANNELS_KEY);
+  if (!allowedChannelIds) {
+    throw new Error("The private allowed-channel setting is unavailable.");
+  }
+
+  const configuredTestChannelIds = parsePrivateChannelList(current, TEST_CHANNELS_KEY);
+  const testChannelIds = configuredTestChannelIds?.length
+    ? configuredTestChannelIds
+    : (parsePrivateChannelList(current, LEGACY_TEST_CHANNELS_KEY) ?? []);
+  const isPluginRoute = PLUGIN_CHANNEL_KEYS.some((key) =>
+    (parsePrivateChannelList(current, key) ?? []).includes(value),
+  );
+  if (isPluginRoute) {
+    throw new Error("The private channel is already assigned to another route.");
+  }
+  const updatedAllowedChannelIds = [...new Set([...allowedChannelIds, value])];
+  const updatedTestChannelIds = [...new Set([...testChannelIds, value])];
+
+  let updated = replaceEnvironmentAssignment(
+    current,
+    ALLOWED_CHANNELS_KEY,
+    updatedAllowedChannelIds.join(","),
+  );
+  updated = replaceEnvironmentAssignment(
+    updated,
+    TEST_CHANNELS_KEY,
+    updatedTestChannelIds.join(","),
+  );
+  await writePrivateEnvironmentFile(environmentPath, updated);
+  console.log("LookupBot private test channel configured.");
 }
 
 function parseLogArguments(args) {
@@ -403,13 +503,15 @@ async function main() {
     await restartService();
   } else if (command === "configure-alert-channel") {
     await configureAlertChannel();
+  } else if (command === "configure-test-channel") {
+    await configureTestChannel();
   } else if (command === "logs") {
     await displayLogs(process.argv.slice(3));
   } else if (command === "install") {
     await installServiceDefinition();
   } else {
     console.error(
-      "Usage: cmibot-ops.mjs <configure-alert-channel|install|logs|restart|start|status|stop>",
+      "Usage: cmibot-ops.mjs <configure-alert-channel|configure-test-channel|install|logs|restart|start|status|stop>",
     );
     process.exitCode = 64;
   }

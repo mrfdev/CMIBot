@@ -128,6 +128,34 @@ test("remote configure-alert-channel forwards private input only through stdin",
   }
 });
 
+test("remote configure-test-channel forwards private input only through stdin", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-remote-"));
+  const testChannelId = "4".repeat(18);
+  try {
+    const fixture = await createFixture(temporaryRoot, { captureStdin: true });
+    const result = await execFileWithInput(
+      remoteScript,
+      ["configure-test-channel"],
+      {
+        cwd: repositoryRoot,
+        encoding: "utf8",
+        env: fixture.environment,
+      },
+      `${testChannelId}\n`,
+    );
+
+    assert.deepEqual(await readArguments(fixture.argumentsPath), [
+      ...sshPrefix,
+      "'/runtime/node' '/srv/lookupbot/scripts/cmibot-ops.mjs' 'configure-test-channel'",
+    ]);
+    assert.equal(await fs.readFile(fixture.stdinPath, "utf8"), `${testChannelId}\n`);
+    assert.doesNotMatch(`${result.stdout}${result.stderr}`, new RegExp(testChannelId));
+    assert.doesNotMatch((await fs.readFile(fixture.argumentsPath, "utf8")), new RegExp(testChannelId));
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
 test("remote paths containing spaces remain one safely quoted command", async () => {
   const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-remote-"));
   try {

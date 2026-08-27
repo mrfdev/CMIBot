@@ -365,9 +365,163 @@ test("configure-alert-channel rejects duplicate assignments without exposing eit
       ),
       (error) => {
         assert.equal(error.code, 1);
-        assert.match(error.stderr, /duplicate alert destination setting/);
+        assert.match(error.stderr, /duplicate private setting/);
         assert.doesNotMatch(error.stderr, /private-value/);
         assert.doesNotMatch(error.stderr, new RegExp(testChannelId));
+        return true;
+      },
+    );
+    assert.equal(await fs.readFile(environmentPath, "utf8"), original);
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("configure-test-channel appends the private route to both channel lists", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-operations-"));
+  const supportChannelId = "3".repeat(18);
+  const existingTestChannelId = "4".repeat(18);
+  const addedTestChannelId = "5".repeat(18);
+
+  try {
+    const environmentPath = path.join(temporaryRoot, ".env");
+    await fs.writeFile(
+      environmentPath,
+      [
+        "DISCORD_TOKEN=keep-private",
+        `DISCORD_ALLOWED_CHANNEL_IDS='${supportChannelId}, ${existingTestChannelId}'`,
+        `DISCORD_TEST_CHANNEL_IDS=${existingTestChannelId}`,
+        "OTHER_SETTING=yes",
+        "",
+      ].join("\n"),
+      { mode: 0o644 },
+    );
+
+    const result = await runOperation(
+      "cmibot-ops.mjs",
+      { ...process.env, CMIBOT_PROJECT_ROOT: temporaryRoot },
+      ["configure-test-channel"],
+      { input: `${addedTestChannelId}\n` },
+    );
+    const updated = await fs.readFile(environmentPath, "utf8");
+    const mode = (await fs.stat(environmentPath)).mode & 0o777;
+
+    assert.equal(result.stdout, "LookupBot private test channel configured.\n");
+    assert.doesNotMatch(`${result.stdout}${result.stderr}`, new RegExp(addedTestChannelId));
+    assert.match(
+      updated,
+      new RegExp(`DISCORD_ALLOWED_CHANNEL_IDS=${supportChannelId},${existingTestChannelId},${addedTestChannelId}`),
+    );
+    assert.match(
+      updated,
+      new RegExp(`DISCORD_TEST_CHANNEL_IDS=${existingTestChannelId},${addedTestChannelId}`),
+    );
+    assert.match(updated, /DISCORD_TOKEN=keep-private/);
+    assert.match(updated, /OTHER_SETTING=yes/);
+    assert.equal(mode, 0o600);
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("configure-test-channel carries the active legacy route into the modern setting", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-operations-"));
+  const existingTestChannelId = "6".repeat(18);
+  const addedTestChannelId = "7".repeat(18);
+
+  try {
+    const environmentPath = path.join(temporaryRoot, ".env");
+    await fs.writeFile(
+      environmentPath,
+      [
+        `DISCORD_ALLOWED_CHANNEL_IDS=${existingTestChannelId}`,
+        "DISCORD_TEST_CHANNEL_IDS=",
+        `DISCORD_CMI_TEST_CHANNEL_IDS=${existingTestChannelId}`,
+        "",
+      ].join("\n"),
+      { mode: 0o600 },
+    );
+
+    await runOperation(
+      "cmibot-ops.mjs",
+      { ...process.env, CMIBOT_PROJECT_ROOT: temporaryRoot },
+      ["configure-test-channel"],
+      { input: `${addedTestChannelId}\n` },
+    );
+    const updated = await fs.readFile(environmentPath, "utf8");
+
+    assert.match(
+      updated,
+      new RegExp(`DISCORD_ALLOWED_CHANNEL_IDS=${existingTestChannelId},${addedTestChannelId}`),
+    );
+    assert.match(
+      updated,
+      new RegExp(`DISCORD_TEST_CHANNEL_IDS=${existingTestChannelId},${addedTestChannelId}`),
+    );
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("configure-test-channel fails closed on malformed private channel settings", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-operations-"));
+  const addedTestChannelId = "8".repeat(18);
+
+  try {
+    const environmentPath = path.join(temporaryRoot, ".env");
+    const original = [
+      "DISCORD_ALLOWED_CHANNEL_IDS=not-a-channel",
+      `DISCORD_TEST_CHANNEL_IDS=${"9".repeat(18)}`,
+      "",
+    ].join("\n");
+    await fs.writeFile(environmentPath, original, { mode: 0o600 });
+
+    await assert.rejects(
+      runOperation(
+        "cmibot-ops.mjs",
+        { ...process.env, CMIBOT_PROJECT_ROOT: temporaryRoot },
+        ["configure-test-channel"],
+        { input: `${addedTestChannelId}\n` },
+      ),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.match(error.stderr, /existing private channel configuration is invalid/);
+        assert.doesNotMatch(error.stderr, /not-a-channel/);
+        assert.doesNotMatch(error.stderr, new RegExp(addedTestChannelId));
+        return true;
+      },
+    );
+    assert.equal(await fs.readFile(environmentPath, "utf8"), original);
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("configure-test-channel rejects a channel already assigned to a plugin route", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-operations-"));
+  const routedChannelId = "1".repeat(17);
+
+  try {
+    const environmentPath = path.join(temporaryRoot, ".env");
+    const original = [
+      `DISCORD_ALLOWED_CHANNEL_IDS=${routedChannelId}`,
+      `DISCORD_CMI_CHANNEL_IDS=${routedChannelId}`,
+      "DISCORD_TEST_CHANNEL_IDS=",
+      "",
+    ].join("\n");
+    await fs.writeFile(environmentPath, original, { mode: 0o600 });
+
+    await assert.rejects(
+      runOperation(
+        "cmibot-ops.mjs",
+        { ...process.env, CMIBOT_PROJECT_ROOT: temporaryRoot },
+        ["configure-test-channel"],
+        { input: `${routedChannelId}\n` },
+      ),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.match(error.stderr, /already assigned to another route/);
+        assert.doesNotMatch(error.stderr, new RegExp(routedChannelId));
         return true;
       },
     );

@@ -40,7 +40,12 @@ function validateLogArguments(args) {
 }
 
 function parseOperation(command, args) {
-  if (command === "status" || command === "restart" || command === "configure-alert-channel") {
+  if (
+    command === "status" ||
+    command === "restart" ||
+    command === "configure-alert-channel" ||
+    command === "configure-test-channel"
+  ) {
     assertNoArguments(command, args);
     return { script: "operations", args: [command] };
   }
@@ -63,7 +68,7 @@ function parseOperation(command, args) {
   }
 
   throw new UsageError(
-    "Usage: remote <configure-alert-channel|deploy [--rollback]|logs [--lines N] [--follow]|restart|status|update>",
+    "Usage: remote <configure-alert-channel|configure-test-channel|deploy [--rollback]|logs [--lines N] [--follow]|restart|status|update>",
   );
 }
 
