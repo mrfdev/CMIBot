@@ -39,7 +39,7 @@ export function formatGroundedAnswerMessage(result, evidence) {
     .filter(Boolean);
   const heading = result.generated ? "### Local Grounded Answer" : "### Indexed Evidence Fallback";
   const disclosure = result.generated
-    ? `_Generated locally from the cited indexed evidence. Confidence: ${result.confidence}. No external AI service was used._`
+    ? `_Generated locally from the cited indexed evidence. Confidence: ${result.confidence}._`
     : "_Deterministic fallback. No AI service received the question or evidence._";
   const answer = sanitizeForDisplay(result.answer).slice(0, 1_000);
   const lines = [heading, answer];
@@ -194,7 +194,7 @@ export async function handleAskInteraction({
       detectedContext: context.pluginId,
     });
     await interaction.editReply({
-      content: "The private grounded answer could not be prepared safely. No external AI service was contacted.",
+      content: "The private grounded answer could not be prepared safely.",
       allowedMentions: NO_MENTIONS,
     });
   }

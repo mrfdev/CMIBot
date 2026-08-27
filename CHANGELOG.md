@@ -12,6 +12,7 @@ This file records material LookupBot changes by ship date. User-facing examples 
 - Added deterministic cited evidence fallback whenever local generation is disabled, busy, unsafe, unavailable, or missing its configured model.
 - Added admin-only `/lookup ai-status`, aggregate-only owner-readable day/month usage state, and a privacy-safe operator readiness command.
 - Added an explicit, repeatable operator installer for the approved local model using the verified Homebrew package, owner-only cloud-disabled configuration, a loopback-only user service, and an end-to-end structured-output smoke test.
+- Kept grounded-answer footers concise by removing the repeated external-provider disclaimer; provider safety remains visible in the dedicated status output.
 - Removed automatic AI reranking from ordinary searches. AI runs only for an authorized private `ask` or `summary:true` request.
 - Added secret, token, private-key, Discord-ID, traversal, and private-path rejection before AI retrieval, plus credential-value redaction before local prompts.
 

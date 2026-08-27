@@ -1432,6 +1432,8 @@ test("grounded answers are private, role-gated, cited, and never audit the quest
     assert.match(responses[0].content, /Local Grounded Answer/);
     assert.match(responses[0].content, /Enable the indexed economy setting/);
     assert.match(responses[0].content, /source line/);
+    assert.match(responses[0].content, /Confidence: high/);
+    assert.doesNotMatch(responses[0].content, /external AI service/i);
     assert.doesNotMatch(responses[0].content, /must-never-leak/);
     const auditText = await fs.readFile(path.join(workspaceRoot, "logs/test-interactions.jsonl"), "utf8");
     assert.doesNotMatch(auditText, /How do I enable|must-never-leak|CMIPlugin/);
