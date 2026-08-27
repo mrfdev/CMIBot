@@ -16,6 +16,29 @@ const APPROVED_MODEL = "qwen3:8b";
 const MAX_CONFIG_BYTES = 64 * 1024;
 const MAX_API_RESPONSE_BYTES = 1024 * 1024;
 const MINIMUM_FREE_BYTES = 8n * 1024n * 1024n * 1024n;
+const PUBLIC_STAGE_LABELS = Object.freeze({
+  preflight: "configuration preflight",
+  runtime: "local runtime installation",
+  service: "loopback service startup",
+  download: "approved model download",
+  verification: "local generation verification",
+});
+
+class InstallStageError extends Error {
+  constructor(stage) {
+    super(stage);
+    this.name = "InstallStageError";
+    this.stage = stage;
+  }
+}
+
+async function runStage(stage, action) {
+  try {
+    return await action();
+  } catch {
+    throw new InstallStageError(stage);
+  }
+}
 
 function projectRoot() {
   return process.env.CMIBOT_PROJECT_ROOT || path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -277,7 +300,7 @@ async function readBoundedJson(response) {
 }
 
 async function waitForService({ launchctl, baseUrl, fetchImpl }) {
-  const timeoutMs = configuredMilliseconds("CMIBOT_OLLAMA_START_TIMEOUT_MS", 30_000, 120_000);
+  const timeoutMs = configuredMilliseconds("CMIBOT_OLLAMA_START_TIMEOUT_MS", 120_000, 300_000);
   const deadline = Date.now() + timeoutMs;
   while (Date.now() <= deadline) {
     const job = await readLaunchdJob(launchctl);
@@ -335,53 +358,64 @@ export async function installLocalAi({
   logger = console,
   platform = process.platform,
 } = {}) {
-  if (args.length !== 0) throw new Error("unexpected-arguments");
-  if (platform !== "darwin" && process.env.CMIBOT_OLLAMA_TEST_MODE !== "1") {
-    throw new Error("unsupported-platform");
-  }
-  if (typeof fetchImpl !== "function") throw new Error("fetch-unavailable");
+  const configuration = await runStage("preflight", async () => {
+    if (args.length !== 0) throw new Error("unexpected-arguments");
+    if (platform !== "darwin" && process.env.CMIBOT_OLLAMA_TEST_MODE !== "1") {
+      throw new Error("unsupported-platform");
+    }
+    if (typeof fetchImpl !== "function") throw new Error("fetch-unavailable");
 
-  const baseUrl = normalizeLoopbackOllamaBaseUrl(
-    process.env.CMIBOT_OLLAMA_BASE_URL || "http://127.0.0.1:11434",
-  );
-  if (!baseUrl) throw new Error("non-loopback-endpoint");
-  const stateDirectory = configuredPath("CMIBOT_OLLAMA_STATE_DIR", path.join(os.homedir(), ".ollama"));
-  const logsDirectory = path.join(stateDirectory, "logs");
-
-  logger.log("Preparing zero-cost local AI with cloud features disabled.");
-  await secureDirectory(stateDirectory);
-  await requireInstallationSpace(stateDirectory);
-  await secureDirectory(logsDirectory);
-  await configureLocalOnlyMode(stateDirectory);
-  const executable = await installOllama(logger);
-
-  logger.log("Starting the loopback-only local AI service.");
-  const launchctl = await installLaunchAgent({ executable, stateDirectory, logsDirectory, baseUrl });
-  await waitForService({ launchctl, baseUrl, fetchImpl });
-
-  logger.log("Downloading the approved local model. This may take several minutes.");
-  await runQuiet(executable, ["pull", APPROVED_MODEL], {
-    env: {
-      ...process.env,
-      OLLAMA_HOST: new URL(baseUrl).host,
-      OLLAMA_NO_CLOUD: "1",
-      NO_COLOR: "1",
-      TERM: "dumb",
-    },
-    logger,
-    progressMessage: "The approved local model download is still in progress.",
+    const baseUrl = normalizeLoopbackOllamaBaseUrl(
+      process.env.CMIBOT_OLLAMA_BASE_URL || "http://127.0.0.1:11434",
+    );
+    if (!baseUrl) throw new Error("non-loopback-endpoint");
+    const stateDirectory = configuredPath("CMIBOT_OLLAMA_STATE_DIR", path.join(os.homedir(), ".ollama"));
+    const logsDirectory = path.join(stateDirectory, "logs");
+    logger.log("Preparing zero-cost local AI with cloud features disabled.");
+    await secureDirectory(stateDirectory);
+    await requireInstallationSpace(stateDirectory);
+    await secureDirectory(logsDirectory);
+    await configureLocalOnlyMode(stateDirectory);
+    return { baseUrl, logsDirectory, stateDirectory };
   });
 
-  await verifyModelInstalled(baseUrl, fetchImpl);
-  logger.log("Verifying privacy-safe structured local generation.");
-  await smokeTest(baseUrl, fetchImpl);
+  const executable = await runStage("runtime", () => installOllama(logger));
+
+  await runStage("service", async () => {
+    logger.log("Starting the loopback-only local AI service.");
+    const command = await installLaunchAgent({ executable, ...configuration });
+    await waitForService({ launchctl: command, baseUrl: configuration.baseUrl, fetchImpl });
+  });
+
+  await runStage("download", async () => {
+    logger.log("Downloading the approved local model. This may take several minutes.");
+    await runQuiet(executable, ["pull", APPROVED_MODEL], {
+      env: {
+        ...process.env,
+        OLLAMA_HOST: new URL(configuration.baseUrl).host,
+        OLLAMA_NO_CLOUD: "1",
+        NO_COLOR: "1",
+        TERM: "dumb",
+      },
+      logger,
+      progressMessage: "The approved local model download is still in progress.",
+    });
+  });
+
+  await runStage("verification", async () => {
+    await verifyModelInstalled(configuration.baseUrl, fetchImpl);
+    logger.log("Verifying privacy-safe structured local generation.");
+    await smokeTest(configuration.baseUrl, fetchImpl);
+  });
   logger.log("Zero-cost local AI is installed and ready.");
 }
 
 const isEntrypoint = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isEntrypoint) {
-  installLocalAi().catch(() => {
-    console.error("Local AI installation failed safely. LookupBot's cited fallback remains available.");
+  installLocalAi().catch((error) => {
+    const stage = error instanceof InstallStageError ? PUBLIC_STAGE_LABELS[error.stage] : "";
+    const qualifier = stage ? ` during ${stage}` : "";
+    console.error(`Local AI installation failed safely${qualifier}. LookupBot's cited fallback remains available.`);
     process.exitCode = 1;
   });
 }
