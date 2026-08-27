@@ -17,6 +17,8 @@ import {
 } from "./context.js";
 import { formatResultsMessage, truncateDiscordMessage } from "./results.js";
 
+const MAX_RELATED_REFERENCES = 6;
+
 function validationMessage(reason, queryDebugErrors) {
   if (queryDebugErrors) {
     return reason;
@@ -55,6 +57,7 @@ export async function handleSearchInteraction({
   metrics,
   runtimeInfo,
   pagination,
+  resolveRelatedReferences,
 }) {
   const availability = getCommandAvailability(context.plugin, canonicalSubcommand);
   if (availability !== "ready") {
@@ -304,7 +307,26 @@ export async function handleSearchInteraction({
         allowedRoots: allowedSourceRoots,
       });
     const visibleResults = retainedMatches.map((item) => {
-      const relatedEntries = related ? findRelatedEntries(item.entry, entries) : [];
+      const safeRelatedPath = (entry, { allowIndexedLogs = false } = {}) =>
+        isSafeIndexedRelativePath(entry?.relativePath, allowedSourceRoots, {
+          allowIndexedLogs,
+        });
+      const nearbyEntries =
+        related && item.entry.sourceType !== "log" && safeRelatedPath(item.entry)
+          ? findRelatedEntries(item.entry, entries)
+          : [];
+      const crossProfileReferences = related && resolveRelatedReferences
+        ? resolveRelatedReferences({
+            context,
+            sourceProfileName: canonicalSubcommand,
+            sourceEntry: item.entry,
+            query: keyword,
+            maxReferences: Math.max(1, MAX_RELATED_REFERENCES - nearbyEntries.length),
+            isEntryAllowed(entry) {
+              return safeRelatedPath(entry, { allowIndexedLogs: true });
+            },
+          }).filter(({ entry }) => safeRelatedPath(entry, { allowIndexedLogs: true }))
+        : [];
       const displayContext = makeDisplayContext(
         item.entry,
         context.plugin.id,
@@ -317,10 +339,19 @@ export async function handleSearchInteraction({
         },
       );
       displayContext.sourceUrl = sourceUrlFor(item.entry.relativePath, item.entry.lineNumber);
-      displayContext.related = relatedEntries.map((entry) => ({
-        ...entry,
-        sourceUrl: sourceUrlFor(item.entry.relativePath, entry.lineNumber),
-      }));
+      displayContext.related = [
+        ...nearbyEntries.map((entry) => ({
+          ...entry,
+          sourceUrl: sourceUrlFor(item.entry.relativePath, entry.lineNumber),
+        })),
+        ...crossProfileReferences.map(({ profileName, entry }) => ({
+          profileName,
+          yamlPath: entry.yamlPath,
+          lineNumber: entry.lineNumber,
+          comments: entry.comments ?? [],
+          sourceUrl: sourceUrlFor(entry.relativePath, entry.lineNumber),
+        })),
+      ].slice(0, MAX_RELATED_REFERENCES);
       return displayContext;
     });
     const totalMentions = searchResult.totalMatches;
@@ -386,6 +417,10 @@ export async function handleSearchInteraction({
       detectedContext: context.pluginId,
       resultCount: initialMatches.length,
       retainedResultCount: retainedMatches.length,
+      relatedReferenceCount: visibleResults.reduce(
+        (count, result) => count + (result.related?.length ?? 0),
+        0,
+      ),
       totalMentions,
       fileCount,
     });

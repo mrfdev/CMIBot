@@ -49,7 +49,7 @@ function addCommonLookupOptions(
     builder = builder.addBooleanOption((option) =>
       option
         .setName("related")
-        .setDescription("Include up to two nearby related YAML entries. Defaults to false."),
+        .setDescription("Include bounded same-context cross-references. Defaults to false."),
     );
   }
 
@@ -114,49 +114,56 @@ export function buildCommandTree(commandName, config) {
       addCommonLookupOptions(
         subcommand.setName("placeholder").setDescription("Search indexed placeholder entries."),
         defaultResultLimit,
+        { includeRelated: true },
       ),
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
         subcommand.setName("material").setDescription("Search indexed material names."),
         materialDefaultLimit,
-        { maxResultLimit: MATERIAL_MAX_RESULT_LIMIT },
+        { includeRelated: true, maxResultLimit: MATERIAL_MAX_RESULT_LIMIT },
       ),
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
         subcommand.setName("command").setDescription("Search indexed command usage entries."),
         defaultResultLimit,
+        { includeRelated: true },
       ),
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
         subcommand.setName("cmd").setDescription("Alias for the indexed command usage search."),
         defaultResultLimit,
+        { includeRelated: true },
       ),
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
         subcommand.setName("permission").setDescription("Search indexed permission entries."),
         defaultResultLimit,
+        { includeRelated: true },
       ),
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
         subcommand.setName("perm").setDescription("Alias for the indexed permission search."),
         defaultResultLimit,
+        { includeRelated: true },
       ),
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
         subcommand.setName("faq").setDescription("Search curated FAQ titles, links, and short notes."),
         defaultResultLimit,
+        { includeRelated: true },
       ),
     )
     .addSubcommand((subcommand) =>
       addCommonLookupOptions(
         subcommand.setName("tabcomplete").setDescription("Search indexed tab-complete token entries."),
         defaultResultLimit,
+        { includeRelated: true },
       ),
     )
     .addSubcommand((subcommand) =>

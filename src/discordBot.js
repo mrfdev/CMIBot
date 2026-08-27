@@ -48,6 +48,7 @@ import {
   createSlidingWindowRateLimiter,
 } from "./security.js";
 import { sanitizeLogText, serviceLogger } from "./logger.js";
+import { createRelatedReferenceIndex } from "./relatedReferences.js";
 import {
   formatLatestVersionMessages,
   formatPublicLatestVersions,
@@ -79,7 +80,9 @@ export function createInteractionHandler(config, searchCache, versionService, de
   const requestMetadata = new WeakMap();
   const pagination = dependencies.pagination ?? createResultPagination(config.search);
   const autocompleteIndexes = new Map();
+  const relatedReferenceIndexes = new Map();
   let autocompleteGeneration = -1;
+  let relatedReferenceGeneration = -1;
   let reloadInProgress = false;
 
   function getAutocompleteIndex(context, profileName) {
@@ -102,6 +105,28 @@ export function createInteractionHandler(config, searchCache, versionService, de
         maximumKeywordLength: config.security.queryMaxLength,
       });
       autocompleteIndexes.set(cacheKey, index);
+    }
+    return index;
+  }
+
+  function getRelatedReferenceIndex(context) {
+    const generation = searchCache.getGeneration?.() ?? 0;
+    if (generation !== relatedReferenceGeneration) {
+      relatedReferenceIndexes.clear();
+      relatedReferenceGeneration = generation;
+    }
+
+    const cacheKey = context.plugin.id;
+    let index = relatedReferenceIndexes.get(cacheKey);
+    if (!index) {
+      const entriesByProfile = Object.fromEntries(
+        Object.keys(context.plugin.profiles).map((profileName) => [
+          profileName,
+          searchCache.getEntries(context.plugin.id, profileName),
+        ]),
+      );
+      index = createRelatedReferenceIndex(entriesByProfile);
+      relatedReferenceIndexes.set(cacheKey, index);
     }
     return index;
   }
@@ -1011,6 +1036,9 @@ export function createInteractionHandler(config, searchCache, versionService, de
       metrics,
       runtimeInfo: dependencies.runtimeInfo,
       pagination,
+      resolveRelatedReferences({ context: relatedContext, ...options }) {
+        return getRelatedReferenceIndex(relatedContext).find(options);
+      },
     });
   }
 

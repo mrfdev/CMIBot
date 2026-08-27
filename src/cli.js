@@ -2,11 +2,15 @@ import "dotenv/config";
 import { createLazyAiResolver } from "./aiLoader.js";
 import { createSearchCache, formatCacheSummary } from "./cache.js";
 import { loadConfig } from "./config.js";
+import { isSafeIndexedRelativePath } from "./discord/browse.js";
 import { formatLanguageCategoryStats } from "./langStats.js";
+import { createRelatedReferenceIndex } from "./relatedReferences.js";
 import { lexicalSearch, orderMatchesForDisplay, suggestSearchQueries } from "./search.js";
 import { resolveFileFilter } from "./security.js";
 import { createVersionService, formatLatestVersions } from "./versionCatalog.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
+
+const MAX_RELATED_REFERENCES = 6;
 
 async function main() {
   const config = loadConfig();
@@ -128,6 +132,20 @@ async function main() {
   const matches = orderMatchesForDisplay(rerankedMatches);
   const profile = plugin.profiles[subcommand];
   const visibleLimit = profile.defaultResultLimit ?? config.search.defaultResultLimit;
+  const relatedIndex = related
+    ? createRelatedReferenceIndex(
+        Object.fromEntries(
+          Object.keys(plugin.profiles).map((profileName) => [
+            profileName,
+            searchCache.getEntries(plugin.id, profileName),
+          ]),
+        ),
+      )
+    : null;
+  const allowedRelatedRoots = [
+    ...(plugin.debugRoots ?? []),
+    ...(config.sharedDebugRoots ?? []).flatMap((root) => root.directories ?? []),
+  ];
 
   if (!matches.length) {
     const entryLabel = profile.entryLabel ?? "entries";
@@ -143,10 +161,33 @@ async function main() {
     const result = makeDisplayContext(item.entry, plugin.id, config.formatDisplayPath);
     console.log(`${result.displayPath}:${result.lineNumber}`);
     if (related) {
-      const relatedEntries = findRelatedEntries(item.entry, entries);
+      const safeRelatedPath = (entry, { allowIndexedLogs = false } = {}) =>
+        isSafeIndexedRelativePath(entry?.relativePath, allowedRelatedRoots, {
+          allowIndexedLogs,
+        });
+      const nearbyEntries = item.entry.sourceType !== "log" && safeRelatedPath(item.entry)
+        ? findRelatedEntries(item.entry, entries)
+        : [];
+      const crossProfileReferences = relatedIndex.find({
+        sourceProfileName: subcommand,
+        sourceEntry: item.entry,
+        query: keyword,
+        maxReferences: Math.max(1, MAX_RELATED_REFERENCES - nearbyEntries.length),
+        isEntryAllowed(entry) {
+          return safeRelatedPath(entry, { allowIndexedLogs: true });
+        },
+      }).filter(({ entry }) => safeRelatedPath(entry, { allowIndexedLogs: true }));
+      const relatedEntries = [
+        ...nearbyEntries.map((entry) => ({ ...entry, profileName: "" })),
+        ...crossProfileReferences.map(({ profileName, entry }) => ({
+          profileName,
+          yamlPath: entry.yamlPath,
+          lineNumber: entry.lineNumber,
+        })),
+      ].slice(0, MAX_RELATED_REFERENCES);
       if (relatedEntries.length) {
         console.log(
-          `Related: ${relatedEntries.map((entry) => `${entry.yamlPath} (line ${entry.lineNumber})`).join(", ")}`,
+          `Related: ${relatedEntries.map((entry) => `${entry.profileName ? `${entry.profileName}: ` : ""}${entry.yamlPath} (line ${entry.lineNumber})`).join(", ")}`,
         );
       }
     }

@@ -269,6 +269,43 @@ function formatResultSnippet(result, options) {
   return result.snippet;
 }
 
+function formatRelatedProfileName(profileName) {
+  const labels = {
+    command: "command",
+    config: "config",
+    faq: "FAQ",
+    language: "language",
+    material: "material",
+    permission: "permission",
+    placeholder: "placeholder",
+    tabcomplete: "tab complete",
+  };
+  return labels[profileName] ?? sanitizeForDisplay(String(profileName ?? "related"));
+}
+
+function formatRelatedReference(entry) {
+  const identity = `\`${sanitizeForDisplay(String(entry.yamlPath ?? "related entry"))}\``;
+  const profilePrefix = entry.profileName
+    ? `**${formatRelatedProfileName(entry.profileName)}:** `
+    : "";
+  const externalUrl = entry.profileName === "faq" ? extractUrlFromComments(entry.comments) : "";
+  const sourceLabel = entry.profileName
+    ? "source"
+    : Number.isSafeInteger(entry.lineNumber)
+      ? `line ${entry.lineNumber}`
+      : "source";
+  const links = [
+    externalUrl ? `[open](<${externalUrl}>)` : "",
+    entry.sourceUrl ? `[${sourceLabel}](<${entry.sourceUrl}>)` : "",
+  ].filter(Boolean);
+  const location = links.length
+    ? ` (${links.join(" · ")})`
+    : Number.isSafeInteger(entry.lineNumber)
+      ? ` (line ${entry.lineNumber})`
+      : "";
+  return `${profilePrefix}${identity}${location}`;
+}
+
 function formatPaginationFooter(pagination, totalMentions) {
   if (!pagination) {
     return "";
@@ -285,11 +322,15 @@ function formatMaterialResultsMessage(keyword, results, totalMentions, options) 
   const safeKeyword = sanitizeForDisplay(keyword);
   const header = `### Found [${totalMentions}] ${mentionLabel} in the NMS material list for \`${safeKeyword}\``;
   const values = results
-    .map((result) =>
-      result.sourceUrl
+    .map((result) => {
+      const value = result.sourceUrl
         ? `- \`${sanitizeForDisplay(result.yamlPath)}\` ([source](<${result.sourceUrl}>))`
-        : `- \`${sanitizeForDisplay(result.yamlPath)}\``,
-    )
+        : `- \`${sanitizeForDisplay(result.yamlPath)}\``;
+      const relatedLine = result.related?.length
+        ? `\n  - Related: ${result.related.map(formatRelatedReference).join(" · ")}`
+        : "";
+      return `${value}${relatedLine}`;
+    })
     .join("\n");
   const footer =
     formatPaginationFooter(options.pagination, totalMentions) ||
@@ -341,13 +382,7 @@ export function formatResultsMessage(
       const leadLine = formatResultLead(result, options);
       const snippet = formatResultSnippet(result, options);
       const relatedLine = result.related?.length
-        ? `Related: ${result.related
-            .map((entry) =>
-              entry.sourceUrl
-                ? `\`${entry.yamlPath}\` ([line ${entry.lineNumber}](<${entry.sourceUrl}>))`
-                : `\`${entry.yamlPath}\` (line ${entry.lineNumber})`,
-            )
-            .join(", ")}\n`
+        ? `Related: ${result.related.map(formatRelatedReference).join(" · ")}\n`
         : "";
       blocks.push([leadLine, `${relatedLine}\`\`\`${result.codeLanguage}\n${snippet}\n\`\`\``].filter(Boolean).join("\n"));
     }

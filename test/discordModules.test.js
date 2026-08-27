@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { ApplicationCommandOptionType } from "discord.js";
 import { buildCommandData } from "../src/discord/commands.js";
 import {
   AUTOCOMPLETE_CHOICE_LIMIT,
@@ -111,7 +112,12 @@ test("slash command schema keeps aliases, limits, and safe config filters", () =
     const keyword = subcommands
       .get(searchSubcommand)
       .options.find((option) => option.name === "keyword");
+    const related = subcommands
+      .get(searchSubcommand)
+      .options.find((option) => option.name === "related");
     assert.equal(keyword.autocomplete, true);
+    assert.equal(related.type, ApplicationCommandOptionType.Boolean);
+    assert.equal(related.required, false);
   }
   assert.equal(configOptions.get("file").autocomplete, true);
   assert.equal(configOptions.get("limit").max_value, 15);
@@ -344,6 +350,70 @@ test("result formatting presents commit-pinned source links without exposing raw
   assert.doesNotMatch(message, /private-display-path/);
 });
 
+test("result formatting labels safe cross-profile references compactly", () => {
+  const message = formatResultsMessage(
+    "balance",
+    [
+      {
+        displayPath: "private-command-index.log",
+        yamlPath: "/cmi balance (playerName)",
+        lineNumber: 10,
+        snippet: "/cmi balance (playerName)",
+        codeLanguage: "text",
+        sourceType: "log",
+        related: [
+          {
+            profileName: "permission",
+            yamlPath: "cmi.command.balance",
+            lineNumber: 20,
+          },
+          {
+            profileName: "faq",
+            yamlPath: "CMI Economy Manager",
+            lineNumber: 30,
+            comments: ["# URL: https://example.com/economy"],
+          },
+        ],
+      },
+    ],
+    1,
+    1,
+    "",
+    ["CMIPlugin/data/commands.log"],
+    { layout: "command" },
+  );
+
+  assert.match(message, /Related: \*\*permission:\*\* `cmi\.command\.balance` \(line 20\)/);
+  assert.match(message, /\*\*FAQ:\*\* `CMI Economy Manager` \(\[open\]/);
+  assert.doesNotMatch(message, /private-command-index/);
+});
+
+test("material result formatting includes opt-in related references", () => {
+  const message = formatResultsMessage(
+    "stone",
+    [
+      {
+        yamlPath: "STONE",
+        related: [
+          {
+            profileName: "language",
+            yamlPath: "STONE",
+            lineNumber: 42,
+          },
+        ],
+      },
+    ],
+    1,
+    1,
+    "",
+    [],
+    { layout: "materialList" },
+  );
+
+  assert.match(message, /- `STONE`/);
+  assert.match(message, /Related: \*\*language:\*\* `STONE` \(line 42\)/);
+});
+
 test("Discord output helpers enforce message-size boundaries", () => {
   const message = ["### First", "a".repeat(30), "### Second", "b".repeat(30)].join("\n");
   const chunks = splitDiscordMessages(message, 45);
@@ -435,6 +505,9 @@ test("the extracted search lifecycle applies context synonyms and audits a forma
         searchMetrics.push(payload);
       },
     },
+    resolveRelatedReferences() {
+      assert.fail("default searches must not resolve cross-profile references");
+    },
   });
 
   assert.equal(responses.length, 1);
@@ -448,6 +521,110 @@ test("the extracted search lifecycle applies context synonyms and audits a forma
   assert.equal(searchMetrics[0].outcome, "success");
   assert.equal(searchMetrics[0].resultCount, 1);
   assert.equal("query" in searchMetrics[0], false);
+});
+
+test("Discord related searches resolve safe cross-profile references only", async () => {
+  const commandEntries = extractEntriesFromText(
+    "/cmi balance: Check a player's balance",
+    "CMIPlugin/data/commands.yml",
+  );
+  const responses = [];
+  const auditEvents = [];
+  const plugin = makePlugin();
+  plugin.debugRoots = ["CMIPlugin"];
+  plugin.profiles.command = {
+    defaultResultLimit: 3,
+    maxResultLimit: 15,
+    entryLabel: "command entries",
+  };
+  const interaction = {
+    user: { id: "support-user" },
+    member: { roles: { cache: [{ id: "support-role" }] } },
+    options: {
+      getString(name) {
+        return { keyword: "balance", mode: "exact" }[name] ?? null;
+      },
+      getInteger: () => null,
+      getBoolean(name) {
+        return name === "related";
+      },
+    },
+    async deferReply() {},
+    async editReply(payload) {
+      responses.push(payload);
+    },
+  };
+
+  await handleSearchInteraction({
+    interaction,
+    subcommand: "command",
+    canonicalSubcommand: "command",
+    context: { plugin, pluginId: "cmi" },
+    config: {
+      search: {
+        defaultResultLimit: 3,
+        maxResultLimit: 15,
+        sourceLinksEnabled: false,
+        synonymsByPlugin: {},
+      },
+      security: {
+        queryAllowlist: [],
+        queryBlocklist: [],
+        queryMinLength: 2,
+        queryMaxLength: 100,
+        queryDebugErrors: false,
+        lookupCooldownSeconds: 0,
+        summaryCooldownSeconds: 0,
+      },
+      discord: { aiRoleIds: ["admin-role"] },
+      sharedDebugRoots: [],
+      formatDisplayPath: (_pluginId, relativePath) => relativePath,
+    },
+    searchCache: { getEntries: () => commandEntries },
+    aiEnabled: false,
+    resolveAiReranker: async () => null,
+    cooldowns: { check: () => ({ allowed: true, retryAfterSeconds: 0 }) },
+    logEvent: async (_interaction, payload) => auditEvents.push(payload),
+    logRateLimitEvent: async () => {},
+    metrics: { recordSearch() {} },
+    resolveRelatedReferences(options) {
+      assert.equal(options.sourceProfileName, "command");
+      assert.equal(options.query, "balance");
+      assert.equal(options.maxReferences, 6);
+      return [
+        {
+          profileName: "permission",
+          entry: {
+            relativePath: "CMIPlugin/data/permissions.log",
+            yamlPath: "cmi.command.balance",
+            lineNumber: 20,
+          },
+        },
+        {
+          profileName: "faq",
+          entry: {
+            relativePath: "CMIPlugin/data/faq.log",
+            yamlPath: "CMI Economy Manager",
+            lineNumber: 30,
+          },
+        },
+        {
+          profileName: "permission",
+          entry: {
+            relativePath: "CMIPlugin/private/secret.key",
+            yamlPath: "must-not-appear",
+            lineNumber: 1,
+          },
+        },
+      ];
+    },
+  });
+
+  assert.equal(responses.length, 1);
+  assert.match(responses[0].content, /\*\*permission:\*\* `cmi\.command\.balance`/);
+  assert.match(responses[0].content, /\*\*FAQ:\*\* `CMI Economy Manager`/);
+  assert.doesNotMatch(responses[0].content, /must-not-appear|secret\.key/);
+  assert.equal(auditEvents.at(-1).relatedReferenceCount, 2);
 });
 
 test("Discord search offers YAML expansion only for safe indexed paths", async () => {

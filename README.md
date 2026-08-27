@@ -92,7 +92,7 @@ CMILib config and English locale files are shared with every plugin context.
 - When more results exist, opaque Previous/Next controls retain up to `PAGINATION_MAX_RESULTS` ranked matches for the configured session lifetime. Every click revalidates the owning user, support role, channel, plugin context, and cache generation.
 - Safe YAML results include a selector for the complete matched block plus two surrounding lines. The expanded excerpt is sent only to the member who ran the lookup; long excerpts use a generically named private attachment instead of being truncated, and non-empty credential-like values are redacted.
 - Source links point to the full commit deployed when the response was generated. A later deployment uses its new commit, while links in older Discord messages remain stable.
-- `related:true` adds nearby YAML entries to config and language results.
+- `related:true` keeps the normal matches intact and adds up to six deterministic cross-references from the active plugin context. Commands can link to matching permissions, config settings, placeholders, FAQs, tab-complete tokens, and language entries; other search profiles use the same cached relationship index. Config and language results still include their nearby same-file YAML entries first. The index never searches other plugin contexts, reads arbitrary files, calls an external service, or exposes a reference outside the configured safe roots.
 - `summary:true` requests an AI summary only when OpenAI support and the configured AI role are enabled.
 - Configured aliases are expanded automatically only inside the active plugin context. Direct matches for the original term remain first.
 - Discord suggests up to 25 context-specific values while `keyword:` or the config `file:` option is focused. Suggestions are derived only from safe cached key metadata for the active plugin profile.
@@ -108,6 +108,7 @@ CMILib config and English locale files are shared with every plugin context.
 /lookup placeholder balance
 /lookup material shulker
 /lookup cmd balance
+/lookup cmd balance related:true
 /lookup perm cmi.command.balance
 /lookup faq refund
 /lookup cmd bottle
