@@ -125,6 +125,10 @@ test("slash command schema keeps aliases, limits, and safe config filters", () =
   const materialOptions = new Map(subcommands.get("material").options.map((option) => [option.name, option]));
   assert.equal(materialOptions.get("limit").max_value, 25);
 
+  const latestOptions = new Map(subcommands.get("latest").options.map((option) => [option.name, option]));
+  assert.equal(latestOptions.get("changes").type, ApplicationCommandOptionType.Boolean);
+  assert.equal(latestOptions.get("changes").required, false);
+
   const debugContexts = subcommands.get("debug").options.find((option) => option.name === "context").choices;
   assert.deepEqual(
     debugContexts.map((choice) => choice.value),
@@ -294,6 +298,7 @@ test("help formatting stays context aware after extraction", () => {
   assert.match(message, /`\/lookup language\|lang <keyword>`/);
   assert.match(message, /`limit: 1-15`/);
   assert.match(message, /summary: true\|false.*disabled/i);
+  assert.match(message, /latest changes:true/);
 });
 
 test("result formatting keeps internal metadata out of public headings", () => {

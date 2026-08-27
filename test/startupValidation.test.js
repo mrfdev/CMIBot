@@ -128,3 +128,22 @@ test("network-backed catalog sources must use credential-free HTTPS URLs", () =>
     },
   );
 });
+
+test("release-note sources require a fixed GitHub repository identity", () => {
+  const fixture = makeFixture();
+  fixture.catalog.plugins[0].releaseNotesSource = {
+    type: "github-releases",
+    repository: "owner/repository",
+  };
+  assert.doesNotThrow(() => validateVersionCatalog(fixture.catalog, fixture.config));
+
+  fixture.catalog.plugins[0].releaseNotesSource.repository = "owner/repository/../../private";
+  assert.throws(
+    () => validateVersionCatalog(fixture.catalog, fixture.config),
+    (error) => {
+      assert.match(error.message, /fixed GitHub owner and repository name/i);
+      assert.doesNotMatch(error.message, /private/);
+      return true;
+    },
+  );
+});

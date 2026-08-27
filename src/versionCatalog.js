@@ -3,6 +3,12 @@ import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { serviceLogger } from "./logger.js";
 import { validateVersionCatalog } from "./startupValidation.js";
+import { createVersionChangesService } from "./versionChanges.js";
+import {
+  comparePluginRelease,
+  compareVersions,
+  formatPluginRelease,
+} from "./versionComparison.js";
 import {
   createUpstreamResilience,
   parseRetryAfter,
@@ -28,29 +34,6 @@ const DISPLAY_ORDER = [
   "placeholderapi",
   "vault",
 ];
-
-function compareVersions(left, right) {
-  const toParts = (value) =>
-    String(value)
-      .split(/[.-]/)
-      .map((part) => (/^\d+$/.test(part) ? Number(part) : part.toLowerCase()));
-  const leftParts = toParts(left);
-  const rightParts = toParts(right);
-  const length = Math.max(leftParts.length, rightParts.length);
-
-  for (let index = 0; index < length; index += 1) {
-    const leftPart = leftParts[index] ?? 0;
-    const rightPart = rightParts[index] ?? 0;
-    if (leftPart === rightPart) {
-      continue;
-    }
-    if (typeof leftPart === "number" && typeof rightPart === "number") {
-      return leftPart > rightPart ? 1 : -1;
-    }
-    return String(leftPart).localeCompare(String(rightPart));
-  }
-  return 0;
-}
 
 function formatDiscordTimestamp(value, style = "R") {
   const timestamp = new Date(value).getTime();
@@ -84,10 +67,6 @@ function parseZripsListingVersion(content, source, label) {
   };
 }
 
-function formatPluginRelease(version, build) {
-  return build == null ? String(version) : `${version} build ${build}`;
-}
-
 function countRetainedUpstreams(snapshot) {
   return (
     (snapshot.paper?.stale ? 1 : 0) +
@@ -98,17 +77,6 @@ function countRetainedUpstreams(snapshot) {
 
 function formatFreshnessSuffix(upstream) {
   return upstream?.stale ? "; **last known, refresh unavailable**" : "";
-}
-
-function comparePluginRelease(plugin, upstream) {
-  const versionComparison = compareVersions(plugin.version, upstream.version);
-  if (versionComparison !== 0) {
-    return versionComparison;
-  }
-  if (plugin.build == null || upstream.build == null) {
-    return 0;
-  }
-  return Number(plugin.build) - Number(upstream.build);
 }
 
 export function getVersionAttentionSummary(snapshot) {
@@ -385,6 +353,14 @@ export function createVersionService(config, dependencies = {}) {
   const now = dependencies.now ?? (() => Date.now());
   const fetchImplementation =
     dependencies.fetch ?? ((...arguments_) => globalThis.fetch(...arguments_));
+  const versionChangesService = createVersionChangesService(config, {
+    fetch: fetchImplementation,
+    logger,
+    metrics,
+    now,
+    sleep: dependencies.sleep,
+    random: dependencies.random,
+  });
   const resilience = createUpstreamResilience({
     maxAttempts: config.versions.retryMaxAttempts,
     baseDelayMs: config.versions.retryBaseDelayMs,
@@ -825,6 +801,7 @@ export function createVersionService(config, dependencies = {}) {
         }
 
         activeState = nextState;
+        versionChangesService.clearCache();
         settled = true;
         void queuePersistentStateWrite(nextState);
         return getSnapshot();
@@ -893,6 +870,9 @@ export function createVersionService(config, dependencies = {}) {
     prepareReload,
     refreshUpstream,
     getSnapshot,
+    getVersionChanges(plugin, scope = "context") {
+      return versionChangesService.resolve(getSnapshot(), plugin, scope);
+    },
     flushPersistence() {
       return persistenceQueue;
     },

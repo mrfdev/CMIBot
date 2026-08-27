@@ -8,6 +8,7 @@ import { createRelatedReferenceIndex } from "./relatedReferences.js";
 import { lexicalSearch, orderMatchesForDisplay, suggestSearchQueries } from "./search.js";
 import { resolveFileFilter } from "./security.js";
 import { createVersionService, formatLatestVersions } from "./versionCatalog.js";
+import { formatVersionChanges } from "./versionChanges.js";
 import { findRelatedEntries, makeDisplayContext } from "./yamlIndex.js";
 
 const MAX_RELATED_REFERENCES = 6;
@@ -26,8 +27,14 @@ async function main() {
   if (subcommand === "latest") {
     const versionService = createVersionService(config);
     const snapshot = await versionService.start();
-    const scope = args[0] === "all" || args[0] === "--all" ? "all" : "context";
+    const scope = args.includes("all") || args.includes("--all") ? "all" : "context";
+    const includeChanges = args.includes("changes") || args.includes("--changes");
     console.log(formatLatestVersions(snapshot, plugin, scope));
+    if (includeChanges) {
+      const report = await versionService.getVersionChanges(plugin, scope);
+      console.log("");
+      console.log(formatVersionChanges(report));
+    }
     versionService.stop();
     return;
   }
@@ -95,7 +102,7 @@ async function main() {
   if (!subcommand || !plugin.profiles[subcommand]) {
     const pluginList = Object.keys(config.plugins).join("|");
     console.error(
-      `Usage: npm run lookup -- [${pluginList}] <config|language|lang|placeholder|material|command|cmd|permission|perm|faq|tabcomplete|langstats|stats|latest> [--mode exact|whole|broad] [--file Chat.yml] [--related] [--summary] <keyword>`,
+      `Usage: npm run lookup -- [${pluginList}] <config|language|lang|placeholder|material|command|cmd|permission|perm|faq|tabcomplete|langstats|stats|latest> [all|--all] [--changes] [--mode exact|whole|broad] [--file Chat.yml] [--related] [--summary] <keyword>`,
     );
     process.exitCode = 1;
     return;

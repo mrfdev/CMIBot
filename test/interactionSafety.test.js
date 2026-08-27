@@ -386,6 +386,177 @@ test("authorized health output is private and uses live service state", async ()
   }
 });
 
+test("version changes stay private and audit only bounded aggregate counts", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-version-changes-"));
+  const config = makeConfig(workspaceRoot);
+  const snapshot = {
+    catalog: {
+      generatedAt: new Date().toISOString(),
+      plugins: [
+        {
+          id: "cmi",
+          label: "CMI",
+          version: "1.0.0",
+          contextId: "cmi",
+          resourceUrl: "https://www.spigotmc.org/resources/100/",
+        },
+        {
+          id: "cmilib",
+          label: "CMILib",
+          version: "1.0.0",
+          shared: true,
+          resourceUrl: "https://www.spigotmc.org/resources/101/",
+        },
+      ],
+      companions: [],
+      paper: {
+        id: "paper",
+        label: "Paper",
+        version: "26.2",
+        build: 119,
+        channel: "STABLE",
+        projectUrl: "https://papermc.io/downloads/paper",
+      },
+    },
+    plugins: new Map([
+      ["cmi", { version: "1.1.0", stale: false }],
+      ["cmilib", { version: "1.0.0", stale: false }],
+    ]),
+    companions: new Map(),
+    paper: { version: "26.2", build: 119, channel: "STABLE", stale: false },
+    checkEnabled: true,
+    checkedAt: new Date().toISOString(),
+    errorCount: 0,
+    retainedCount: 0,
+  };
+  let changeRequests = 0;
+  const versionService = {
+    getSnapshot: () => snapshot,
+    async getVersionChanges() {
+      changeRequests += 1;
+      return {
+        status: "ready",
+        scope: "context",
+        pluginLabel: "CMI",
+        changes: [
+          {
+            id: "cmi",
+            label: "CMI",
+            current: "1.0.0",
+            latest: "1.1.0",
+            upstream: { stale: false },
+            historyUrl: "https://www.spigotmc.org/resources/100/updates",
+            status: "available",
+            error: false,
+            releases: [
+              {
+                version: "1.1.0",
+                url: "https://www.spigotmc.org/resources/100/update?update=10",
+                items: [{ text: "Safe change for @everyone" }],
+                omittedItemCount: 0,
+              },
+            ],
+          },
+        ],
+        omittedResourceCount: 0,
+        errorCount: 0,
+        releaseCount: 1,
+        itemCount: 1,
+      };
+    },
+  };
+  const handler = createTestInteractionHandler(config, {}, versionService);
+
+  function makeLatestInteraction({ publicResponse, includeChanges = true }) {
+    const replies = [];
+    const deferrals = [];
+    const edits = [];
+    const followUps = [];
+    return {
+      replies,
+      deferrals,
+      edits,
+      followUps,
+      interaction: {
+        isChatInputCommand: () => true,
+        isRepliable: () => true,
+        commandName: "lookup",
+        guildId: "expected-guild",
+        channelId: "channel-1",
+        user: { id: "support-1", tag: "support" },
+        member: { roles: { cache: [{ id: "support-role" }] } },
+        options: {
+          getSubcommand: () => "latest",
+          getString: () => "context",
+          getBoolean(name) {
+            return (name === "changes" && includeChanges) || (name === "public" && publicResponse);
+          },
+        },
+        replied: false,
+        deferred: false,
+        async reply(payload) {
+          this.replied = true;
+          replies.push(payload);
+        },
+        async deferReply(payload) {
+          this.deferred = true;
+          deferrals.push(payload);
+        },
+        async editReply(payload) {
+          this.replied = true;
+          edits.push(payload);
+        },
+        async followUp(payload) {
+          followUps.push(payload);
+        },
+      },
+    };
+  }
+
+  try {
+    const defaultAttempt = makeLatestInteraction({
+      publicResponse: false,
+      includeChanges: false,
+    });
+    await handler(defaultAttempt.interaction);
+    assert.equal(changeRequests, 0);
+    assert.match(defaultAttempt.edits[0].content, /Latest Versions/);
+    assert.equal(defaultAttempt.followUps.length, 0);
+
+    const publicAttempt = makeLatestInteraction({ publicResponse: true });
+    await handler(publicAttempt.interaction);
+    assert.equal(changeRequests, 0);
+    assert.match(publicAttempt.replies[0].content, /private-only/i);
+    assert.ok(publicAttempt.replies[0].flags);
+
+    const privateAttempt = makeLatestInteraction({ publicResponse: false });
+    await handler(privateAttempt.interaction);
+    assert.equal(changeRequests, 1);
+    assert.ok(privateAttempt.deferrals[0].flags);
+    assert.match(privateAttempt.edits[0].content, /Latest Versions/);
+    assert.equal(privateAttempt.followUps.length, 1);
+    assert.ok(privateAttempt.followUps[0].flags);
+    assert.match(privateAttempt.followUps[0].content, /Version Changes/);
+    assert.doesNotMatch(privateAttempt.followUps[0].content, /@everyone/);
+    assert.deepEqual(privateAttempt.followUps[0].allowedMentions, { parse: [] });
+
+    const auditText = await fs.readFile(
+      path.join(workspaceRoot, "logs/test-interactions.jsonl"),
+      "utf8",
+    );
+    const auditEntries = auditText.trim().split("\n").map((line) => JSON.parse(line));
+    const success = auditEntries.find(
+      (entry) => entry.outcome === "success" && entry.changes === true,
+    );
+    assert.equal(success.changeResourceCount, 1);
+    assert.equal(success.releaseNoteCount, 1);
+    assert.equal(success.releaseNoteItemCount, 1);
+    assert.equal("releases" in success, false);
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
 test("authorized autocomplete is context-aware, generation-cached, and unaudited", async () => {
   const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-autocomplete-"));
   const config = makeConfig(workspaceRoot);

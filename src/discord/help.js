@@ -65,6 +65,7 @@ export function formatHelpMessage(config, member, context, commandName) {
   lines.push(`- \`${prefix} latest\` shows versions for this plugin and CMILib`);
   lines.push(`- \`${prefix} latest public:true\` publicly shows only the latest plugin and CMILib releases`);
   lines.push(`- \`${prefix} latest scope:all\` shows every tracked resource and CMI companion`);
+  lines.push(`- \`${prefix} latest changes:true\` privately shows what changed in pending updates`);
   if (canReload) {
     lines.push(`- \`${prefix} alerts-test\` sends a clearly marked test to the private admin alert channel`);
     lines.push(`- \`${prefix} health\` shows private service health and data freshness`);

@@ -34,6 +34,10 @@ const SUPPORT_PLUGIN_METADATA = new Map([
         url: "https://ci.extendedclip.com/job/PlaceholderAPI/lastSuccessfulBuild/api/json",
         artifactPattern: "^PlaceholderAPI-([0-9]+(?:\\.[0-9]+)+)\\.jar$",
       },
+      releaseNotesSource: {
+        type: "github-releases",
+        repository: "PlaceholderAPI/PlaceholderAPI",
+      },
     },
   ],
 ]);
@@ -193,6 +197,8 @@ export async function buildVersionCatalog(workspaceRoot, serverDirectory) {
     const supportMetadata = SUPPORT_PLUGIN_METADATA.get(metadata.name.toLowerCase());
     const resourceId = definition?.resourceId ?? null;
     const versionSource = definition?.versionSource ?? supportMetadata?.versionSource;
+    const releaseNotesSource =
+      definition?.releaseNotesSource ?? supportMetadata?.releaseNotesSource;
     const localBuildMatch = supportMetadata?.localBuildPattern
       ? jarName.match(supportMetadata.localBuildPattern)
       : null;
@@ -211,6 +217,7 @@ export async function buildVersionCatalog(workspaceRoot, serverDirectory) {
       website: metadata.website,
       ...(localBuildMatch ? { build: Number(localBuildMatch[1]) } : {}),
       ...(versionSource ? { versionSource } : {}),
+      ...(releaseNotesSource ? { releaseNotesSource } : {}),
     });
   }
 

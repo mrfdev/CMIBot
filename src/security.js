@@ -19,7 +19,7 @@ function isSpecialSearchQuery(query) {
 }
 
 export function sanitizeForDisplay(value) {
-  return value.replace(/`/g, "'").replace(/@/g, "@\u200b");
+  return value.replace(/`/g, "'").replace(/@(?!\u200b)/g, "@\u200b");
 }
 
 export function normalizeQuery(rawQuery) {

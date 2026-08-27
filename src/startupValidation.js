@@ -67,6 +67,21 @@ function validateVersionSource(source, label, supportedTypes) {
   }
 }
 
+function validateReleaseNotesSource(source, label) {
+  requireObject(source, label);
+  if (source.type !== "github-releases") {
+    throw new Error(`${label} has an unsupported type.`);
+  }
+  requireNonEmptyString(source.repository, `${label} repository`);
+  const parts = source.repository.split("/");
+  if (
+    !/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(source.repository) ||
+    parts.some((part) => [".", ".."].includes(part))
+  ) {
+    throw new Error(`${label} repository must be a fixed GitHub owner and repository name.`);
+  }
+}
+
 function validateCatalogResource(resource, label, supportedSourceTypes) {
   requireObject(resource, label);
   requireNonEmptyString(resource.id, `${label} id`);
@@ -77,6 +92,9 @@ function validateCatalogResource(resource, label, supportedSourceTypes) {
   }
   if (resource.versionSource) {
     validateVersionSource(resource.versionSource, `${label} version source`, supportedSourceTypes);
+  }
+  if (resource.releaseNotesSource) {
+    validateReleaseNotesSource(resource.releaseNotesSource, `${label} release notes source`);
   }
 }
 

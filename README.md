@@ -69,6 +69,7 @@ CMILib config and English locale files are shared with every plugin context.
 /lookup latest
 /lookup latest public:true
 /lookup latest scope:all
+/lookup latest changes:true
 /lookup health                # admin only
 /lookup alerts-test           # admin only; sends a clearly marked private test alert
 /lookup debug                 # admin only
@@ -116,6 +117,8 @@ CMILib config and English locale files are shared with every plugin context.
 /lookup latest
 /lookup latest public:true
 /lookup latest scope:all
+/lookup latest changes:true
+/lookup latest scope:all changes:true
 ```
 
 ### Search Synonyms
@@ -276,6 +279,8 @@ Discord autocomplete uses a separate, generation-aware metadata index. It propos
 `/lookup latest` privately shows the clean snapshot version for the active plugin, CMILib, and Paper. `/lookup latest public:true` posts a compact public response containing only the latest upstream versions for the active plugin and CMILib, followed by an upgrade recommendation. It never includes the local clean snapshot, Paper, internal generation timestamps, or other tracked resources.
 
 `/lookup latest scope:all` privately lists every jar in the clean reference server, support dependencies such as LuckPerms and PlaceholderAPI, and the tracked CMI companion resources. Public output is intentionally limited to the current channel context, so `scope:all public:true` is rejected privately.
+
+`/lookup latest changes:true` privately appends the version differences and bounded release notes for updates between the clean snapshot and the latest checked versions. `scope:all` applies the same report to every pending tracked update. Release details are loaded lazily only when requested, cached by exact version pair, limited to fixed trusted providers and response sizes, converted to plain mention-safe text, and globally capped before Discord rendering. Spiget update posts cover tracked plugin resources, Paper build metadata supplies commit messages, LuckPerms uses its public changelog metadata, and PlaceholderAPI uses its GitHub releases. Resources without a trusted structured feed retain the version comparison and get a safe release-history link; individual provider failures do not hide the version diff. `changes:true public:true` is rejected because release-note details are private-only.
 
 The all-resources response is grouped for readability: the first private message lists the main Zrips plugins, and the second lists CMI companion resources followed by Paper and other third-party resources.
 
@@ -558,6 +563,8 @@ npm run lookup -- tryme config reward
 npm run lookup -- bottledexp language experience
 npm run lookup -- cmi latest
 npm run lookup -- cmi latest all
+npm run lookup -- cmi latest --changes
+npm run lookup -- cmi latest all --changes
 ```
 
 ## Verification

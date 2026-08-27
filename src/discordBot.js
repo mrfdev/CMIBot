@@ -49,6 +49,7 @@ import {
 } from "./security.js";
 import { sanitizeLogText, serviceLogger } from "./logger.js";
 import { createRelatedReferenceIndex } from "./relatedReferences.js";
+import { formatVersionChanges } from "./versionChanges.js";
 import {
   formatLatestVersionMessages,
   formatPublicLatestVersions,
@@ -771,6 +772,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
     if (canonicalSubcommand === "latest") {
       const scope = interaction.options.getString("scope") ?? "context";
       const publicResponse = interaction.options.getBoolean("public") ?? false;
+      const includeChanges = interaction.options.getBoolean("changes") ?? false;
 
       if (publicResponse && scope !== "context") {
         await logEvent(interaction, {
@@ -789,38 +791,73 @@ export function createInteractionHandler(config, searchCache, versionService, de
         return;
       }
 
-      const snapshot = versionService.getSnapshot();
-      let versionMessages;
-      try {
-        versionMessages = publicResponse
-          ? splitDiscordMessages(formatPublicLatestVersions(snapshot, context.plugin))
-          : formatLatestVersionMessages(snapshot, context.plugin, scope).flatMap((message) =>
-              splitDiscordMessages(message),
-            );
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error";
+      if (publicResponse && includeChanges) {
         await logEvent(interaction, {
           subcommand,
           scope,
-          visibility: publicResponse ? "public" : "private",
-          outcome: "error",
-          reason: message,
+          visibility: "public",
+          changes: true,
+          outcome: "denied",
+          reason: "public-version-changes",
           detectedContext: context.pluginId,
         });
         await interaction.reply({
-          content: publicResponse
-            ? `No public version result was posted: ${message}`
-            : `The bot hit an error while loading version information: ${message}`,
+          content: "Release-note details are private-only. Remove `public:true` and try again.",
           flags: MessageFlags.Ephemeral,
           allowedMentions: NO_MENTIONS,
         });
         return;
       }
 
+      const snapshot = versionService.getSnapshot();
       if (publicResponse) {
         await interaction.deferReply();
       } else {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      }
+
+      async function sendVersionFailure(content) {
+        if (publicResponse) {
+          await interaction.deleteReply().catch(() => {});
+          await interaction.followUp({
+            content,
+            flags: MessageFlags.Ephemeral,
+            allowedMentions: NO_MENTIONS,
+          });
+        } else {
+          await interaction.editReply({ content, allowedMentions: NO_MENTIONS });
+        }
+      }
+
+      let versionMessages;
+      let changeReport = null;
+      try {
+        versionMessages = publicResponse
+          ? splitDiscordMessages(formatPublicLatestVersions(snapshot, context.plugin))
+          : formatLatestVersionMessages(snapshot, context.plugin, scope).flatMap((message) =>
+              splitDiscordMessages(message),
+            );
+        if (includeChanges) {
+          changeReport = await versionService.getVersionChanges(context.plugin, scope);
+          versionMessages.push(...splitDiscordMessages(formatVersionChanges(changeReport)));
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        await logEvent(interaction, {
+          subcommand,
+          scope,
+          visibility: publicResponse ? "public" : "private",
+          changes: includeChanges,
+          outcome: "error",
+          reason: message,
+          detectedContext: context.pluginId,
+        });
+        await sendVersionFailure(
+          publicResponse
+            ? `No public version result was posted: ${message}`
+            : `The bot hit an error while loading version information: ${message}`,
+        );
+        return;
       }
 
       try {
@@ -828,9 +865,18 @@ export function createInteractionHandler(config, searchCache, versionService, de
           subcommand,
           scope,
           visibility: publicResponse ? "public" : "private",
+          changes: includeChanges,
           outcome: "success",
           detectedContext: context.pluginId,
           versionCheckErrors: snapshot.errorCount,
+          ...(changeReport
+            ? {
+                changeResourceCount: changeReport.changes.length,
+                releaseNoteCount: changeReport.releaseCount,
+                releaseNoteItemCount: changeReport.itemCount,
+                releaseNoteErrorCount: changeReport.errorCount,
+              }
+            : {}),
         });
         await interaction.editReply({
           content: versionMessages[0],
@@ -855,16 +901,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
           detectedContext: context.pluginId,
         });
         const content = `The bot hit an error while loading version information: ${message}`;
-        if (publicResponse) {
-          await interaction.deleteReply().catch(() => {});
-          await interaction.followUp({
-            content,
-            flags: MessageFlags.Ephemeral,
-            allowedMentions: NO_MENTIONS,
-          });
-        } else {
-          await interaction.editReply({ content, allowedMentions: NO_MENTIONS });
-        }
+        await sendVersionFailure(content);
       }
       return;
     }

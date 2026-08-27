@@ -209,6 +209,11 @@ export function buildCommandTree(commandName, config) {
           option
             .setName("public")
             .setDescription("Post a compact upstream-only result publicly. Defaults to false."),
+        )
+        .addBooleanOption((option) =>
+          option
+            .setName("changes")
+            .setDescription("Privately include bounded release notes for pending updates. Defaults to false."),
         ),
     )
     .addSubcommand((subcommand) =>
