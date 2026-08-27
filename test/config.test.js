@@ -23,6 +23,12 @@ function makeConfig(openai, aiRoleIds = []) {
     security: {
       auditLogPath: "logs/audit.jsonl",
     },
+    search: {
+      defaultResultLimit: 3,
+      maxResultLimit: 15,
+      synonymsPath: "data/search-synonyms.json",
+      synonymsByPlugin: {},
+    },
     versions: {
       catalogPath: "data/versions.json",
       statePath: "logs/versions.json",
@@ -120,4 +126,15 @@ test("profile include globs cannot escape the project workspace", () => {
       return true;
     },
   );
+});
+
+test("search synonyms cannot reference an unknown plugin context", () => {
+  const config = makeConfig({ enabled: false, apiKey: "", model: "gpt-5-mini" });
+  config.search.synonymsByPlugin = {
+    unknown: {
+      short: ["expanded term"],
+    },
+  };
+
+  assert.throws(() => validateBotConfig(config), /unknown plugin context/i);
 });

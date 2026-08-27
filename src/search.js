@@ -1,3 +1,5 @@
+import { expandSearchQueries } from "./searchSynonyms.js";
+
 const BRACE_TOKEN_PATTERN = /^\{[^{}\s]+\}$/;
 const PERCENT_TOKEN_PATTERN = /^%[^%\s]+%$/;
 const BRACKET_TOKEN_PATTERN = /^\[[^\]\s]+\]$/;
@@ -161,7 +163,17 @@ function matchesWholeEntry(entry, normalizedQuery) {
   return matchesWholeText(entry.searchText, normalizedQuery);
 }
 
-export function lexicalSearchWithStats(query, entries, { limit = 20, mode = "exact" } = {}) {
+function getDirectSynonymPriority(entry, normalizedQuery) {
+  if (matchesWholeEntry(entry, normalizedQuery)) {
+    return 3;
+  }
+  if (normalizedQuery.length >= 2 && !normalizedQuery.includes(" ")) {
+    return tokenize(entry.searchText).some((token) => token.startsWith(normalizedQuery)) ? 2 : 0;
+  }
+  return 0;
+}
+
+function rankSingleQuery(query, entries, { mode = "exact" } = {}) {
   const normalizedQuery = normalize(query);
   const rawQuery = query.trim().toLowerCase();
   const tokens = tokenize(query).filter((token) => token.length >= 3);
@@ -224,10 +236,64 @@ export function lexicalSearchWithStats(query, entries, { limit = 20, mode = "exa
     .filter((item) => item.score > 0)
     .sort((left, right) => right.score - left.score || left.entry.relativePath.localeCompare(right.entry.relativePath));
 
+  return rankedMatches;
+}
+
+export function lexicalSearchWithStats(query, entries, { limit = 20, mode = "exact", synonyms = {} } = {}) {
+  const queryVariants = expandSearchQueries(query, synonyms);
+  const firstMatches = rankSingleQuery(queryVariants[0], entries, { mode });
+
+  if (queryVariants.length === 1) {
+    return {
+      matches: firstMatches.slice(0, limit),
+      totalMatches: firstMatches.length,
+      matchedFiles: [...new Set(firstMatches.map((item) => item.entry.relativePath))],
+      synonymApplied: false,
+      queryVariantCount: 1,
+    };
+  }
+
+  const matchesByEntry = new Map();
+  const mergeMatches = (items, getPriority) => {
+    for (const item of items) {
+      const previous = matchesByEntry.get(item.entry);
+      const priority = getPriority(item);
+      if (priority <= 0) {
+        continue;
+      }
+      if (
+        !previous ||
+        priority > previous.priority ||
+        (priority === previous.priority && item.score > previous.score)
+      ) {
+        matchesByEntry.set(item.entry, { ...item, priority });
+      }
+    }
+  };
+
+  const normalizedOriginalQuery = normalize(queryVariants[0]);
+  mergeMatches(firstMatches, (item) => getDirectSynonymPriority(item.entry, normalizedOriginalQuery));
+  for (const expandedQuery of queryVariants.slice(1)) {
+    mergeMatches(rankSingleQuery(expandedQuery, entries, { mode }), () => 1);
+  }
+
+  const rankedMatches = [...matchesByEntry.values()]
+    .sort(
+      (left, right) =>
+        right.priority - left.priority ||
+        right.score - left.score ||
+        left.entry.relativePath.localeCompare(right.entry.relativePath) ||
+        left.entry.lineNumber - right.entry.lineNumber ||
+        left.entry.yamlPath.localeCompare(right.entry.yamlPath),
+    )
+    .map(({ entry, score, priority }) => ({ entry, score, synonymPriority: priority }));
+
   return {
     matches: rankedMatches.slice(0, limit),
     totalMatches: rankedMatches.length,
     matchedFiles: [...new Set(rankedMatches.map((item) => item.entry.relativePath))],
+    synonymApplied: true,
+    queryVariantCount: queryVariants.length,
   };
 }
 
@@ -245,6 +311,11 @@ export function orderMatchesForDisplay(items) {
   }
 
   return [...items].sort((left, right) => {
+    const priorityDifference = (right.synonymPriority ?? 0) - (left.synonymPriority ?? 0);
+    if (priorityDifference !== 0) {
+      return priorityDifference;
+    }
+
     const leftFileOrder = fileOrder.get(left.entry.relativePath) ?? Number.MAX_SAFE_INTEGER;
     const rightFileOrder = fileOrder.get(right.entry.relativePath) ?? Number.MAX_SAFE_INTEGER;
 

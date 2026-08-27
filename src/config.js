@@ -1,4 +1,5 @@
 import path from "node:path";
+import { loadSearchSynonyms, parseSearchSynonymDocument } from "./searchSynonyms.js";
 
 const SUPPORTED_PROFILE_SOURCE_TYPES = new Set(["log", "yaml"]);
 const SUPPORTED_LOG_PARSER_TYPES = new Set([
@@ -160,6 +161,16 @@ function validatePluginConfiguration(config) {
       if (availability === "ready" && SEARCH_COMMAND_NAMES.has(commandName) && !plugin.profiles[commandName]) {
         throw new Error(`${pluginKey} marks ${commandName} ready without a matching profile.`);
       }
+    }
+  }
+
+  parseSearchSynonymDocument({
+    schemaVersion: 1,
+    plugins: config.search.synonymsByPlugin,
+  });
+  for (const pluginId of Object.keys(config.search.synonymsByPlugin)) {
+    if (!config.plugins[pluginId]) {
+      throw new Error(`Search synonyms reference an unknown plugin context: ${pluginId}.`);
     }
   }
 }
@@ -773,6 +784,8 @@ function buildPluginCommandAvailability(overrides = {}) {
 export function loadConfig() {
   const workspaceRoot = process.cwd();
   const displayPathPrefix = process.env.DISPLAY_PATH_PREFIX?.trim() || "~/plugins";
+  const searchSynonymsPath = process.env.SEARCH_SYNONYMS_PATH?.trim() || "data/search-synonyms.json";
+  const synonymsByPlugin = loadSearchSynonyms(workspaceRoot, searchSynonymsPath);
   const cmiProfiles = buildCmiProfiles();
   const jobsProfiles = buildJobsProfiles();
   const svisProfiles = buildSvisProfiles();
@@ -820,6 +833,8 @@ export function loadConfig() {
     search: {
       defaultResultLimit: Math.max(1, Math.min(15, parseInteger(process.env.DEFAULT_RESULT_LIMIT, 3))),
       maxResultLimit: 15,
+      synonymsPath: searchSynonymsPath,
+      synonymsByPlugin,
     },
     versions: {
       catalogPath: process.env.VERSION_CATALOG_PATH?.trim() || "data/versions.json",
@@ -987,7 +1002,7 @@ export function loadConfig() {
 }
 
 export function validateBotConfig(config) {
-  if (!config?.discord || !config.openai || !config.security || !config.versions) {
+  if (!config?.discord || !config.openai || !config.search || !config.security || !config.versions) {
     throw new Error("Bot configuration is incomplete.");
   }
   requireConfigValue(config.discord.token, "DISCORD_TOKEN");
@@ -1016,6 +1031,7 @@ export function validateBotConfig(config) {
 
   validateRelativePath(config.versions.catalogPath, "VERSION_CATALOG_PATH");
   validateRelativePath(config.versions.statePath, "VERSION_STATE_PATH");
+  validateRelativePath(config.search.synonymsPath, "SEARCH_SYNONYMS_PATH");
   validateRelativePath(config.security.auditLogPath, "AUDIT_LOG_PATH");
   if (!Number.isSafeInteger(config.versions.checkIntervalMs) || config.versions.checkIntervalMs <= 0) {
     throw new Error("The version-check interval must be a positive integer.");

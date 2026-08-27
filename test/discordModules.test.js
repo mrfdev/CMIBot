@@ -205,7 +205,7 @@ test("Discord output helpers enforce message-size boundaries", () => {
   assert.equal(formatDuration(90_000), "1m 30s");
 });
 
-test("the extracted search lifecycle returns and audits a formatted result", async () => {
+test("the extracted search lifecycle applies context synonyms and audits a formatted result", async () => {
   const entries = extractEntriesFromText(
     ["# Enables support for DynMap web chat", "DynMapChat: false"].join("\n"),
     "CMIPlugin/CMI/Settings/Chat.yml",
@@ -224,7 +224,7 @@ test("the extracted search lifecycle returns and audits a formatted result", asy
     options: {
       getString(name) {
         return {
-          keyword: "dynmap",
+          keyword: "webmap",
           file: "",
           mode: "exact",
         }[name] ?? null;
@@ -247,7 +247,15 @@ test("the extracted search lifecycle returns and audits a formatted result", asy
     canonicalSubcommand: "config",
     context: { plugin, pluginId: "cmi" },
     config: {
-      search: { defaultResultLimit: 3, maxResultLimit: 15 },
+      search: {
+        defaultResultLimit: 3,
+        maxResultLimit: 15,
+        synonymsByPlugin: {
+          cmi: {
+            webmap: ["dynmap"],
+          },
+        },
+      },
       security: {
         queryAllowlist: [],
         queryBlocklist: [],
@@ -277,4 +285,6 @@ test("the extracted search lifecycle returns and audits a formatted result", asy
   assert.match(responses[0].content, /DynMapChat: false/);
   assert.equal(auditEvents.at(-1).outcome, "success");
   assert.equal(auditEvents.at(-1).totalMentions, 1);
+  assert.equal(auditEvents.at(-1).synonymApplied, true);
+  assert.equal(auditEvents.at(-1).queryVariantCount, 2);
 });

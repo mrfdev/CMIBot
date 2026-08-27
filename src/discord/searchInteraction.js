@@ -197,7 +197,8 @@ export async function handleSearchInteraction({
 
   try {
     const entries = fileFilter.filteredEntries;
-    const searchResult = lexicalSearchWithStats(keyword, entries, { limit: 25, mode });
+    const synonyms = config.search.synonymsByPlugin?.[context.plugin.id] ?? {};
+    const searchResult = lexicalSearchWithStats(keyword, entries, { limit: 25, mode, synonyms });
     const lexicalMatches = searchResult.matches;
     const reranker = aiEnabled && canUseAi ? await resolveAiReranker() : null;
     const rerankedMatches = reranker ? await reranker.rerank(keyword, lexicalMatches) : lexicalMatches;
@@ -212,6 +213,8 @@ export async function handleSearchInteraction({
         mode,
         related,
         summary,
+        synonymApplied: searchResult.synonymApplied,
+        queryVariantCount: searchResult.queryVariantCount,
         outcome: "empty",
         detectedContext: context.pluginId,
       });
@@ -258,6 +261,8 @@ export async function handleSearchInteraction({
       mode,
       related,
       summary,
+      synonymApplied: searchResult.synonymApplied,
+      queryVariantCount: searchResult.queryVariantCount,
       aiEnabled: canUseAi,
       outcome: "success",
       detectedContext: context.pluginId,

@@ -8,6 +8,7 @@ The repository is still named `CMIBot`, but `/lookup` is the only registered sla
 
 - Channel-ID-based plugin routing
 - Exact, whole-word, and broad searches
+- Configurable plugin-scoped aliases and synonym expansion
 - Safe indexed-file filtering for config searches
 - English locale searches with shared CMILib data
 - Curated command, permission, placeholder, FAQ, material, and tab-complete indexes where available
@@ -79,6 +80,7 @@ CMILib config and English locale files are shared with every plugin context.
 - Found totals and file counts are calculated before the display limit is applied.
 - `related:true` adds nearby YAML entries to config and language results.
 - `summary:true` requests an AI summary only when OpenAI support and the configured AI role are enabled.
+- Configured aliases are expanded automatically only inside the active plugin context. Direct matches for the original term remain first.
 
 ### Examples
 
@@ -99,6 +101,25 @@ CMILib config and English locale files are shared with every plugin context.
 /lookup latest public:true
 /lookup latest scope:all
 ```
+
+### Search Synonyms
+
+Plugin-specific aliases live in `data/search-synonyms.json`, or another safe project-relative JSON file selected with `SEARCH_SYNONYMS_PATH`. For example, CMI `tp` can retain direct `/cmi tp` matches while also finding entries about `teleport` and `teleportation`. The same alias has no effect in another plugin context unless that plugin defines it independently.
+
+Each alias maps to one or more trusted expansion terms:
+
+```json
+{
+  "schemaVersion": 1,
+  "plugins": {
+    "cmi": {
+      "tp": ["teleport", "teleportation"]
+    }
+  }
+}
+```
+
+The file is validated at startup. Unknown plugin contexts, malformed JSON, duplicate normalized aliases, self-expansion, unsafe characters, traversal, symlinks, and excessive alias or expansion counts fail closed. Query expansion is bounded and never recursively expands generated terms. Configuration changes take effect after the next verified deployment or restart.
 
 ## Channel Routing
 

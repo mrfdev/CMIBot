@@ -87,6 +87,10 @@ export function formatHelpMessage(config, member, context, commandName) {
   lines.push("", "Options:");
   lines.push("- `mode: exact|whole|broad` controls how strict the search is");
 
+  if (Object.keys(config.search.synonymsByPlugin?.[plugin.id] ?? {}).length) {
+    lines.push("- configured short terms and aliases expand only inside the active plugin context");
+  }
+
   if (getCommandAvailability(plugin, "config") === "ready") {
     lines.push("- `file: <name>` narrows `config` to a matching indexed file");
   }

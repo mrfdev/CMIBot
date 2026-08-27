@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "plugins": {
+    "cmi": {
+      "tp": ["teleport", "teleportation"],
+      "rtp": ["random teleport", "random teleportation"],
+      "tpa": ["teleport request"],
+      "msg": ["private message"],
+      "bal": ["balance"],
+      "inv": ["inventory"]
+    },
+    "jobs": {
+      "xp": ["experience", "experience points"]
+    },
+    "residence": {
+      "res": ["residence"]
+    },
+    "bottledexp": {
+      "xp": ["experience", "experience points"]
+    }
+  }
+}

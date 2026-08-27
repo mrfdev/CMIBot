@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { extractEntriesFromTokenListText } from "../src/logIndex.js";
-import { lexicalSearchWithStats } from "../src/search.js";
+import { lexicalSearchWithStats, orderMatchesForDisplay } from "../src/search.js";
 import { extractEntriesFromText } from "../src/yamlIndex.js";
 
 test("log source paths do not count as material matches", () => {
@@ -57,4 +57,57 @@ test("match totals and files are calculated before the candidate limit", () => {
     [...result.matchedFiles].sort(),
     ["CMIPlugin/data/materials.log", "CMIPlugin/data/extra-materials.log"].sort(),
   );
+});
+
+test("configured aliases add synonym matches without replacing direct matches", () => {
+  const entries = extractEntriesFromTokenListText(
+    ["HTTP_LINK", "TP", "TELEPORT", "TELEPORT_REQUEST"].join("\n"),
+    "CMIPlugin/data/commands.log",
+  );
+
+  const result = lexicalSearchWithStats("tp", entries, {
+    limit: 3,
+    synonyms: {
+      tp: ["teleport"],
+    },
+  });
+
+  assert.equal(result.synonymApplied, true);
+  assert.equal(result.queryVariantCount, 2);
+  assert.equal(result.totalMatches, 3);
+  assert.deepEqual(result.matches.map((item) => item.entry.key), ["TP", "TELEPORT", "TELEPORT_REQUEST"]);
+});
+
+test("aliases remain opt-in for each plugin search scope", () => {
+  const entries = extractEntriesFromText(["Teleport:", "  Enabled: true"].join("\n"), "config.yml");
+
+  const withoutPluginAliases = lexicalSearchWithStats("tp", entries, { limit: 25 });
+  const withPluginAliases = lexicalSearchWithStats("tp", entries, {
+    limit: 25,
+    synonyms: {
+      tp: ["teleport"],
+    },
+  });
+
+  assert.equal(withoutPluginAliases.totalMatches, 0);
+  assert.equal(withoutPluginAliases.synonymApplied, false);
+  assert.ok(withPluginAliases.totalMatches > 0);
+  assert.equal(withPluginAliases.matches[0].entry.yamlPath, "Teleport");
+});
+
+test("display grouping preserves synonym relevance tiers", () => {
+  const entries = extractEntriesFromTokenListText(
+    ["TELEPORT", "TP"].join("\n"),
+    "CMIPlugin/data/commands.log",
+  );
+  const result = lexicalSearchWithStats("tp", entries, {
+    limit: 25,
+    synonyms: {
+      tp: ["teleport"],
+    },
+  });
+
+  const ordered = orderMatchesForDisplay(result.matches);
+
+  assert.deepEqual(ordered.map((item) => item.entry.key), ["TP", "TELEPORT"]);
 });

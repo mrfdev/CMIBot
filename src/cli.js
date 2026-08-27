@@ -121,7 +121,8 @@ async function main() {
   }
 
   const entries = fileFilter.filteredEntries;
-  const lexicalMatches = lexicalSearch(keyword, entries, { limit: 25, mode });
+  const synonyms = config.search.synonymsByPlugin?.[plugin.id] ?? {};
+  const lexicalMatches = lexicalSearch(keyword, entries, { limit: 25, mode, synonyms });
   const reranker = await resolveAiReranker();
   const rerankedMatches = reranker ? await reranker.rerank(keyword, lexicalMatches) : lexicalMatches;
   const matches = orderMatchesForDisplay(rerankedMatches);
