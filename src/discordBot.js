@@ -27,6 +27,7 @@ import {
 } from "./discord/browse.js";
 import { formatHelpMessage } from "./discord/help.js";
 import { formatHealthMessage } from "./discord/health.js";
+import { createExpandedYamlContextPayload } from "./discord/expandedContext.js";
 import { createResultPagination } from "./discord/pagination.js";
 import {
   formatLangStatsOnlyMessage,
@@ -221,6 +222,56 @@ export function createInteractionHandler(config, searchCache, versionService, de
             : result.status === "invalid-context"
               ? "These result controls are not valid in this channel or plugin context."
               : "These result controls expired. Run the lookup again for fresh results.";
+      await interaction.reply({
+        content,
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: NO_MENTIONS,
+      });
+      return;
+    }
+
+    if (pagination.isContextSelect(interaction)) {
+      const context = resolveChannelContext(interaction.channelId, config, testOverrides);
+      const result = pagination.resolveContextSelection(
+        interaction.customId,
+        interaction.values?.[0],
+        {
+          userId: interaction.user?.id,
+          guildId: interaction.guildId,
+          channelId: interaction.channelId,
+          pluginId: context.pluginId,
+          cacheGeneration: searchCache.getGeneration?.() ?? 0,
+          hasAccess:
+            config.discord.allowedChannelIds.includes(interaction.channelId) &&
+            hasRole(interaction.member, { roleIds: config.discord.allowedRoleIds }),
+        },
+      );
+      logger.info("discord.context_expansion", {
+        status: result.status,
+        resultNumber: result.resultNumber ?? 0,
+      });
+
+      if (result.status === "ok") {
+        const payload = createExpandedYamlContextPayload(result.result, {
+          attachmentSizeLimit: interaction.attachmentSizeLimit,
+        });
+        if (payload) {
+          await interaction.reply({
+            ...payload,
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+      }
+
+      const content =
+        result.status === "unauthorized"
+          ? "These context controls belong to the support member who ran the lookup."
+          : result.status === "stale"
+            ? "The lookup cache changed after these results were created. Run the lookup again."
+            : result.status === "invalid-context"
+              ? "These context controls are not valid in this channel or plugin context."
+              : "These context controls expired or are no longer valid. Run the lookup again for fresh results.";
       await interaction.reply({
         content,
         flags: MessageFlags.Ephemeral,
@@ -977,7 +1028,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
       return;
     }
 
-    if (pagination.isPaginationButton(interaction)) {
+    if (pagination.isPaginationButton(interaction) || pagination.isContextSelect(interaction)) {
       await handleInteraction(interaction);
       return;
     }

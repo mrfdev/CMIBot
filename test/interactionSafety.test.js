@@ -9,6 +9,7 @@ import {
   reloadServicesAtomically,
 } from "../src/discordBot.js";
 import { createResultPagination } from "../src/discord/pagination.js";
+import { extractEntriesFromText, makeDisplayContext } from "../src/yamlIndex.js";
 
 const SILENT_LOGGER = {
   info() {},
@@ -593,6 +594,96 @@ test("pagination buttons revalidate the owning user, role, channel, context, and
     await handler(allowed.interaction);
     assert.equal(allowed.updates.length, 1);
     assert.match(allowed.updates[0].content, /Two: true/);
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("expanded YAML controls reply privately after revalidating owner and role", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-context-role-"));
+  const pagination = createResultPagination(
+    { paginationTtlMs: 10_000 },
+    { createSessionId: () => "contextControl01", now: () => 1_000 },
+  );
+  const entries = extractEntriesFromText(
+    [
+      "Root:",
+      "  Before: true",
+      "  Target:",
+      "    Nested:",
+      "      Value: two",
+      "  After: false",
+    ].join("\n"),
+    "CMIPlugin/config.yml",
+  );
+  const entry = entries.find((candidate) => candidate.yamlPath === "Root.Target");
+  const result = makeDisplayContext(entry, "cmi", (_pluginId, relativePath) => relativePath, {
+    includeIndexedYamlContext: true,
+  });
+  result.related = [];
+  const session = pagination.createSession({
+    ownerId: "support-user",
+    guildId: "expected-guild",
+    channelId: "channel-1",
+    pluginId: "cmi",
+    cacheGeneration: 4,
+    keyword: "target",
+    results: [result],
+    totalMentions: 1,
+    fileCount: 1,
+    pageSize: 1,
+  });
+  const contextMenu = session.payload.components[0].components[0];
+  const handler = createTestInteractionHandler(
+    makeConfig(workspaceRoot),
+    { getGeneration: () => 4 },
+    {},
+    { pagination },
+  );
+
+  function makeSelection(roleIds) {
+    const replies = [];
+    return {
+      replies,
+      interaction: {
+        isButton: () => false,
+        isStringSelectMenu: () => true,
+        isRepliable: () => true,
+        customId: contextMenu.custom_id,
+        values: [contextMenu.options[0].value],
+        attachmentSizeLimit: 8 * 1024 * 1024,
+        guildId: "expected-guild",
+        channelId: "channel-1",
+        user: { id: "support-user", tag: "support" },
+        member: { roles: { cache: roleIds.map((id) => ({ id })) } },
+        replied: false,
+        deferred: false,
+        async reply(payload) {
+          this.replied = true;
+          replies.push(payload);
+        },
+      },
+    };
+  }
+
+  try {
+    const denied = makeSelection([]);
+    await handler(denied.interaction);
+    assert.match(denied.replies[0].content, /belong to the support member/i);
+    assert.ok(denied.replies[0].flags);
+
+    const allowed = makeSelection(["support-role"]);
+    await handler(allowed.interaction);
+    assert.equal(allowed.replies.length, 1);
+    assert.ok(allowed.replies[0].flags);
+    assert.deepEqual(allowed.replies[0].allowedMentions, { parse: [] });
+    assert.match(allowed.replies[0].content, /Expanded YAML Context/);
+    assert.match(allowed.replies[0].content, /Nested:\n      Value: two/);
+
+    await assert.rejects(
+      () => fs.access(path.join(workspaceRoot, "logs/test-interactions.jsonl")),
+      { code: "ENOENT" },
+    );
   } finally {
     await fs.rm(workspaceRoot, { recursive: true, force: true });
   }

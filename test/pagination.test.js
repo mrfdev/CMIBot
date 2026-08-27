@@ -3,16 +3,27 @@ import test from "node:test";
 import { createResultPagination } from "../src/discord/pagination.js";
 
 function makeResults(count) {
-  return Array.from({ length: count }, (_, index) => ({
-    displayPath: "CMIPlugin/CMI/config.yml",
-    relativePath: "CMIPlugin/CMI/config.yml",
-    yamlPath: `Setting.${index + 1}`,
-    lineNumber: index + 1,
-    snippet: `Setting.${index + 1}: true`,
-    codeLanguage: "yml",
-    sourceType: "yaml",
-    related: [],
-  }));
+  return Array.from({ length: count }, (_, index) => {
+    const result = {
+      displayPath: "CMIPlugin/CMI/config.yml",
+      relativePath: "CMIPlugin/CMI/config.yml",
+      yamlPath: `Setting.${index + 1}`,
+      lineNumber: index + 1,
+      snippet: `Setting.${index + 1}: true`,
+      codeLanguage: "yml",
+      sourceType: "yaml",
+      related: [],
+    };
+    Object.defineProperty(result, "indexedYamlContext", {
+      value: {
+        document: { lines: [`Setting.${index + 1}: true`] },
+        blockStartLine: 1,
+        blockEndLine: 1,
+      },
+      enumerable: false,
+    });
+    return result;
+  });
 }
 
 function makeSession(pagination, overrides = {}) {
@@ -52,10 +63,17 @@ test("pagination uses opaque controls and owner-bound pages", () => {
   );
   const session = makeSession(pagination);
   const controls = session.payload.components[0].components;
+  const contextMenu = session.payload.components[1].components[0];
   const nextCustomId = controls[2].custom_id;
 
   assert.match(nextCustomId, /^lookup-page:opaqueSession01:next$/);
   assert.doesNotMatch(nextCustomId, /private|query|CMIPlugin|owner-user|guild-one|channel-one/);
+  assert.match(contextMenu.custom_id, /^lookup-context:opaqueSession01$/);
+  assert.doesNotMatch(
+    contextMenu.custom_id,
+    /private|query|CMIPlugin|owner-user|guild-one|channel-one/,
+  );
+  assert.deepEqual(contextMenu.options.map((option) => option.value), ["0", "1"]);
   assert.equal(controls[0].disabled, true);
   assert.equal(controls[2].disabled, false);
   assert.match(session.payload.content, /Page 1\/3, showing results 1-2 of 5; top 5 of 8 matches retained/);
@@ -70,6 +88,65 @@ test("pagination uses opaque controls and owner-bound pages", () => {
   assert.match(next.payload.content, /Setting\.3/);
   assert.match(next.payload.content, /Page 2\/3, showing results 3-4 of 5/);
   assert.equal(next.payload.components[0].components[0].disabled, false);
+  assert.deepEqual(
+    next.payload.components[1].components[0].options.map((option) => option.value),
+    ["2", "3"],
+  );
+});
+
+test("expanded-context selections are owner-bound and limited to the visible page", () => {
+  const pagination = createResultPagination(
+    { paginationTtlMs: 10_000 },
+    { createSessionId: () => "contextSession01", now: () => 1_000 },
+  );
+  const session = makeSession(pagination);
+  const customId = session.payload.components[1].components[0].custom_id;
+
+  assert.equal(
+    pagination.resolveContextSelection(customId, "0", validContext({ userId: "other" })).status,
+    "unauthorized",
+  );
+  assert.equal(
+    pagination.resolveContextSelection(customId, "2", validContext()).status,
+    "invalid-selection",
+  );
+  assert.equal(
+    pagination.resolveContextSelection(customId, "../../etc/passwd", validContext()).status,
+    "invalid-selection",
+  );
+
+  const selected = pagination.resolveContextSelection(customId, "1", validContext());
+  assert.equal(selected.status, "ok");
+  assert.equal(selected.resultNumber, 2);
+  assert.equal(selected.result.yamlPath, "Setting.2");
+
+  const nextCustomId = session.payload.components[0].components[2].custom_id;
+  pagination.resolveButton(nextCustomId, validContext());
+  assert.equal(
+    pagination.resolveContextSelection(customId, "0", validContext()).status,
+    "invalid-selection",
+  );
+  assert.equal(
+    pagination.resolveContextSelection(customId, "2", validContext()).status,
+    "ok",
+  );
+});
+
+test("a single result can expose context without adding pagination buttons", () => {
+  const pagination = createResultPagination(
+    { paginationTtlMs: 10_000 },
+    { createSessionId: () => "singleContext01", now: () => 1_000 },
+  );
+  const session = makeSession(pagination, {
+    results: makeResults(1),
+    totalMentions: 1,
+    pageSize: 3,
+  });
+
+  assert.equal(session.payload.components.length, 1);
+  assert.equal(session.payload.components[0].components[0].type, 3);
+  assert.equal(session.payload.components[0].components[0].options.length, 1);
+  assert.doesNotMatch(session.payload.content, /Page 1\/1/);
 });
 
 test("pagination invalidates changed contexts, cache generations, and expired sessions", () => {

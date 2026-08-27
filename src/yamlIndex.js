@@ -3,6 +3,7 @@ import path from "node:path";
 import fg from "fast-glob";
 
 const KEY_LINE_PATTERN = /^(\s*)([^#\s-][^:]*?):(?:\s*(.*))?$/;
+const DEFAULT_SURROUNDING_LINE_COUNT = 2;
 
 function stripInlineComment(value) {
   if (!value) {
@@ -75,9 +76,46 @@ function extractTextForSearch(comments, yamlPath, key, value, continuationLines 
   return [yamlPath, key, value, continuationText, commentText].join("\n").toLowerCase();
 }
 
+function attachIndexedYamlContext(entries, entryIndents, lines) {
+  const document = Object.freeze({ lines: Object.freeze(lines) });
+  const openEntries = [];
+
+  function closeEntry(entryIndex, boundaryStartLine) {
+    const entry = entries[entryIndex];
+    let blockEndLine = Math.max(entry.lineNumber, boundaryStartLine - 1);
+    while (blockEndLine > entry.lineNumber && !lines[blockEndLine - 1]?.trim()) {
+      blockEndLine -= 1;
+    }
+
+    Object.defineProperty(entry, "indexedYamlContext", {
+      value: Object.freeze({
+        document,
+        blockStartLine: entry.startLine,
+        blockEndLine,
+      }),
+      enumerable: false,
+      configurable: false,
+      writable: false,
+    });
+  }
+
+  for (let entryIndex = 0; entryIndex < entries.length; entryIndex += 1) {
+    const indent = entryIndents[entryIndex];
+    while (openEntries.length && entryIndents[openEntries.at(-1)] >= indent) {
+      closeEntry(openEntries.pop(), entries[entryIndex].startLine);
+    }
+    openEntries.push(entryIndex);
+  }
+
+  while (openEntries.length) {
+    closeEntry(openEntries.pop(), lines.length + 1);
+  }
+}
+
 export function extractEntriesFromText(fileText, relativePath) {
   const lines = fileText.split(/\r?\n/);
   const entries = [];
+  const entryIndents = [];
   const stack = [];
   let commentBuffer = [];
 
@@ -131,6 +169,7 @@ export function extractEntriesFromText(fileText, relativePath) {
         continuationLines,
       ),
     });
+    entryIndents.push(indent);
 
     stack.push({
       indent,
@@ -138,6 +177,8 @@ export function extractEntriesFromText(fileText, relativePath) {
     });
     commentBuffer = [];
   }
+
+  attachIndexedYamlContext(entries, entryIndents, lines);
 
   return entries;
 }
@@ -162,8 +203,13 @@ export async function loadEntriesForProfile(profile, workspaceRoot) {
   return entries;
 }
 
-export function makeDisplayContext(entry, pluginId, formatDisplayPath) {
-  return {
+export function makeDisplayContext(
+  entry,
+  pluginId,
+  formatDisplayPath,
+  { includeIndexedYamlContext = false } = {},
+) {
+  const displayContext = {
     displayPath: formatDisplayPath(pluginId, entry.relativePath),
     relativePath: entry.relativePath,
     lineNumber: entry.lineNumber,
@@ -172,6 +218,50 @@ export function makeDisplayContext(entry, pluginId, formatDisplayPath) {
     comments: entry.comments ?? [],
     codeLanguage: entry.codeLanguage ?? "yml",
     sourceType: entry.sourceType ?? "yaml",
+  };
+
+  if (includeIndexedYamlContext && entry.indexedYamlContext) {
+    Object.defineProperty(displayContext, "indexedYamlContext", {
+      value: entry.indexedYamlContext,
+      enumerable: false,
+      configurable: false,
+      writable: false,
+    });
+  }
+
+  return displayContext;
+}
+
+export function materializeIndexedYamlContext(
+  entry,
+  { surroundingLineCount = DEFAULT_SURROUNDING_LINE_COUNT } = {},
+) {
+  const metadata = entry?.indexedYamlContext;
+  const lines = metadata?.document?.lines;
+  if (
+    !Array.isArray(lines) ||
+    !Number.isSafeInteger(metadata.blockStartLine) ||
+    !Number.isSafeInteger(metadata.blockEndLine) ||
+    metadata.blockStartLine < 1 ||
+    metadata.blockEndLine < metadata.blockStartLine ||
+    metadata.blockEndLine > lines.length
+  ) {
+    return null;
+  }
+
+  const parsedSurroundingLines = Number(surroundingLineCount);
+  const surroundingLines = Number.isSafeInteger(parsedSurroundingLines)
+    ? Math.max(0, Math.min(10, parsedSurroundingLines))
+    : DEFAULT_SURROUNDING_LINE_COUNT;
+  const startLine = Math.max(1, metadata.blockStartLine - surroundingLines);
+  const endLine = Math.min(lines.length, metadata.blockEndLine + surroundingLines);
+
+  return {
+    startLine,
+    endLine,
+    blockStartLine: metadata.blockStartLine,
+    blockEndLine: metadata.blockEndLine,
+    snippet: lines.slice(startLine - 1, endLine).join("\n").trimEnd(),
   };
 }
 

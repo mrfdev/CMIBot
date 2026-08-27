@@ -9,6 +9,7 @@ import { resolveFileFilter, sanitizeForDisplay, validateQuery } from "../securit
 import { buildPinnedSourceUrl } from "../sourceLinks.js";
 import { findRelatedEntries, makeDisplayContext } from "../yamlIndex.js";
 import { NO_MENTIONS, PRIMARY_COMMAND_NAME } from "./constants.js";
+import { isSafeIndexedRelativePath } from "./browse.js";
 import {
   formatCommandUnavailableMessage,
   getCommandAvailability,
@@ -304,14 +305,23 @@ export async function handleSearchInteraction({
       });
     const visibleResults = retainedMatches.map((item) => {
       const relatedEntries = related ? findRelatedEntries(item.entry, entries) : [];
-      return {
-        ...makeDisplayContext(item.entry, context.plugin.id, config.formatDisplayPath),
-        sourceUrl: sourceUrlFor(item.entry.relativePath, item.entry.lineNumber),
-        related: relatedEntries.map((entry) => ({
-          ...entry,
-          sourceUrl: sourceUrlFor(item.entry.relativePath, entry.lineNumber),
-        })),
-      };
+      const displayContext = makeDisplayContext(
+        item.entry,
+        context.plugin.id,
+        config.formatDisplayPath,
+        {
+          includeIndexedYamlContext: isSafeIndexedRelativePath(
+            item.entry.relativePath,
+            allowedSourceRoots,
+          ),
+        },
+      );
+      displayContext.sourceUrl = sourceUrlFor(item.entry.relativePath, item.entry.lineNumber);
+      displayContext.related = relatedEntries.map((entry) => ({
+        ...entry,
+        sourceUrl: sourceUrlFor(item.entry.relativePath, entry.lineNumber),
+      }));
+      return displayContext;
     });
     const totalMentions = searchResult.totalMatches;
     const fileCount = searchResult.matchedFiles.length;
@@ -329,8 +339,9 @@ export async function handleSearchInteraction({
       showFileHints: canonicalSubcommand === "config",
       layout: getResultLayout(canonicalSubcommand),
     };
+    const hasExpandableResults = pagination?.hasExpandableResults?.(visibleResults) ?? false;
     const responsePayload =
-      pagination && visibleResults.length > limit
+      pagination && (visibleResults.length > limit || hasExpandableResults)
         ? pagination.createSession({
             ownerId: interaction.user.id,
             guildId: interaction.guildId,

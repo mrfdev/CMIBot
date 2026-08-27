@@ -25,7 +25,7 @@ The repository is still named `CMIBot`, but `/lookup` is the only registered sla
 - Layered user/channel/global rate limits, input validation, disabled mentions, role-ID access checks, JSONL audit logs, and bounded privacy-aware structured service logs
 - Privacy-safe aggregate metrics for commands, searches, reloads, AI usage, upstream checks, errors, and memory
 - Optional aggregate admin alerts for stale snapshots, upstream failures, and tracked updates
-- Owner-bound interactive result pagination and commit-pinned public source links
+- Owner-bound pagination and private full-block YAML context with commit-pinned public source links
 - Generated environment schema, blank-safe examples, and plugin-profile documentation
 - Context-aware help, stats, language stats, latest versions, health, and debug output
 
@@ -90,6 +90,7 @@ CMILib config and English locale files are shared with every plugin context.
 - Source filenames and repository paths are metadata, not searchable content. Use `file:` when you intentionally want to restrict a config lookup to an indexed file.
 - Found totals and file counts are calculated before the display limit is applied.
 - When more results exist, opaque Previous/Next controls retain up to `PAGINATION_MAX_RESULTS` ranked matches for the configured session lifetime. Every click revalidates the owning user, support role, channel, plugin context, and cache generation.
+- Safe YAML results include a selector for the complete matched block plus two surrounding lines. The expanded excerpt is sent only to the member who ran the lookup; long excerpts use a generically named private attachment instead of being truncated, and non-empty credential-like values are redacted.
 - Source links point to the full commit deployed when the response was generated. A later deployment uses its new commit, while links in older Discord messages remain stable.
 - `related:true` adds nearby YAML entries to config and language results.
 - `summary:true` requests an AI summary only when OpenAI support and the configured AI role are enabled.
@@ -325,6 +326,8 @@ The scripts prefer the JDK home paths from the compatibility manifest. If a patc
 
 All indexed YAML plus curated and jar-generated log data is loaded into RAM during startup. Profile loaders share the bounded `CACHE_LOAD_CONCURRENCY` pool; shared CMILib profiles finish before dependent plugin profiles begin. `/lookup reload` without options globally rebuilds every plugin cache, reloads the version catalog, and refreshes upstream version checks. `plugin:` narrows the cache reload to one context, and `profile:` narrows it to one profile. A profile without `plugin:` uses the current channel context. Selective reloads intentionally leave version data and unrelated cache snapshots unchanged.
 
+Each indexed YAML file retains one shared in-memory line snapshot so an authorized result can reconstruct its complete nested block without rereading the filesystem. Expansion is available only for safe YAML paths beneath the active plugin or shared roots. The selector contains only an opaque session ID and numeric result choices, and every selection revalidates the original member, role, guild, channel, plugin context, visible page, and cache generation. Sessions expire automatically; a reload immediately makes earlier selectors stale.
+
 Repeated identical searches reuse a least-recently-used result cache bounded by `SEARCH_RESULT_CACHE_MAX_ENTRIES` (default 256, zero disables it). Plugin context, profile, normalized query, file filter, mode, and retained-result limit are part of the key. Any successful full or selective cache reload invalidates all retained results; a failed or discarded reload leaves them untouched. Health and metrics expose aggregate size, hit, miss, and eviction counts only, never cache keys or query text.
 
 CMILib is cached once through the `CMILIB_*_INCLUDE_GLOBS` profiles. Plugin contexts retain only their own entries, then compose the matching shared CMILib config, language, and placeholder entries into searches at read time. This preserves the same `/lookup` results and per-context stats without retaining another copy of every CMILib entry for every Zrips plugin.
@@ -386,6 +389,7 @@ Aggregate alerts are disabled unless `DISCORD_ADMIN_ALERT_CHANNEL_ID` names a te
 - `/lookup files` never reads from a user-supplied path or returns file contents.
 - Autocomplete fails closed for unauthorized contexts and derives choices only from safe cached metadata, never values, comments, partial-query logs, or arbitrary filesystem reads.
 - Pagination IDs are random and contain no query, user, route, or path data; sessions are bounded, expire automatically, and are invalidated by cache reloads.
+- Expanded YAML is materialized only from the already-indexed in-memory snapshot, never from a user-selected path or a new filesystem read. Replies are private, attachment size is capped, non-empty credential-like values are redacted, and unsafe or credential-like paths receive no expansion control.
 - Pinned source links require a full deployed commit and a safe path beneath the active plugin or shared root; short revisions, mutable branches, private hosts, traversal, and credential-like targets produce no link.
 - A sliding-window limit follows each user across every subcommand, so switching commands cannot bypass throttling.
 - Authorized support commands also share per-channel and process-wide windows to contain coordinated bursts.

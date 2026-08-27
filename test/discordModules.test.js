@@ -450,6 +450,105 @@ test("the extracted search lifecycle applies context synonyms and audits a forma
   assert.equal("query" in searchMetrics[0], false);
 });
 
+test("Discord search offers YAML expansion only for safe indexed paths", async () => {
+  async function runSearch(relativePath, sessionId) {
+    const entries = extractEntriesFromText("Root:\n  Setting: needle", relativePath);
+    const responses = [];
+    const plugin = makePlugin();
+    plugin.debugRoots = ["CMIPlugin"];
+    plugin.profiles.config = {
+      defaultResultLimit: 3,
+      maxResultLimit: 15,
+      entryLabel: "YAML entries",
+    };
+    const pagination = createResultPagination(
+      { paginationMaxResults: 5, paginationTtlMs: 10_000 },
+      { createSessionId: () => sessionId, now: () => 1_000 },
+    );
+    const interaction = {
+      guildId: "guild-one",
+      channelId: "channel-one",
+      user: { id: "support-user" },
+      member: { roles: { cache: [{ id: "support-role" }] } },
+      options: {
+        getString(name) {
+          return { keyword: "needle", file: "", mode: "exact" }[name] ?? null;
+        },
+        getInteger: () => null,
+        getBoolean: () => false,
+      },
+      async deferReply() {},
+      async editReply(payload) {
+        responses.push(payload);
+      },
+    };
+
+    await handleSearchInteraction({
+      interaction,
+      subcommand: "config",
+      canonicalSubcommand: "config",
+      context: { plugin, pluginId: "cmi" },
+      config: {
+        search: {
+          defaultResultLimit: 3,
+          maxResultLimit: 15,
+          paginationMaxResults: 5,
+          sourceLinksEnabled: false,
+          synonymsByPlugin: {},
+        },
+        security: {
+          queryAllowlist: [],
+          queryBlocklist: [],
+          queryMinLength: 2,
+          queryMaxLength: 100,
+          queryDebugErrors: false,
+          lookupCooldownSeconds: 0,
+          summaryCooldownSeconds: 0,
+        },
+        discord: { aiRoleIds: ["admin-role"] },
+        sharedDebugRoots: [],
+        formatDisplayPath: (_pluginId, pathValue) => pathValue,
+      },
+      searchCache: {
+        getEntries: () => entries,
+        getGeneration: () => 3,
+      },
+      aiEnabled: false,
+      resolveAiReranker: async () => null,
+      cooldowns: { check: () => ({ allowed: true, retryAfterSeconds: 0 }) },
+      logEvent: async () => {},
+      logRateLimitEvent: async () => {},
+      metrics: { recordSearch() {} },
+      pagination,
+    });
+
+    return { response: responses[0], pagination };
+  }
+
+  const safe = await runSearch("CMIPlugin/CMI/config.yml", "safeContext01");
+  assert.equal(safe.response.components.length, 1);
+  assert.equal(safe.response.components[0].components[0].type, 3);
+  assert.match(safe.response.components[0].components[0].custom_id, /^lookup-context:/);
+
+  const selected = safe.pagination.resolveContextSelection(
+    safe.response.components[0].components[0].custom_id,
+    safe.response.components[0].components[0].options[0].value,
+    {
+      userId: "support-user",
+      guildId: "guild-one",
+      channelId: "channel-one",
+      pluginId: "cmi",
+      cacheGeneration: 3,
+      hasAccess: true,
+    },
+  );
+  assert.equal(selected.status, "ok");
+  assert.ok(selected.result.indexedYamlContext);
+
+  const sensitive = await runSearch("CMIPlugin/private/token.yml", "unsafeContext01");
+  assert.equal(sensitive.response.components, undefined);
+});
+
 test("an empty Discord search offers scoped suggestions without auditing their text", async () => {
   const entries = extractEntriesFromText("Teleport: true", "CMIPlugin/CMI/config.yml");
   const responses = [];
