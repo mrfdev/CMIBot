@@ -15,6 +15,7 @@ test("CI covers supported Node versions, checks, and the production dependency a
   assert.match(workflow, /push:\n\s+branches:\n\s+- main/);
   assert.match(workflow, /\n  pull_request:\n/);
   assert.match(workflow, /\n  workflow_dispatch:\n/);
+  assert.match(workflow, /  test:\n[\s\S]*?    runs-on: macos-latest/);
   assert.match(workflow, /node-version:\n\s+- "22\.x"\n\s+- "24\.x"\n\s+- "26\.x"/);
   assert.match(workflow, /run: npm ci\n/);
   assert.match(workflow, /run: npm run check:bot/);

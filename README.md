@@ -424,7 +424,7 @@ The LaunchAgent points at `.deploy/current`. Each release is assembled with its 
 
 ## Continuous Integration
 
-GitHub Actions runs on pushes to `main`, pull requests, and manual dispatches. The test matrix runs `npm ci` followed by `npm run check:bot` on Node.js 22 LTS, 24 LTS, and 26 Current. A separate Node.js 24 job installs the locked dependency tree without lifecycle scripts and runs the production dependency audit.
+GitHub Actions runs on pushes to `main`, pull requests, and manual dispatches. The macOS test matrix runs `npm ci` followed by `npm run check:bot` on Node.js 22 LTS, 24 LTS, and 26 Current, including validation of the launchd service definition. A separate Node.js 24 Ubuntu job installs the locked dependency tree without lifecycle scripts and runs the production dependency audit.
 
 The workflow has read-only repository permissions, receives no repository secrets, disables checkout credential persistence and automatic package-manager caching, and pins official actions to immutable commit SHAs. Dependabot monitors both npm packages and GitHub Actions references.
 
