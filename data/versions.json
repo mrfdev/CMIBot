@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-27T13:02:06.034Z",
+  "generatedAt": "2026-08-28T07:55:34.170Z",
   "sourceServer": "servers/Paper-26.2",
   "paper": {
     "id": "paper",
@@ -73,8 +73,8 @@
       "id": "luckperms",
       "label": "LuckPerms",
       "pluginName": "LuckPerms",
-      "version": "5.5.79",
-      "jar": "LuckPerms-Bukkit-5.5.79.jar",
+      "version": "5.5.81",
+      "jar": "LuckPerms-Bukkit-5.5.81.jar",
       "contextId": null,
       "shared": false,
       "tracked": false,
