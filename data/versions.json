@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-28T07:55:34.170Z",
+  "generatedAt": "2026-08-29T08:09:44.604Z",
   "sourceServer": "servers/Paper-26.2",
   "paper": {
     "id": "paper",
     "label": "Paper",
     "version": "26.2",
-    "build": 119,
+    "build": 120,
     "channel": "STABLE",
     "jar": "Paper-26.2.jar",
-    "sha256": "a8c9140c3075bd7c04973e9cdc491b21bfe6bad472b674ef932a4ae0fec19629",
+    "sha256": "2d1a4c3e5152171c3ef327a8ae10baeae44d6c13b4620bc2578cc15ea6c6ab47",
     "apiVersion": "26.2",
-    "apiCoordinate": "26.2.build.119-stable",
+    "apiCoordinate": "26.2.build.120-stable",
     "javaTarget": 25,
     "exporterVersion": "1.0.1",
     "projectUrl": "https://papermc.io/downloads/paper"

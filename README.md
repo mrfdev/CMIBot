@@ -318,7 +318,7 @@ The scheduled timer is in memory and starts with the bot. Restarting the bot res
 
 ### Paper Compatibility
 
-`runtime-exporter/compatibility.json` is the source of truth for the internal Paper tooling. It currently pins Paper `26.2` build `119` on `STABLE`, API `26.2.build.119-stable`, exporter `1.0.1`, and Java target `25`.
+`runtime-exporter/compatibility.json` is the source of truth for the internal Paper tooling. It currently pins Paper `26.2` build `120` on `STABLE`, API `26.2.build.120-stable`, exporter `1.0.1`, and Java target `25`.
 
 Verify the tracked metadata, PaperScript source/config, installed jar checksum, exact API jar, JDKs, and the live latest-stable build:
 
