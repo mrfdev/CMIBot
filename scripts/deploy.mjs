@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { hasHealthyServiceLog } from "./deploy-health.mjs";
+import { readPrivateEnvironmentFile } from "../src/privateEnvironment.js";
 
 const execFileAsync = promisify(execFile);
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -213,7 +214,7 @@ async function deploy() {
   if (status) {
     throw new Error("The source worktree is not clean; refusing to deploy.");
   }
-  await fs.access(environmentPath);
+  await readPrivateEnvironmentFile(environmentPath);
   const commit = await capture(git, ["rev-parse", "--verify", "HEAD^{commit}"], { cwd: sourceRoot });
   if (!/^[0-9a-f]{40}$/i.test(commit)) {
     throw new Error("Git did not return a full commit ID.");
@@ -292,6 +293,8 @@ async function rollback() {
   const previousLink = path.join(deployRoot, "previous");
   const lockPath = path.join(deployRoot, "deploy.lock");
   const serviceLogPath = path.join(sourceRoot, "logs", "cmibot-service.log");
+
+  await readPrivateEnvironmentFile(path.join(sourceRoot, ".env"));
 
   await fs.mkdir(deployRoot, { recursive: true, mode: 0o700 });
   await acquireDeploymentLock(lockPath);

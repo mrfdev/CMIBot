@@ -500,13 +500,13 @@ Install and start:
 
 ```bash
 npm ci
-cp .env.example .env
+install -m 600 .env.example .env
 npm start
 ```
 
 `npm ci` installs the exact dependency versions recorded in `package-lock.json`, which is the recommended path for the live bot and fresh clones. Use `npm install` only when intentionally updating dependencies locally.
 
-Fill in the Discord token, application ID, guild ID, channel IDs, and role IDs in `.env`. The real `.env` is ignored and must be created independently on each machine.
+Fill in the Discord token, application ID, guild ID, channel IDs, and role IDs in `.env`. The real `.env` is ignored and must be created independently on each machine. Startup, service installation, and deployment reject symbolic links, files owned by another account, and group- or world-accessible permissions. Existing installations can be corrected with `chmod 600 .env`.
 
 Local Ollama support is enabled by default but remains safe when Ollama or the configured model is absent because cited lexical fallback stays active. No API key is accepted or required. Set `AI_ENABLED=false` to disable model generation entirely while keeping normal lookup commands deterministic.
 

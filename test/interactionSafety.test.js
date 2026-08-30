@@ -50,6 +50,11 @@ function makeConfig(workspaceRoot) {
       commandChannelRateLimit: 0,
       commandGlobalRateLimit: 0,
       commandRateWindowSeconds: 30,
+      interactionUserRateLimit: 0,
+      interactionChannelRateLimit: 0,
+      interactionGlobalRateLimit: 0,
+      interactionRateWindowSeconds: 10,
+      interactionMaxConcurrent: 0,
       debugCooldownSeconds: 0,
       reloadCooldownSeconds: 0,
       rateLimitAuditCooldownSeconds: 30,
@@ -691,6 +696,278 @@ test("autocomplete fails closed before reading indexes for unauthorized members"
     assert.equal(cacheRead, false);
   } finally {
     await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("unauthorized autocomplete cannot consume shared interaction capacity", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-autocomplete-shared-limit-"));
+  const config = makeConfig(workspaceRoot);
+  config.security.queryMaxLength = 80;
+  config.security.interactionUserRateLimit = 10;
+  config.security.interactionChannelRateLimit = 1;
+  config.security.interactionGlobalRateLimit = 1;
+  config.security.interactionMaxConcurrent = 4;
+  config.sharedDebugRoots = [];
+  config.plugins.cmi = {
+    id: "cmi",
+    label: "CMI",
+    debugRoots: ["CMIPlugin"],
+    profiles: { config: {} },
+    commandAvailability: { config: "ready" },
+  };
+  const handler = createTestInteractionHandler(config, {
+    getGeneration: () => 1,
+    getEntries: () => [{
+      relativePath: "CMIPlugin/CMI/config.yml",
+      key: "TeleportEnabled",
+      yamlPath: "Commands.TeleportEnabled",
+    }],
+  }, {});
+
+  function makeAutocomplete({ authorized, userId }) {
+    const responses = [];
+    return {
+      responses,
+      interaction: {
+        isAutocomplete: () => true,
+        isChatInputCommand: () => false,
+        commandName: "lookup",
+        guildId: "expected-guild",
+        channelId: "channel-1",
+        user: { id: userId, tag: userId },
+        member: {
+          roles: {
+            cache: authorized ? [{ id: "support-role" }] : [],
+          },
+        },
+        options: {
+          getSubcommand: () => "config",
+          getFocused: () => ({ name: "keyword", value: "tele" }),
+        },
+        async respond(choices) {
+          responses.push(choices);
+        },
+      },
+    };
+  }
+
+  try {
+    const denied = makeAutocomplete({ authorized: false, userId: "outsider" });
+    const allowed = makeAutocomplete({ authorized: true, userId: "support-user" });
+    await handler(denied.interaction);
+    await handler(allowed.interaction);
+
+    assert.deepEqual(denied.responses, [[]]);
+    assert.ok(allowed.responses[0].some((choice) => /TeleportEnabled/.test(choice.value)));
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("authorized autocomplete is rate-limited before repeated index work", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-autocomplete-limit-"));
+  const config = makeConfig(workspaceRoot);
+  config.security.queryMaxLength = 80;
+  config.security.interactionUserRateLimit = 1;
+  config.security.interactionChannelRateLimit = 10;
+  config.security.interactionGlobalRateLimit = 10;
+  config.security.interactionMaxConcurrent = 4;
+  config.sharedDebugRoots = [];
+  config.plugins.cmi = {
+    id: "cmi",
+    label: "CMI",
+    debugRoots: ["CMIPlugin"],
+    profiles: { config: {} },
+    commandAvailability: { config: "ready" },
+  };
+  let entryLoads = 0;
+  const handler = createTestInteractionHandler(config, {
+    getGeneration: () => 1,
+    getEntries() {
+      entryLoads += 1;
+      return [{
+        relativePath: "CMIPlugin/CMI/config.yml",
+        key: "TeleportEnabled",
+        yamlPath: "Commands.TeleportEnabled",
+      }];
+    },
+  }, {});
+
+  function makeAutocomplete() {
+    const responses = [];
+    return {
+      responses,
+      interaction: {
+        isAutocomplete: () => true,
+        isChatInputCommand: () => false,
+        commandName: "lookup",
+        guildId: "expected-guild",
+        channelId: "channel-1",
+        user: { id: "support-user", tag: "support" },
+        member: { roles: { cache: [{ id: "support-role" }] } },
+        options: {
+          getSubcommand: () => "config",
+          getFocused: () => ({ name: "keyword", value: "tele" }),
+        },
+        async respond(choices) {
+          responses.push(choices);
+        },
+      },
+    };
+  }
+
+  try {
+    const first = makeAutocomplete();
+    const second = makeAutocomplete();
+    await handler(first.interaction);
+    await handler(second.interaction);
+
+    assert.ok(first.responses[0].some((choice) => /TeleportEnabled/.test(choice.value)));
+    assert.deepEqual(second.responses, [[]]);
+    assert.equal(entryLoads, 1);
+  } finally {
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("interactive concurrency rejects excess autocomplete work without breaking the first request", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-autocomplete-concurrency-"));
+  const config = makeConfig(workspaceRoot);
+  config.security.queryMaxLength = 80;
+  config.security.interactionUserRateLimit = 10;
+  config.security.interactionChannelRateLimit = 10;
+  config.security.interactionGlobalRateLimit = 10;
+  config.security.interactionMaxConcurrent = 1;
+  config.sharedDebugRoots = [];
+  config.plugins.cmi = {
+    id: "cmi",
+    label: "CMI",
+    debugRoots: ["CMIPlugin"],
+    profiles: { config: {} },
+    commandAvailability: { config: "ready" },
+  };
+  const handler = createTestInteractionHandler(config, {
+    getGeneration: () => 1,
+    getEntries: () => [{
+      relativePath: "CMIPlugin/CMI/config.yml",
+      key: "TeleportEnabled",
+      yamlPath: "Commands.TeleportEnabled",
+    }],
+  }, {});
+  let releaseFirst;
+  const firstGate = new Promise((resolve) => {
+    releaseFirst = resolve;
+  });
+
+  function makeAutocomplete({ blocked = false } = {}) {
+    const responses = [];
+    return {
+      responses,
+      interaction: {
+        isAutocomplete: () => true,
+        isChatInputCommand: () => false,
+        commandName: "lookup",
+        guildId: "expected-guild",
+        channelId: "channel-1",
+        user: { id: blocked ? "support-2" : "support-1", tag: "support" },
+        member: { roles: { cache: [{ id: "support-role" }] } },
+        options: {
+          getSubcommand: () => "config",
+          getFocused: () => ({ name: "keyword", value: "tele" }),
+        },
+        async respond(choices) {
+          responses.push(choices);
+          if (!blocked) {
+            await firstGate;
+          }
+        },
+      },
+    };
+  }
+
+  try {
+    const first = makeAutocomplete();
+    const second = makeAutocomplete({ blocked: true });
+    const firstRequest = handler(first.interaction);
+    await new Promise((resolve) => setImmediate(resolve));
+    await handler(second.interaction);
+
+    assert.deepEqual(second.responses, [[]]);
+    releaseFirst();
+    await firstRequest;
+    assert.ok(first.responses[0].some((choice) => /TeleportEnabled/.test(choice.value)));
+  } finally {
+    releaseFirst?.();
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("pagination and context controls share the interactive rate boundary before session resolution", async () => {
+  for (const kind of ["button", "context"]) {
+    const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), `lookupbot-${kind}-limit-`));
+    const config = makeConfig(workspaceRoot);
+    config.security.interactionUserRateLimit = 1;
+    config.security.interactionChannelRateLimit = 10;
+    config.security.interactionGlobalRateLimit = 10;
+    config.security.interactionMaxConcurrent = 4;
+    let resolutions = 0;
+    const pagination = {
+      isPaginationButton: () => kind === "button",
+      isContextSelect: () => kind === "context",
+      resolveButton() {
+        resolutions += 1;
+        return { status: "expired" };
+      },
+      resolveContextSelection() {
+        resolutions += 1;
+        return { status: "expired" };
+      },
+    };
+    const handler = createTestInteractionHandler(
+      config,
+      { getGeneration: () => 1 },
+      {},
+      { pagination },
+    );
+
+    function makeComponent() {
+      const replies = [];
+      return {
+        replies,
+        interaction: {
+          isAutocomplete: () => false,
+          isChatInputCommand: () => false,
+          isRepliable: () => true,
+          customId: "controlled",
+          values: ["1"],
+          guildId: "expected-guild",
+          channelId: "channel-1",
+          user: { id: "support-user", tag: "support" },
+          member: { roles: { cache: [{ id: "support-role" }] } },
+          replied: false,
+          deferred: false,
+          async reply(payload) {
+            this.replied = true;
+            replies.push(payload);
+          },
+        },
+      };
+    }
+
+    try {
+      const first = makeComponent();
+      const second = makeComponent();
+      await handler(first.interaction);
+      await handler(second.interaction);
+
+      assert.match(first.replies[0].content, /expired/i);
+      assert.match(second.replies[0].content, /too quickly/i);
+      assert.ok(second.replies[0].flags);
+      assert.deepEqual(second.replies[0].allowedMentions, { parse: [] });
+      assert.equal(resolutions, 1);
+    } finally {
+      await fs.rm(workspaceRoot, { recursive: true, force: true });
+    }
   }
 });
 

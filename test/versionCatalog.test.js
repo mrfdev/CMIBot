@@ -144,17 +144,12 @@ function createFetchFixture(t) {
       throw new Error(`${key} temporarily unavailable`);
     }
 
-    return {
-      ok: true,
+    return new Response(typeof body === "string" ? body : JSON.stringify(body), {
       status: 200,
-      statusText: "OK",
-      async json() {
-        return body;
+      headers: {
+        "content-type": typeof body === "string" ? "text/plain" : "application/json",
       },
-      async text() {
-        return String(body);
-      },
-    };
+    });
   });
 
   return state;
@@ -212,19 +207,9 @@ test("version checks recover from temporary HTTP failures through the resilience
     async fetch() {
       attempts += 1;
       if (attempts < 3) {
-        return {
-          ok: false,
-          status: 503,
-          headers: { get: () => null },
-        };
+        return new Response("unavailable", { status: 503 });
       }
-      return {
-        ok: true,
-        status: 200,
-        async json() {
-          return [{ id: 91, channel: "STABLE" }];
-        },
-      };
+      return Response.json([{ id: 91, channel: "STABLE" }]);
     },
   });
 
@@ -465,6 +450,180 @@ test("last-known upstream values survive a cold restart", async (t) => {
     if (secondService) {
       await secondService.flushPersistence();
     }
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("primary metadata rejects oversized streams without retrying and refuses redirects", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-version-bounded-"));
+  const catalogPath = path.join(workspaceRoot, "versions.json");
+  const config = makeNetworkConfig(workspaceRoot);
+  config.versions.retryMaxAttempts = 3;
+  let calls = 0;
+  const optionsSeen = [];
+  const service = createVersionService(config, {
+    logger: { info() {}, warn() {}, error() {} },
+    sleep: async () => {},
+    async fetch(_input, options) {
+      calls += 1;
+      optionsSeen.push(options);
+      return new Response("x".repeat(1024 * 1024 + 1));
+    },
+  });
+
+  try {
+    await fs.writeFile(catalogPath, JSON.stringify(makeCatalog("generated")), "utf8");
+    const snapshot = await service.start();
+
+    assert.equal(snapshot.paper, null);
+    assert.equal(snapshot.errorCount, 1);
+    assert.equal(calls, 1);
+    assert.equal(optionsSeen[0].redirect, "error");
+  } finally {
+    service.stop();
+    await service.flushPersistence();
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("upstream version identifiers reject Discord injection while preserving prereleases", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-version-safe-text-"));
+  const catalogPath = path.join(workspaceRoot, "versions.json");
+  const statePath = path.join(workspaceRoot, "logs/upstream-versions.json");
+  const catalog = makeTrackedCatalog();
+  const requests = [];
+  const service = createVersionService(makeNetworkConfig(workspaceRoot), {
+    logger: { info() {}, warn() {}, error() {} },
+    async fetch(input, options) {
+      const url = String(input);
+      requests.push({ url, options });
+      if (url.includes("fill.papermc.io")) {
+        return Response.json([{ id: 87, channel: "STABLE" }]);
+      }
+      if (url.includes("/resources/3742/")) {
+        return Response.json({ name: "1.2.3\n**[click](<https://evil.example>)** @everyone" });
+      }
+      if (url.includes("/resources/87610/")) {
+        return Response.json({ name: "1.2.3-rc.1+build_7" });
+      }
+      if (url.startsWith("https://example.test/companions?")) {
+        return new Response("file=CMIB1.1.0.jar");
+      }
+      throw new Error(`Unexpected test URL: ${url}`);
+    },
+  });
+
+  try {
+    await fs.writeFile(catalogPath, JSON.stringify(catalog), "utf8");
+    const snapshot = await service.start();
+    await service.flushPersistence();
+
+    assert.equal(snapshot.plugins.has("cmi"), false);
+    assert.equal(snapshot.plugins.get("cmilib").version, "1.2.3-rc.1+build_7");
+    assert.equal(snapshot.errorCount, 1);
+    assert.ok(requests.every((request) => request.options.redirect === "error"));
+    assert.doesNotMatch(await fs.readFile(statePath, "utf8"), /evil\.example|@everyone|click/);
+
+    assert.throws(
+      () => formatPublicLatestVersions(snapshot, { id: "cmi", label: "CMI" }),
+      /currently unavailable/i,
+    );
+
+    const poisonedSnapshot = {
+      ...snapshot,
+      plugins: new Map([
+        ["cmi", { version: "1.2.3`\n[click](https://evil.example)", stale: false }],
+        ["cmilib", { version: "1.2.3-rc.1+build_7", stale: false }],
+      ]),
+    };
+    assert.throws(
+      () => formatPublicLatestVersions(poisonedSnapshot, { id: "cmi", label: "CMI" }),
+      /safe version identifier|safe inline version/i,
+    );
+  } finally {
+    service.stop();
+    await service.flushPersistence();
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("persisted poison is discarded without losing legitimate last-known siblings", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-version-poisoned-state-"));
+  const catalogPath = path.join(workspaceRoot, "versions.json");
+  const statePath = path.join(workspaceRoot, "logs/upstream-versions.json");
+  const service = createVersionService(makeNetworkConfig(workspaceRoot), {
+    logger: { info() {}, warn() {}, error() {} },
+    async fetch() {
+      throw new TypeError("offline");
+    },
+    sleep: async () => {},
+  });
+
+  try {
+    await fs.mkdir(path.dirname(statePath), { recursive: true });
+    await fs.writeFile(catalogPath, JSON.stringify(makeTrackedCatalog()), "utf8");
+    await fs.writeFile(
+      statePath,
+      JSON.stringify({
+        schemaVersion: 1,
+        savedAt: "2026-08-30T00:00:00.000Z",
+        paper: { version: "26.2", build: 87, channel: "STABLE" },
+        plugins: {
+          cmi: { version: "1.0.0`\n# forged" },
+          cmilib: { version: "1.0.0" },
+        },
+        companions: { "cmi-bungee": { version: "1.0.0" } },
+      }),
+      { mode: 0o600 },
+    );
+
+    const snapshot = await service.start();
+
+    assert.equal(snapshot.plugins.has("cmi"), false);
+    assert.equal(snapshot.plugins.get("cmilib").version, "1.0.0");
+    assert.equal(snapshot.plugins.get("cmilib").stale, true);
+    assert.equal(snapshot.companions.get("cmi-bungee").version, "1.0.0");
+  } finally {
+    service.stop();
+    await service.flushPersistence();
+    await fs.rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("primary version refreshes use bounded concurrency", async () => {
+  const workspaceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-version-concurrency-"));
+  const catalogPath = path.join(workspaceRoot, "versions.json");
+  const catalog = makeCatalog("generated");
+  catalog.plugins = Array.from({ length: 12 }, (_, index) => ({
+    id: `plugin-${index}`,
+    label: `Plugin ${index}`,
+    version: "1.0.0",
+    resourceId: 10_000 + index,
+  }));
+  let active = 0;
+  let peak = 0;
+  const service = createVersionService(makeNetworkConfig(workspaceRoot), {
+    async fetch(input) {
+      active += 1;
+      peak = Math.max(peak, active);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      active -= 1;
+      return String(input).includes("fill.papermc.io")
+        ? Response.json([{ id: 87, channel: "STABLE" }])
+        : Response.json({ name: "1.1.0" });
+    },
+  });
+
+  try {
+    await fs.writeFile(catalogPath, JSON.stringify(catalog), "utf8");
+    const snapshot = await service.start();
+
+    assert.equal(snapshot.errorCount, 0);
+    assert.ok(peak > 1);
+    assert.ok(peak <= 4, `expected at most four concurrent fetches, saw ${peak}`);
+  } finally {
+    service.stop();
+    await service.flushPersistence();
     await fs.rm(workspaceRoot, { recursive: true, force: true });
   }
 });

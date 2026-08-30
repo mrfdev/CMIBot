@@ -23,6 +23,7 @@ import { formatBytes, formatDuration } from "../src/discord/debug.js";
 import { formatHelpMessage } from "../src/discord/help.js";
 import { createResultPagination } from "../src/discord/pagination.js";
 import {
+  enforceDiscordMessageBatch,
   formatResultsMessage,
   splitDiscordMessages,
   truncateDiscordMessage,
@@ -488,6 +489,11 @@ test("Discord output helpers enforce message-size boundaries", () => {
   assert.match(truncateDiscordMessage("x".repeat(2100)), /Trimmed to fit Discord message limits/);
   assert.equal(formatBytes(1024), "1.00 KB");
   assert.equal(formatDuration(90_000), "1m 30s");
+  assert.deepEqual(enforceDiscordMessageBatch(["one", "two"], { maxMessages: 2 }), ["one", "two"]);
+  assert.throws(
+    () => enforceDiscordMessageBatch(["one", "two", "three"], { maxMessages: 2 }),
+    /message limit/i,
+  );
 });
 
 test("Discord truncation never leaves a partial hidden link that can create an embed", () => {

@@ -9,6 +9,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { isLocalOllamaModelName, normalizeLoopbackOllamaBaseUrl } from "../src/ollama.js";
+import {
+  readPrivateEnvironmentFile as readValidatedPrivateEnvironmentFile,
+} from "../src/privateEnvironment.js";
 
 const execFileAsync = promisify(execFile);
 const label = "com.mrfdev.cmibot";
@@ -91,6 +94,7 @@ async function renderServiceDefinition() {
 }
 
 async function installServiceDefinition({ announce = true } = {}) {
+  await readPrivateEnvironmentFile(path.join(projectRoot(), ".env"));
   const destination = installedPlistPath();
   const temporary = `${destination}.tmp-${process.pid}`;
   const definition = await renderServiceDefinition();
@@ -188,6 +192,8 @@ async function startService({ announce = true } = {}) {
     return;
   }
 
+  await readPrivateEnvironmentFile(path.join(projectRoot(), ".env"));
+
   if (currentJob) {
     await execFileAsync(launchctlPath(), ["kickstart", launchdTarget()], {
       encoding: "utf8",
@@ -250,29 +256,11 @@ async function readPrivateLine() {
   return value;
 }
 
-async function readPrivateEnvironmentFile(environmentPath) {
-  let handle;
-  try {
-    handle = await fs.open(environmentPath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
-  } catch {
-    throw new Error("The private environment file is unavailable.");
-  }
-
-  try {
-    const stats = await handle.stat();
-    if (!stats.isFile()) {
-      throw new Error("The private environment file must be a regular file.");
-    }
-    if (typeof process.getuid === "function" && stats.uid !== process.getuid()) {
-      throw new Error("The private environment file must be owned by the service user.");
-    }
-    if (stats.size > MAX_ENV_FILE_BYTES) {
-      throw new Error("The private environment file is unexpectedly large.");
-    }
-    return await handle.readFile("utf8");
-  } finally {
-    await handle.close().catch(() => {});
-  }
+async function readPrivateEnvironmentFile(environmentPath, options = {}) {
+  return readValidatedPrivateEnvironmentFile(environmentPath, {
+    ...options,
+    maxBytes: MAX_ENV_FILE_BYTES,
+  });
 }
 
 function environmentLines(contents) {
@@ -470,7 +458,9 @@ async function configureAlertChannel() {
   }
 
   const environmentPath = path.join(projectRoot(), ".env");
-  const current = await readPrivateEnvironmentFile(environmentPath);
+  const current = await readPrivateEnvironmentFile(environmentPath, {
+    allowBroadPermissions: true,
+  });
   const updated = replaceEnvironmentAssignment(current, ADMIN_ALERT_CHANNEL_KEY, value);
   await writePrivateEnvironmentFile(environmentPath, updated);
   console.log("LookupBot admin alert destination configured privately.");
@@ -483,7 +473,9 @@ async function configureTestChannel() {
   }
 
   const environmentPath = path.join(projectRoot(), ".env");
-  const current = await readPrivateEnvironmentFile(environmentPath);
+  const current = await readPrivateEnvironmentFile(environmentPath, {
+    allowBroadPermissions: true,
+  });
   const allowedChannelIds = parsePrivateChannelList(current, ALLOWED_CHANNELS_KEY);
   if (!allowedChannelIds) {
     throw new Error("The private allowed-channel setting is unavailable.");

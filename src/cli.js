@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./loadEnvironment.js";
 import { createLazyAiResolver } from "./aiLoader.js";
 import { prepareGroundedEvidence } from "./aiSafety.js";
 import { createSearchCache, formatCacheSummary } from "./cache.js";

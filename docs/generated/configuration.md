@@ -95,6 +95,11 @@ Only a loopback Ollama service and local model are supported. External and paid 
 | `COMMAND_CHANNEL_RATE_LIMIT` | integer | no | public | `30` | Commands allowed per channel in each rate window. |
 | `COMMAND_GLOBAL_RATE_LIMIT` | integer | no | public | `100` | Commands allowed globally in each rate window. |
 | `COMMAND_RATE_WINDOW_SECONDS` | integer | no | public | `30` | Sliding command-rate window in seconds. |
+| `INTERACTION_USER_RATE_LIMIT` | integer | no | public | `20` | Autocomplete and result-control interactions allowed per user in each rate window. |
+| `INTERACTION_CHANNEL_RATE_LIMIT` | integer | no | public | `100` | Authorized autocomplete and result-control interactions allowed per channel in each rate window. |
+| `INTERACTION_GLOBAL_RATE_LIMIT` | integer | no | public | `200` | Authorized autocomplete and result-control interactions allowed globally in each rate window. |
+| `INTERACTION_RATE_WINDOW_SECONDS` | integer | no | public | `10` | Sliding autocomplete and result-control rate window in seconds. |
+| `INTERACTION_MAX_CONCURRENT` | integer | no | public | `8` | Maximum concurrent authorized autocomplete and result-control interactions. |
 | `LOOKUP_COOLDOWN_SECONDS` | integer | no | public | `3` | Per-user lookup cooldown. |
 | `SUMMARY_COOLDOWN_SECONDS` | integer | no | public | `15` | Per-user AI summary cooldown. |
 | `AI_QUESTION_COOLDOWN_SECONDS` | integer | no | public | `20` | Per-user grounded-answer cooldown. |

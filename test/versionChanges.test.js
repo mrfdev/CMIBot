@@ -97,21 +97,10 @@ function makeSnapshot() {
 
 function jsonResponse(value, { status = 200, contentLength = null } = {}) {
   const text = JSON.stringify(value);
-  return {
-    ok: status >= 200 && status < 300,
+  return new Response(text, {
     status,
-    headers: {
-      get(name) {
-        if (name.toLowerCase() === "content-length" && contentLength != null) {
-          return String(contentLength);
-        }
-        return null;
-      },
-    },
-    async text() {
-      return text;
-    },
-  };
+    headers: contentLength == null ? {} : { "content-length": String(contentLength) },
+  });
 }
 
 test("version changes combine trusted providers, sanitize text, and cache exact version pairs", async () => {
@@ -389,4 +378,38 @@ test("release-note responses and rendered links fail closed at their safety boun
   });
   assert.match(message, /Safe text/);
   assert.doesNotMatch(message, /untrusted\.example/);
+
+  const poisonedReport = {
+    ...reportForFormatting("1.2.3-rc.1+build_7"),
+    changes: [
+      {
+        ...reportForFormatting("1.2.3-rc.1+build_7").changes[0],
+        latest: "1.2.3`\n[click](https://evil.example)",
+      },
+    ],
+  };
+  assert.throws(() => formatVersionChanges(poisonedReport), /safe inline version/i);
+  assert.match(formatVersionChanges(reportForFormatting("1.2.3-rc.1+build_7")), /1\.2\.3-rc\.1\+build_7/);
 });
+
+function reportForFormatting(latest) {
+  return {
+    status: "ready",
+    scope: "context",
+    pluginLabel: "CMI",
+    changes: [
+      {
+        id: "cmi",
+        label: "CMI",
+        current: "1.0.0",
+        latest,
+        upstream: { stale: false },
+        historyUrl: "",
+        status: "link-only",
+        releases: [],
+      },
+    ],
+    omittedResourceCount: 0,
+    errorCount: 0,
+  };
+}

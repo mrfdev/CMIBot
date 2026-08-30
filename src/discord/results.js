@@ -3,6 +3,7 @@ import { formatCacheSummary } from "../cache.js";
 import { sanitizeForDisplay } from "../security.js";
 
 const DISCORD_MESSAGE_LIMIT = 2000;
+const DEFAULT_MESSAGE_BATCH_LIMIT = 8;
 const TRIM_NOTICE = "_(Trimmed to fit Discord message limits.)_";
 
 function pluralize(count, singular, plural = `${singular}s`) {
@@ -525,4 +526,21 @@ export function splitDiscordMessages(message, maxLength = 1900) {
     }
     return parts;
   });
+}
+
+export function enforceDiscordMessageBatch(
+  messages,
+  { maxMessages = DEFAULT_MESSAGE_BATCH_LIMIT } = {},
+) {
+  if (
+    !Array.isArray(messages) ||
+    !messages.length ||
+    !Number.isSafeInteger(maxMessages) ||
+    maxMessages < 1 ||
+    messages.length > maxMessages ||
+    messages.some((message) => typeof message !== "string" || message.length > DISCORD_MESSAGE_LIMIT)
+  ) {
+    throw new Error("Version output exceeded the Discord message limit.");
+  }
+  return messages;
 }

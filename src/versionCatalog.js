@@ -14,11 +14,23 @@ import {
   parseRetryAfter,
   UpstreamHttpError,
 } from "./upstreamResilience.js";
+import {
+  MAX_UPSTREAM_RESPONSE_BYTES,
+  readBoundedResponseJson,
+  readBoundedResponseText,
+} from "./upstreamResponse.js";
+import {
+  formatInlineVersion,
+  normalizeVersionIdentifier,
+  tryNormalizeVersionIdentifier,
+} from "./versionSafety.js";
 
 const SPIGET_API_ROOT = "https://api.spiget.org/v2";
 const PAPER_API_ROOT = "https://fill.papermc.io/v3/projects/paper";
 const PERSISTED_STATE_SCHEMA_VERSION = 1;
 const MAX_PERSISTED_STATE_BYTES = 1024 * 1024;
+const MAX_PRIMARY_FETCH_CONCURRENCY = 4;
+const MAX_PROVIDER_ITEMS = 5_000;
 const DISPLAY_ORDER = [
   "paper",
   "cmi",
@@ -56,15 +68,55 @@ function parseZripsListingVersion(content, source, label) {
     `file=${escapeRegex(source.filePrefix)}([0-9]+(?:\\.[0-9]+)+)\\.jar`,
     "gi",
   );
-  const versions = [...content.matchAll(pattern)].map((match) => match[1]);
-  if (versions.length === 0) {
+  let latestVersion = null;
+  for (const match of content.matchAll(pattern)) {
+    const candidate = normalizeVersionIdentifier(match[1], `${label} version`);
+    if (latestVersion == null || compareVersions(candidate, latestVersion) > 0) {
+      latestVersion = candidate;
+    }
+  }
+  if (latestVersion == null) {
     throw new Error(`${label} returned no downloadable version.`);
   }
   return {
-    version: versions.reduce((latest, candidate) =>
-      compareVersions(candidate, latest) > 0 ? candidate : latest,
-    ),
+    version: latestVersion,
   };
+}
+
+function normalizeBuild(value, label = "Upstream build") {
+  const build = Number(value);
+  if (!Number.isSafeInteger(build) || build < 0) {
+    throw new Error(`${label} must be a non-negative safe integer.`);
+  }
+  return build;
+}
+
+function normalizeChannel(value, label = "Upstream channel") {
+  if (typeof value !== "string" || !/^[A-Z0-9][A-Z0-9_-]{0,15}$/.test(value)) {
+    throw new Error(`${label} must be a safe channel identifier.`);
+  }
+  return value;
+}
+
+async function settleWithConcurrency(tasks, maximumConcurrency) {
+  const results = new Array(tasks.length);
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < tasks.length) {
+      const index = cursor;
+      cursor += 1;
+      try {
+        results[index] = { status: "fulfilled", value: await tasks[index]() };
+      } catch (reason) {
+        results[index] = { status: "rejected", reason };
+      }
+    }
+  }
+
+  const workerCount = Math.min(maximumConcurrency, tasks.length);
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
 }
 
 function countRetainedUpstreams(snapshot) {
@@ -147,7 +199,7 @@ export function getVersionAttentionSummary(snapshot) {
 
 function formatPluginVersionLine(plugin, upstream, checkEnabled) {
   const label = linkedLabel(plugin.label, plugin.resourceUrl || plugin.website);
-  const prefix = `- **${label}:** clean snapshot \`${formatPluginRelease(plugin.version, plugin.build)}\``;
+  const prefix = `- **${label}:** clean snapshot ${formatInlineVersion(formatPluginRelease(plugin.version, plugin.build), "Clean snapshot version")}`;
 
   if (!plugin.resourceId && !plugin.versionSource) {
     return `${prefix} (snapshot only)`;
@@ -159,16 +211,21 @@ function formatPluginVersionLine(plugin, upstream, checkEnabled) {
     return `${prefix} (upstream unavailable)`;
   }
 
-  const comparison = comparePluginRelease(plugin, upstream);
+  const safeUpstream = {
+    ...upstream,
+    version: normalizeVersionIdentifier(upstream.version),
+    ...(upstream.build != null ? { build: normalizeBuild(upstream.build) } : {}),
+  };
+  const comparison = comparePluginRelease(plugin, safeUpstream);
   const status = comparison === 0 ? "current" : comparison < 0 ? "**update available**" : "snapshot newer than upstream listing";
-  return `${prefix} | upstream \`${formatPluginRelease(upstream.version, upstream.build)}\` (${status}${formatFreshnessSuffix(upstream)})`;
+  return `${prefix} | upstream ${formatInlineVersion(formatPluginRelease(safeUpstream.version, safeUpstream.build), "Upstream version")} (${status}${formatFreshnessSuffix(safeUpstream)})`;
 }
 
 function formatPaperVersionLine(paper, upstream, checkEnabled) {
   const label = linkedLabel(paper.label, paper.projectUrl);
   const localBuild = paper.build == null ? "unknown" : paper.build;
   const localChannel = paper.channel && paper.channel !== "unknown" ? ` ${paper.channel}` : "";
-  const prefix = `- **${label}:** clean snapshot \`${paper.version} build ${localBuild}${localChannel}\``;
+  const prefix = `- **${label}:** clean snapshot ${formatInlineVersion(`${paper.version} build ${localBuild}${localChannel}`, "Clean Paper version")}`;
 
   if (!checkEnabled) {
     return `${prefix} (upstream checks disabled)`;
@@ -177,15 +234,20 @@ function formatPaperVersionLine(paper, upstream, checkEnabled) {
     return `${prefix} (upstream unavailable)`;
   }
 
-  const localMatchesVersion = String(paper.version) === String(upstream.version);
-  const comparison = localMatchesVersion ? Number(localBuild) - Number(upstream.build) : compareVersions(paper.version, upstream.version);
+  const upstreamVersion = normalizeVersionIdentifier(upstream.version, "Upstream Paper version");
+  const upstreamBuild = normalizeBuild(upstream.build, "Upstream Paper build");
+  const upstreamChannel = normalizeChannel(upstream.channel, "Upstream Paper channel");
+  const localMatchesVersion = String(paper.version) === upstreamVersion;
+  const comparison = localMatchesVersion ? Number(localBuild) - upstreamBuild : compareVersions(paper.version, upstreamVersion);
   const status = comparison === 0 ? "current" : comparison < 0 ? "**update available**" : "snapshot newer than upstream listing";
-  return `${prefix} | upstream \`${upstream.version} build ${upstream.build} ${upstream.channel}\` (${status}${formatFreshnessSuffix(upstream)})`;
+  return `${prefix} | upstream ${formatInlineVersion(`${upstreamVersion} build ${upstreamBuild} ${upstreamChannel}`, "Upstream Paper version")} (${status}${formatFreshnessSuffix(upstream)})`;
 }
 
 function formatCompanionVersionLine(companion, upstream, checkEnabled) {
   const label = linkedLabel(companion.label, companion.resourceUrl);
-  const local = companion.version ? `local artifact \`${companion.version}\`` : "not stored locally";
+  const local = companion.version
+    ? `local artifact ${formatInlineVersion(companion.version, "Local companion version")}`
+    : "not stored locally";
   const prefix = `- **${label}:** ${local}`;
 
   if (!checkEnabled) {
@@ -194,19 +256,20 @@ function formatCompanionVersionLine(companion, upstream, checkEnabled) {
   if (!upstream?.version) {
     return `${prefix} (upstream unavailable)`;
   }
+  const upstreamVersion = normalizeVersionIdentifier(upstream.version);
   if (!companion.version) {
-    return `${prefix} | upstream \`${upstream.version}\` (upstream only${formatFreshnessSuffix(upstream)})`;
+    return `${prefix} | upstream ${formatInlineVersion(upstreamVersion, "Upstream companion version")} (upstream only${formatFreshnessSuffix(upstream)})`;
   }
 
-  const comparison = compareVersions(companion.version, upstream.version);
+  const comparison = compareVersions(companion.version, upstreamVersion);
   const status = comparison === 0 ? "current" : comparison < 0 ? "**update available**" : "local artifact newer than upstream listing";
-  return `${prefix} | upstream \`${upstream.version}\` (${status}${formatFreshnessSuffix(upstream)})`;
+  return `${prefix} | upstream ${formatInlineVersion(upstreamVersion, "Upstream companion version")} (${status}${formatFreshnessSuffix(upstream)})`;
 }
 
 function formatPublicPluginVersionLine(plugin, upstream) {
   const label = linkedLabel(plugin.label, plugin.resourceUrl || plugin.website);
   const freshness = upstream.stale ? " **(last known; live refresh unavailable)**" : "";
-  return `- **${label}:** \`${upstream.version}\`${freshness}`;
+  return `- **${label}:** ${formatInlineVersion(normalizeVersionIdentifier(upstream.version), "Upstream version")}${freshness}`;
 }
 
 function orderPlugins(plugins) {
@@ -410,14 +473,22 @@ export function createVersionService(config, dependencies = {}) {
           accept: "application/json",
           "user-agent": "LookupBot/0.1 (+https://github.com/mrfdev/CMIBot)",
         },
+        redirect: "error",
         signal: AbortSignal.timeout(config.versions.requestTimeoutMs),
       });
       if (!response.ok) {
+        await response.body?.cancel?.().catch(() => {});
         throw new UpstreamHttpError(response.status, {
           retryAfterMs: parseRetryAfter(response.headers?.get?.("retry-after"), Number(now())),
         });
       }
-      return bodyType === "json" ? response.json() : response.text();
+      const responseOptions = {
+        label: "Version metadata",
+        maxBytes: MAX_UPSTREAM_RESPONSE_BYTES,
+      };
+      return bodyType === "json"
+        ? readBoundedResponseJson(response, responseOptions)
+        : readBoundedResponseText(response, responseOptions);
     });
   }
 
@@ -440,28 +511,47 @@ export function createVersionService(config, dependencies = {}) {
     };
   }
 
-  function sanitizePersistedVersion(value, { requireBuild = false } = {}) {
+  function sanitizePersistedVersion(
+    value,
+    { requireBuild = false, requireChannel = false } = {},
+  ) {
     if (!value || typeof value !== "object" || !value.version) {
       return null;
     }
 
+    const version = tryNormalizeVersionIdentifier(value.version, "Persisted upstream version");
+    if (!version) {
+      return null;
+    }
     const record = {
-      version: String(value.version),
+      version,
       stale: true,
     };
     if (value.build != null) {
-      const build = Number(value.build);
-      if (Number.isFinite(build) && build >= 0) {
-        record.build = build;
+      try {
+        record.build = normalizeBuild(value.build, "Persisted upstream build");
+      } catch {
+        return null;
       }
     }
     if (requireBuild && record.build == null) {
       return null;
     }
-    if (typeof value.channel === "string" && value.channel) {
-      record.channel = value.channel;
+    if (value.channel != null) {
+      try {
+        record.channel = normalizeChannel(value.channel, "Persisted upstream channel");
+      } catch {
+        return null;
+      }
     }
-    if (typeof value.lastSuccessfulCheckAt === "string" && value.lastSuccessfulCheckAt) {
+    if (requireChannel && !record.channel) {
+      return null;
+    }
+    if (
+      typeof value.lastSuccessfulCheckAt === "string" &&
+      value.lastSuccessfulCheckAt.length <= 40 &&
+      Number.isFinite(Date.parse(value.lastSuccessfulCheckAt))
+    ) {
       record.lastSuccessfulCheckAt = value.lastSuccessfulCheckAt;
     }
     return record;
@@ -473,9 +563,9 @@ export function createVersionService(config, dependencies = {}) {
     }
 
     return {
-      version: String(value.version),
-      ...(value.build != null ? { build: Number(value.build) } : {}),
-      ...(value.channel ? { channel: String(value.channel) } : {}),
+      version: normalizeVersionIdentifier(value.version),
+      ...(value.build != null ? { build: normalizeBuild(value.build) } : {}),
+      ...(value.channel ? { channel: normalizeChannel(value.channel) } : {}),
       ...(value.lastSuccessfulCheckAt
         ? { lastSuccessfulCheckAt: String(value.lastSuccessfulCheckAt) }
         : {}),
@@ -516,7 +606,10 @@ export function createVersionService(config, dependencies = {}) {
       }
 
       const state = createEmptyState(catalog);
-      const paper = sanitizePersistedVersion(parsed.paper, { requireBuild: true });
+      const paper = sanitizePersistedVersion(parsed.paper, {
+        requireBuild: true,
+        requireChannel: true,
+      });
       if (paper && String(paper.version) === String(config.versions.paperVersion)) {
         state.paper = paper;
       }
@@ -558,12 +651,15 @@ export function createVersionService(config, dependencies = {}) {
       return persistenceQueue;
     }
 
-    const content = `${JSON.stringify(serializePersistentState(state), null, 2)}\n`;
     persistenceQueue = persistenceQueue
       .catch(() => {})
       .then(async () => {
+        const content = `${JSON.stringify(serializePersistentState(state), null, 2)}\n`;
+        if (Buffer.byteLength(content, "utf8") > MAX_PERSISTED_STATE_BYTES) {
+          throw new Error(`state file exceeds ${MAX_PERSISTED_STATE_BYTES} bytes`);
+        }
         const temporaryPath = `${statePath}.${process.pid}.tmp`;
-        await fs.mkdir(path.dirname(statePath), { recursive: true });
+        await fs.mkdir(path.dirname(statePath), { recursive: true, mode: 0o700 });
         try {
           await fs.writeFile(temporaryPath, content, { encoding: "utf8", mode: 0o600 });
           await fs.rename(temporaryPath, statePath);
@@ -607,20 +703,33 @@ export function createVersionService(config, dependencies = {}) {
       "paper",
       `${PAPER_API_ROOT}/versions/${encodeURIComponent(config.versions.paperVersion)}/builds`,
     );
-    if (!Array.isArray(builds)) {
+    if (!Array.isArray(builds) || builds.length > MAX_PROVIDER_ITEMS) {
       throw new Error("Paper returned an unexpected builds response.");
     }
     const allowedChannels = new Set(config.versions.paperChannels);
-    const latest = builds
-      .filter((build) => allowedChannels.has(String(build.channel).toUpperCase()))
-      .sort((left, right) => Number(right.id) - Number(left.id))[0];
+    const matchingBuilds = [];
+    for (const build of builds) {
+      const channel = String(build?.channel ?? "").toUpperCase();
+      if (!allowedChannels.has(channel)) {
+        continue;
+      }
+      try {
+        matchingBuilds.push({
+          id: normalizeBuild(build.id, "Paper build"),
+          channel: normalizeChannel(channel, "Paper channel"),
+        });
+      } catch {
+        continue;
+      }
+    }
+    const latest = matchingBuilds.sort((left, right) => right.id - left.id)[0];
     if (!latest) {
       throw new Error(`No Paper builds matched channels ${config.versions.paperChannels.join(", ")}.`);
     }
     return {
-      version: config.versions.paperVersion,
-      build: Number(latest.id),
-      channel: String(latest.channel).toUpperCase(),
+      version: normalizeVersionIdentifier(config.versions.paperVersion, "Paper version"),
+      build: latest.id,
+      channel: latest.channel,
     };
   }
 
@@ -640,7 +749,7 @@ export function createVersionService(config, dependencies = {}) {
       if (!latest?.name) {
         throw new Error(`${plugin.label} returned no latest version name.`);
       }
-      return { version: String(latest.name) };
+      return { version: normalizeVersionIdentifier(latest.name, `${plugin.label} version`) };
     }
 
     if (source?.type === "luckperms-metadata") {
@@ -648,20 +757,25 @@ export function createVersionService(config, dependencies = {}) {
       if (!metadata?.version) {
         throw new Error(`${plugin.label} returned no latest version.`);
       }
-      return { version: String(metadata.version) };
+      return {
+        version: normalizeVersionIdentifier(metadata.version, `${plugin.label} version`),
+      };
     }
 
     if (source?.type === "jenkins-artifact") {
       const build = await fetchJson(resourceKey, source.url);
       const artifactPattern = new RegExp(source.artifactPattern, "i");
-      const artifact = build?.artifacts?.find((entry) => artifactPattern.test(String(entry.fileName)));
+      if (!Array.isArray(build?.artifacts) || build.artifacts.length > MAX_PROVIDER_ITEMS) {
+        throw new Error(`${plugin.label} returned an unexpected artifact list.`);
+      }
+      const artifact = build.artifacts.find((entry) => artifactPattern.test(String(entry.fileName)));
       const match = artifact?.fileName?.match(artifactPattern);
       if (!Number.isFinite(Number(build?.number)) || !match?.[1]) {
         throw new Error(`${plugin.label} returned no successful plugin artifact.`);
       }
       return {
-        version: match[1],
-        build: Number(build.number),
+        version: normalizeVersionIdentifier(match[1], `${plugin.label} version`),
+        build: normalizeBuild(build.number, `${plugin.label} build`),
       };
     }
 
@@ -682,7 +796,9 @@ export function createVersionService(config, dependencies = {}) {
       if (!match) {
         throw new Error(`${companion.label} returned no project version.`);
       }
-      return { version: match[1].trim() };
+      return {
+        version: normalizeVersionIdentifier(match[1].trim(), `${companion.label} version`),
+      };
     }
 
     if (source.type === "zrips-listing") {
@@ -710,11 +826,12 @@ export function createVersionService(config, dependencies = {}) {
     const startedAt = performance.now();
     const trackedPlugins = catalog.plugins.filter((entry) => entry.resourceId || entry.versionSource);
     const trackedCompanions = catalog.companions.filter((entry) => entry.versionSource);
-    const results = await Promise.allSettled([
-      checkPaper(),
-      ...trackedPlugins.map((entry) => checkPlugin(entry)),
-      ...trackedCompanions.map((entry) => checkCompanion(entry)),
-    ]);
+    const tasks = [
+      () => checkPaper(),
+      ...trackedPlugins.map((entry) => () => checkPlugin(entry)),
+      ...trackedCompanions.map((entry) => () => checkCompanion(entry)),
+    ];
+    const results = await settleWithConcurrency(tasks, MAX_PRIMARY_FETCH_CONCURRENCY);
     const checkedAt = new Date().toISOString();
     const paperResult = results[0];
     if (paperResult.status === "fulfilled") {

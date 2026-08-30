@@ -1094,6 +1094,26 @@ export function loadConfig() {
       commandChannelRateLimit: Math.max(0, parseInteger(process.env.COMMAND_CHANNEL_RATE_LIMIT, 30)),
       commandGlobalRateLimit: Math.max(0, parseInteger(process.env.COMMAND_GLOBAL_RATE_LIMIT, 100)),
       commandRateWindowSeconds: Math.max(0, parseInteger(process.env.COMMAND_RATE_WINDOW_SECONDS, 30)),
+      interactionUserRateLimit: Math.max(
+        0,
+        Math.min(10_000, parseInteger(process.env.INTERACTION_USER_RATE_LIMIT, 20)),
+      ),
+      interactionChannelRateLimit: Math.max(
+        0,
+        Math.min(10_000, parseInteger(process.env.INTERACTION_CHANNEL_RATE_LIMIT, 100)),
+      ),
+      interactionGlobalRateLimit: Math.max(
+        0,
+        Math.min(10_000, parseInteger(process.env.INTERACTION_GLOBAL_RATE_LIMIT, 200)),
+      ),
+      interactionRateWindowSeconds: Math.max(
+        1,
+        Math.min(3_600, parseInteger(process.env.INTERACTION_RATE_WINDOW_SECONDS, 10)),
+      ),
+      interactionMaxConcurrent: Math.max(
+        1,
+        Math.min(64, parseInteger(process.env.INTERACTION_MAX_CONCURRENT, 8)),
+      ),
       lookupCooldownSeconds: Math.max(0, parseInteger(process.env.LOOKUP_COOLDOWN_SECONDS, 3)),
       summaryCooldownSeconds: Math.max(0, parseInteger(process.env.SUMMARY_COOLDOWN_SECONDS, 15)),
       aiQuestionCooldownSeconds: Math.max(0, parseInteger(process.env.AI_QUESTION_COOLDOWN_SECONDS, 20)),

@@ -164,6 +164,35 @@ test("deploy switches to a verified release while preserving shared environment 
   }
 });
 
+test("deploy rejects a group-readable private environment before staging", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-deploy-private-env-"));
+
+  try {
+    const { sourceRoot } = await createSourceRepository(temporaryRoot);
+    const { environment } = await createDeploymentBoundaries(temporaryRoot, sourceRoot);
+    await fs.chmod(path.join(sourceRoot, ".env"), 0o640);
+
+    await assert.rejects(
+      runDeploy([], {
+        cwd: sourceRoot,
+        encoding: "utf8",
+        env: environment,
+      }),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.match(error.stderr, /owner-only permissions/i);
+        return true;
+      },
+    );
+    await assert.rejects(
+      () => fs.access(path.join(sourceRoot, ".deploy", "current")),
+      { code: "ENOENT" },
+    );
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
 test("a failed health check restores and restarts the previous release", async () => {
   const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-deploy-"));
 

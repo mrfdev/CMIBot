@@ -50,3 +50,34 @@ test("the managed runner captures legacy output in the same process with privacy
     await fs.rm(projectRoot, { recursive: true, force: true });
   }
 });
+
+test("the managed runner rejects an insecure environment before importing the release", async () => {
+  const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-service-runner-env-"));
+  try {
+    const currentRelease = path.join(projectRoot, ".deploy", "current");
+    const markerPath = path.join(projectRoot, "release-imported");
+    await fs.mkdir(path.join(currentRelease, "src"), { recursive: true });
+    await fs.writeFile(
+      path.join(currentRelease, "src", "index.js"),
+      `await import("node:fs/promises").then((fs) => fs.writeFile(${JSON.stringify(markerPath)}, "yes"));\n`,
+      "utf8",
+    );
+    await fs.writeFile(path.join(projectRoot, ".env"), "DISCORD_TOKEN=private\n", { mode: 0o644 });
+
+    await assert.rejects(
+      execFileAsync(process.execPath, [runnerPath], {
+        encoding: "utf8",
+        env: { ...process.env, CMIBOT_PROJECT_ROOT: projectRoot },
+      }),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.match(error.stderr, /owner-only permissions/i);
+        assert.doesNotMatch(error.stderr, new RegExp(projectRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+        return true;
+      },
+    );
+    await assert.rejects(() => fs.access(markerPath), { code: "ENOENT" });
+  } finally {
+    await fs.rm(projectRoot, { recursive: true, force: true });
+  }
+});

@@ -34,6 +34,7 @@ import {
 import { createExpandedYamlContextPayload } from "./discord/expandedContext.js";
 import { createResultPagination } from "./discord/pagination.js";
 import {
+  enforceDiscordMessageBatch,
   formatLangStatsOnlyMessage,
   formatReloadMessage,
   formatStatsMessage,
@@ -85,6 +86,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
   });
   const cooldowns = createCooldownManager();
   const rateLimiter = createSlidingWindowRateLimiter();
+  const interactionRateLimiter = createSlidingWindowRateLimiter();
   const testOverrides = new Map();
   const requestMetadata = new WeakMap();
   const pagination = dependencies.pagination ?? createResultPagination(config.search);
@@ -93,6 +95,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
   let autocompleteGeneration = -1;
   let relatedReferenceGeneration = -1;
   let reloadInProgress = false;
+  let activeInteractiveRequests = 0;
 
   function getAutocompleteIndex(context, profileName) {
     const generation = searchCache.getGeneration?.() ?? 0;
@@ -140,6 +143,94 @@ export function createInteractionHandler(config, searchCache, versionService, de
     return index;
   }
 
+  async function respondToAutocomplete(interaction, choices) {
+    try {
+      await interaction.respond(choices);
+    } catch {
+      logger.warn("discord.autocomplete_response_failed", { responded: false });
+    }
+  }
+
+  function hasInteractiveAccess(interaction) {
+    return (
+      interaction.guildId === config.discord.guildId &&
+      config.discord.allowedChannelIds.includes(interaction.channelId) &&
+      hasRole(interaction.member, { roleIds: config.discord.allowedRoleIds })
+    );
+  }
+
+  async function rejectInteractiveRequest(interaction, type, content) {
+    if (type === "autocomplete") {
+      await respondToAutocomplete(interaction, []);
+      return;
+    }
+    await interaction.reply({
+      content,
+      flags: MessageFlags.Ephemeral,
+      allowedMentions: NO_MENTIONS,
+    });
+  }
+
+  async function acquireInteractiveBudget(interaction, type) {
+    const sharedAccess = hasInteractiveAccess(interaction);
+    const windowSeconds = config.security.interactionRateWindowSeconds ?? 10;
+    const rules = [
+      {
+        key: `interaction:user:${interaction.user?.id ?? "unknown"}`,
+        scope: "user",
+        maxRequests: config.security.interactionUserRateLimit,
+        windowSeconds,
+      },
+    ];
+    if (sharedAccess) {
+      rules.push(
+        {
+          key: `interaction:channel:${interaction.channelId}`,
+          scope: "channel",
+          maxRequests: config.security.interactionChannelRateLimit,
+          windowSeconds,
+        },
+        {
+          key: "interaction:global",
+          scope: "global",
+          maxRequests: config.security.interactionGlobalRateLimit,
+          windowSeconds,
+        },
+      );
+    }
+
+    const rateLimit = interactionRateLimiter.checkMany(rules);
+    if (!rateLimit.allowed) {
+      await rejectInteractiveRequest(
+        interaction,
+        type,
+        `You are using bot controls too quickly. Try again in ${rateLimit.retryAfterSeconds}s.`,
+      );
+      return null;
+    }
+
+    const maximumConcurrent = Number(config.security.interactionMaxConcurrent) || 0;
+    if (sharedAccess && maximumConcurrent > 0) {
+      if (activeInteractiveRequests >= maximumConcurrent) {
+        await rejectInteractiveRequest(
+          interaction,
+          type,
+          "The bot is temporarily handling too many interactive requests. Try again shortly.",
+        );
+        return null;
+      }
+      activeInteractiveRequests += 1;
+      let released = false;
+      return () => {
+        if (!released) {
+          released = true;
+          activeInteractiveRequests = Math.max(0, activeInteractiveRequests - 1);
+        }
+      };
+    }
+    return () => {};
+  }
+
   async function handleAutocompleteInteraction(interaction) {
     let choices = [];
     try {
@@ -174,11 +265,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
       choices = [];
     }
 
-    try {
-      await interaction.respond(choices);
-    } catch {
-      logger.warn("discord.autocomplete_response_failed", { responded: false });
-    }
+    await respondToAutocomplete(interaction, choices);
   }
 
   function logEvent(interaction, payload) {
@@ -221,55 +308,26 @@ export function createInteractionHandler(config, searchCache, versionService, de
 
   async function handleInteraction(interaction) {
     if (interaction.isAutocomplete?.()) {
-      await handleAutocompleteInteraction(interaction);
+      const release = await acquireInteractiveBudget(interaction, "autocomplete");
+      if (!release) {
+        return;
+      }
+      try {
+        await handleAutocompleteInteraction(interaction);
+      } finally {
+        release();
+      }
       return;
     }
 
     if (pagination.isPaginationButton(interaction)) {
-      const context = resolveChannelContext(interaction.channelId, config, testOverrides);
-      const result = pagination.resolveButton(interaction.customId, {
-        userId: interaction.user?.id,
-        guildId: interaction.guildId,
-        channelId: interaction.channelId,
-        pluginId: context.pluginId,
-        cacheGeneration: searchCache.getGeneration?.() ?? 0,
-        hasAccess:
-          config.discord.allowedChannelIds.includes(interaction.channelId) &&
-          hasRole(interaction.member, { roleIds: config.discord.allowedRoleIds }),
-      });
-      logger.info("discord.pagination_action", {
-        status: result.status,
-        action: result.action ?? "none",
-        pageNumber: result.pageNumber ?? 0,
-      });
-
-      if (result.status === "ok") {
-        await interaction.update(result.payload);
+      const release = await acquireInteractiveBudget(interaction, "component");
+      if (!release) {
         return;
       }
-
-      const content =
-        result.status === "unauthorized"
-          ? "These result controls belong to the support member who ran the lookup."
-          : result.status === "stale"
-            ? "The lookup cache changed after these results were created. Run the lookup again."
-            : result.status === "invalid-context"
-              ? "These result controls are not valid in this channel or plugin context."
-              : "These result controls expired. Run the lookup again for fresh results.";
-      await interaction.reply({
-        content,
-        flags: MessageFlags.Ephemeral,
-        allowedMentions: NO_MENTIONS,
-      });
-      return;
-    }
-
-    if (pagination.isContextSelect(interaction)) {
-      const context = resolveChannelContext(interaction.channelId, config, testOverrides);
-      const result = pagination.resolveContextSelection(
-        interaction.customId,
-        interaction.values?.[0],
-        {
+      try {
+        const context = resolveChannelContext(interaction.channelId, config, testOverrides);
+        const result = pagination.resolveButton(interaction.customId, {
           userId: interaction.user?.id,
           guildId: interaction.guildId,
           channelId: interaction.channelId,
@@ -278,39 +336,92 @@ export function createInteractionHandler(config, searchCache, versionService, de
           hasAccess:
             config.discord.allowedChannelIds.includes(interaction.channelId) &&
             hasRole(interaction.member, { roleIds: config.discord.allowedRoleIds }),
-        },
-      );
-      logger.info("discord.context_expansion", {
-        status: result.status,
-        resultNumber: result.resultNumber ?? 0,
-      });
-
-      if (result.status === "ok") {
-        const payload = createExpandedYamlContextPayload(result.result, {
-          attachmentSizeLimit: interaction.attachmentSizeLimit,
         });
-        if (payload) {
-          await interaction.reply({
-            ...payload,
-            flags: MessageFlags.Ephemeral,
-          });
+        logger.info("discord.pagination_action", {
+          status: result.status,
+          action: result.action ?? "none",
+          pageNumber: result.pageNumber ?? 0,
+        });
+
+        if (result.status === "ok") {
+          await interaction.update(result.payload);
           return;
         }
-      }
 
-      const content =
-        result.status === "unauthorized"
-          ? "These context controls belong to the support member who ran the lookup."
-          : result.status === "stale"
-            ? "The lookup cache changed after these results were created. Run the lookup again."
-            : result.status === "invalid-context"
-              ? "These context controls are not valid in this channel or plugin context."
-              : "These context controls expired or are no longer valid. Run the lookup again for fresh results.";
-      await interaction.reply({
-        content,
-        flags: MessageFlags.Ephemeral,
-        allowedMentions: NO_MENTIONS,
-      });
+        const content =
+          result.status === "unauthorized"
+            ? "These result controls belong to the support member who ran the lookup."
+            : result.status === "stale"
+              ? "The lookup cache changed after these results were created. Run the lookup again."
+              : result.status === "invalid-context"
+                ? "These result controls are not valid in this channel or plugin context."
+                : "These result controls expired. Run the lookup again for fresh results.";
+        await interaction.reply({
+          content,
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+      } finally {
+        release();
+      }
+      return;
+    }
+
+    if (pagination.isContextSelect(interaction)) {
+      const release = await acquireInteractiveBudget(interaction, "component");
+      if (!release) {
+        return;
+      }
+      try {
+        const context = resolveChannelContext(interaction.channelId, config, testOverrides);
+        const result = pagination.resolveContextSelection(
+          interaction.customId,
+          interaction.values?.[0],
+          {
+            userId: interaction.user?.id,
+            guildId: interaction.guildId,
+            channelId: interaction.channelId,
+            pluginId: context.pluginId,
+            cacheGeneration: searchCache.getGeneration?.() ?? 0,
+            hasAccess:
+              config.discord.allowedChannelIds.includes(interaction.channelId) &&
+              hasRole(interaction.member, { roleIds: config.discord.allowedRoleIds }),
+          },
+        );
+        logger.info("discord.context_expansion", {
+          status: result.status,
+          resultNumber: result.resultNumber ?? 0,
+        });
+
+        if (result.status === "ok") {
+          const payload = createExpandedYamlContextPayload(result.result, {
+            attachmentSizeLimit: interaction.attachmentSizeLimit,
+          });
+          if (payload) {
+            await interaction.reply({
+              ...payload,
+              flags: MessageFlags.Ephemeral,
+            });
+            return;
+          }
+        }
+
+        const content =
+          result.status === "unauthorized"
+            ? "These context controls belong to the support member who ran the lookup."
+            : result.status === "stale"
+              ? "The lookup cache changed after these results were created. Run the lookup again."
+              : result.status === "invalid-context"
+                ? "These context controls are not valid in this channel or plugin context."
+                : "These context controls expired or are no longer valid. Run the lookup again for fresh results.";
+        await interaction.reply({
+          content,
+          flags: MessageFlags.Ephemeral,
+          allowedMentions: NO_MENTIONS,
+        });
+      } finally {
+        release();
+      }
       return;
     }
 
@@ -905,6 +1016,7 @@ export function createInteractionHandler(config, searchCache, versionService, de
           changeReport = await versionService.getVersionChanges(context.plugin, scope);
           versionMessages.push(...splitDiscordMessages(formatVersionChanges(changeReport)));
         }
+        versionMessages = enforceDiscordMessageBatch(versionMessages);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
         await logEvent(interaction, {

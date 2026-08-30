@@ -10,11 +10,15 @@ import {
   compareVersions,
   formatPluginRelease,
 } from "./versionComparison.js";
+import {
+  MAX_UPSTREAM_RESPONSE_BYTES,
+  readBoundedResponseJson,
+} from "./upstreamResponse.js";
+import { formatInlineVersion, normalizeInlineVersion } from "./versionSafety.js";
 
 const SPIGET_API_ROOT = "https://api.spiget.org/v2";
 const PAPER_API_ROOT = "https://fill.papermc.io/v3/projects/paper";
 const LUCKPERMS_METADATA_URL = "https://metadata.luckperms.net/data/all";
-const MAX_RESPONSE_BYTES = 1024 * 1024;
 const MAX_CACHE_ENTRIES = 64;
 const MAX_PENDING_RESOURCES = 12;
 const MAX_RELEASES_PER_RESOURCE = 3;
@@ -52,43 +56,6 @@ function normalizeCacheTtl(value) {
     return MAXIMUM_CACHE_TTL_MS;
   }
   return Math.max(MINIMUM_CACHE_TTL_MS, Math.min(MAXIMUM_CACHE_TTL_MS, parsed));
-}
-
-function responseSizeError() {
-  const error = new Error("Release metadata response exceeded the size limit.");
-  error.temporary = false;
-  return error;
-}
-
-async function readBoundedResponseText(response) {
-  const reader = response.body?.getReader?.();
-  if (!reader) {
-    const text = await response.text();
-    if (Buffer.byteLength(text, "utf8") > MAX_RESPONSE_BYTES) {
-      throw responseSizeError();
-    }
-    return text;
-  }
-
-  const chunks = [];
-  let byteLength = 0;
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-      byteLength += value.byteLength;
-      if (byteLength > MAX_RESPONSE_BYTES) {
-        await reader.cancel().catch(() => {});
-        throw responseSizeError();
-      }
-      chunks.push(Buffer.from(value.buffer, value.byteOffset, value.byteLength));
-    }
-  } finally {
-    reader.releaseLock();
-  }
-  return Buffer.concat(chunks, byteLength).toString("utf8");
 }
 
 function decodeHtmlEntities(value) {
@@ -132,7 +99,11 @@ function stripHtml(value) {
 
 function decodeBase64Html(value) {
   const encoded = String(value ?? "").trim();
-  if (!encoded || encoded.length > MAX_RESPONSE_BYTES || !/^[a-z0-9+/=\s]+$/i.test(encoded)) {
+  if (
+    !encoded ||
+    encoded.length > MAX_UPSTREAM_RESPONSE_BYTES ||
+    !/^[a-z0-9+/=\s]+$/i.test(encoded)
+  ) {
     return "";
   }
   try {
@@ -508,23 +479,15 @@ export function createVersionChangesService(config, dependencies = {}) {
         signal: AbortSignal.timeout(config.versions.requestTimeoutMs),
       });
       if (!response.ok) {
+        await response.body?.cancel?.().catch(() => {});
         throw new UpstreamHttpError(response.status, {
           retryAfterMs: parseRetryAfter(response.headers?.get?.("retry-after"), Number(now())),
         });
       }
-      const declaredLengthHeader = response.headers?.get?.("content-length");
-      const declaredLength = declaredLengthHeader == null ? Number.NaN : Number(declaredLengthHeader);
-      if (Number.isFinite(declaredLength) && declaredLength > MAX_RESPONSE_BYTES) {
-        throw responseSizeError();
-      }
-      const text = await readBoundedResponseText(response);
-      try {
-        return JSON.parse(text);
-      } catch {
-        const error = new Error("Release metadata was not valid JSON.");
-        error.temporary = false;
-        throw error;
-      }
+      return readBoundedResponseJson(response, {
+        label: "Release metadata",
+        maxBytes: MAX_UPSTREAM_RESPONSE_BYTES,
+      });
     });
   }
 
@@ -688,12 +651,12 @@ export function formatVersionChanges(report) {
     const stale = change.upstream.stale ? " **(latest is last known)**" : "";
     lines.push(
       "",
-      `**${sanitizeForDisplay(change.label)}:** \`${sanitizeForDisplay(change.current)}\` → \`${sanitizeForDisplay(change.latest)}\`${stale}`,
+      `**${sanitizeForDisplay(change.label)}:** ${formatInlineVersion(change.current, "Current version")} → ${formatInlineVersion(change.latest, "Latest version")}${stale}`,
     );
     if (change.releases.length) {
       for (const release of change.releases) {
         lines.push(
-          `- **${formatReleaseLink(sanitizeForDisplay(release.version), release.url)}**`,
+          `- **${formatReleaseLink(normalizeInlineVersion(release.version, "Release version"), release.url)}**`,
         );
         for (const item of release.items) {
           const safeItemUrl = safeHistoryUrl(item.url);

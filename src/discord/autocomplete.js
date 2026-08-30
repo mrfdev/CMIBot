@@ -127,6 +127,16 @@ function getMatchRank(candidate, focusedValue) {
   return bestRank;
 }
 
+function compareRankedCandidates(left, right) {
+  return (
+    left.rank - right.rank ||
+    right.candidate.priority - left.candidate.priority ||
+    right.candidate.frequency - left.candidate.frequency ||
+    left.candidate.name.length - right.candidate.name.length ||
+    left.candidate.name.localeCompare(right.candidate.name, undefined, { sensitivity: "base" })
+  );
+}
+
 export function buildAutocompleteIndex(entries, {
   allowedRoots = [],
   maximumKeywordLength = DISCORD_CHOICE_TEXT_LIMIT,
@@ -154,17 +164,23 @@ export function selectAutocompleteChoices(index, optionName, focusedValue, {
 
   const focused = normalizeForMatch(focusedValue).slice(0, DISCORD_CHOICE_TEXT_LIMIT);
   const boundedLimit = Math.max(1, Math.min(AUTOCOMPLETE_CHOICE_LIMIT, Number(limit) || AUTOCOMPLETE_CHOICE_LIMIT));
-  return candidates
-    .map((candidate) => ({ candidate, rank: getMatchRank(candidate, focused) }))
-    .filter((item) => Number.isFinite(item.rank))
-    .sort(
-      (left, right) =>
-        left.rank - right.rank ||
-        right.candidate.priority - left.candidate.priority ||
-        right.candidate.frequency - left.candidate.frequency ||
-        left.candidate.name.length - right.candidate.name.length ||
-        left.candidate.name.localeCompare(right.candidate.name, undefined, { sensitivity: "base" }),
-    )
-    .slice(0, boundedLimit)
-    .map(({ candidate }) => ({ name: candidate.name, value: candidate.value }));
+  const selected = [];
+  for (const candidate of candidates) {
+    const item = { candidate, rank: getMatchRank(candidate, focused) };
+    if (!Number.isFinite(item.rank)) {
+      continue;
+    }
+    const insertionIndex = selected.findIndex(
+      (existing) => compareRankedCandidates(item, existing) < 0,
+    );
+    if (insertionIndex < 0) {
+      selected.push(item);
+    } else {
+      selected.splice(insertionIndex, 0, item);
+    }
+    if (selected.length > boundedLimit) {
+      selected.pop();
+    }
+  }
+  return selected.map(({ candidate }) => ({ name: candidate.name, value: candidate.value }));
 }

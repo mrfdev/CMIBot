@@ -513,6 +513,46 @@
       "pattern": "^[0-9]+$",
       "default": "30"
     },
+    "INTERACTION_USER_RATE_LIMIT": {
+      "type": "string",
+      "description": "Autocomplete and result-control interactions allowed per user in each rate window.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "20"
+    },
+    "INTERACTION_CHANNEL_RATE_LIMIT": {
+      "type": "string",
+      "description": "Authorized autocomplete and result-control interactions allowed per channel in each rate window.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "100"
+    },
+    "INTERACTION_GLOBAL_RATE_LIMIT": {
+      "type": "string",
+      "description": "Authorized autocomplete and result-control interactions allowed globally in each rate window.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "200"
+    },
+    "INTERACTION_RATE_WINDOW_SECONDS": {
+      "type": "string",
+      "description": "Sliding autocomplete and result-control rate window in seconds.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "10"
+    },
+    "INTERACTION_MAX_CONCURRENT": {
+      "type": "string",
+      "description": "Maximum concurrent authorized autocomplete and result-control interactions.",
+      "x-value-type": "integer",
+      "x-sensitivity": "public",
+      "pattern": "^[0-9]+$",
+      "default": "8"
+    },
     "LOOKUP_COOLDOWN_SECONDS": {
       "type": "string",
       "description": "Per-user lookup cooldown.",

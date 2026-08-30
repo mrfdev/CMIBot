@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./loadEnvironment.js";
 import { performance } from "node:perf_hooks";
 import { Client, GatewayIntentBits } from "discord.js";
 import { createAttentionMonitor } from "./attentionMonitor.js";

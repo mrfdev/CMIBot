@@ -38,8 +38,17 @@ async function createLaunchctlFixture(
   const stopPendingPath = path.join(temporaryRoot, "launchctl.stop-pending");
   const launchAgentsDirectory = path.join(temporaryRoot, "LaunchAgents");
   const plistPath = path.join(launchAgentsDirectory, "com.mrfdev.cmibot.plist");
+  const operationsDirectory = path.join(temporaryRoot, "operations");
 
   await fs.mkdir(launchAgentsDirectory);
+  await fs.mkdir(operationsDirectory);
+  await fs.copyFile(
+    path.join(repositoryRoot, "operations", "com.mrfdev.cmibot.plist"),
+    path.join(operationsDirectory, "com.mrfdev.cmibot.plist"),
+  );
+  await fs.writeFile(path.join(temporaryRoot, ".env"), "DISCORD_TOKEN=test-private\n", {
+    mode: 0o600,
+  });
   await fs.writeFile(plistPath, "test plist\n", "utf8");
   if (loaded) {
     await fs.writeFile(loadedPath, "loaded\n", "utf8");
@@ -122,6 +131,7 @@ async function createLaunchctlFixture(
   return {
     environment: {
       ...process.env,
+      CMIBOT_PROJECT_ROOT: temporaryRoot,
       CMIBOT_LAUNCHCTL: launchctlPath,
       CMIBOT_LAUNCH_AGENTS_DIR: launchAgentsDirectory,
       CMIBOT_TEST_LAUNCHCTL_COUNTER: counterPath,
@@ -272,11 +282,31 @@ test("install renders a private local service definition without printing its pa
     assert.doesNotMatch(result.stdout, /\/test-runtime|Users|home/i);
     assert.match(installed, /\/test-runtime\/bin\/node/);
     assert.match(installed, /scripts\/service-runner\.mjs/);
-    const expectedCurrent = path.join(repositoryRoot, ".deploy", "current");
+    const expectedCurrent = path.join(temporaryRoot, ".deploy", "current");
     assert.match(installed, new RegExp(expectedCurrent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.doesNotMatch(installed, /__[A-Z0-9_]+__/);
     assert.match(installed, /<string>\/dev\/null<\/string>/);
     assert.equal(mode, 0o600);
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("install rejects a broadly readable private environment", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-operations-env-"));
+
+  try {
+    const fixture = await createLaunchctlFixture(temporaryRoot);
+    await fs.chmod(path.join(temporaryRoot, ".env"), 0o644);
+
+    await assert.rejects(
+      runOperation("install", fixture.environment),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.match(error.stderr, /owner-only permissions/i);
+        return true;
+      },
+    );
   } finally {
     await fs.rm(temporaryRoot, { recursive: true, force: true });
   }
