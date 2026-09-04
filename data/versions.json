@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-03T12:42:07.486Z",
+  "generatedAt": "2026-09-04T15:40:55.932Z",
   "sourceServer": "servers/Paper-26.2",
   "paper": {
     "id": "paper",
@@ -34,8 +34,8 @@
       "id": "cmi",
       "label": "CMI",
       "pluginName": "CMI",
-      "version": "9.8.9.9",
-      "jar": "CMI-9.8.9.9.jar",
+      "version": "9.8.9.10",
+      "jar": "CMI-9.8.9.10.jar",
       "contextId": "cmi",
       "shared": false,
       "tracked": true,
