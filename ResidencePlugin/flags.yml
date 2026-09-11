@@ -52,7 +52,7 @@ Global:
     # Allows or denys players to use beds
     bed: true
     # Applies to: Residence
-    # Allows or denys animal boarding in residences
+    # Allow or deny non-player entities from riding vehicles
     boarding: true
     # Applies to: Both
     # Allows or denys players to use brewing stands
@@ -112,7 +112,7 @@ Global:
     # Allow or deny creeper explosions
     creeper: true
     # Applies to: Residence
-    # Allows or denys all entity damage within the residence
+    # Allow or deny damage to players and tamed animals
     damage: false
     # Applies to: Residence
     # Sets day time in residence
@@ -262,6 +262,9 @@ Global:
     # Allows or denys players to use looms
     loom: true
     # Applies to: Residence
+    # Allow or deny derailed hopper minecarts from sucking items from containers
+    minecartsuction: true
+    # Applies to: Residence
     # Prevents mob droping exp on death
     mobexpdrop: true
     # Applies to: Residence
@@ -345,7 +348,7 @@ Global:
     # Applies to: Both
     # Allows or denys sheep shear
     shear: true
-    # Applies to: Residence
+    # Applies to: Both
     # Allows or denys shooting projectile in area
     shoot: true
     # Applies to: Residence
@@ -513,6 +516,7 @@ Global:
     leash: LEAD
     lever: LEVER
     loom: LOOM
+    minecartsuction: HOPPER_MINECART
     mobexpdrop: MELON_SEEDS
     mobgriefing: BONE
     mobitemdrop: COCOA_BEANS
@@ -707,8 +711,8 @@ ItemList:
     # this is the actual list of material names that this list allows or disallows
     # You can look up the material name by item ID in game by typing /res material <id>
     # Alternativly, you can simply use the item ID in the list, but its less descriptive and harder to see what the list allows or dissallows at a glance
-    Items:
-    - LAVA
-    - WATER
-    - STATIONARY_LAVA
-    - STATIONARY_WATER
+    # Items:
+    # - Apple
+    # - Stone
+    # - Lava_Bucket
+    Items: []

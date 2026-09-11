@@ -157,6 +157,10 @@ Global:
     WalkSpeed:
       '1': 0.5
       '2': 2.0
+    ExtraProtection:
+      # Whether to check hoppers crossing Residence borders to prevent edge container theft (default: true)
+      # If Flags.container is globally disabled, this option has no effect
+      HopperCrossResidenceCheck: true
   Signs:
     MaxPerResidence: 5
   # The interval, in milliseconds, between movement checks.
@@ -408,6 +412,9 @@ Global:
     - Flag_Deny
     - Residence_FlagDeny
     - General_NoPVPZone
+    # Cooldown for sending duplicate Flag deny messages, in seconds(default: 1)
+    # Only effective for 1.16+ versions; suppresses spam from repeated Flag deny messages
+    FlagDenyMessageCooldown: 1
   ActionBar:
     ShowOnSelection: true
   # Enable or disable residence chat channels.
@@ -528,7 +535,7 @@ Global:
           Sides: RED_WOOL
           LineThickness: 0.05
           GridSize: 8.0
-          HideInSeconds: 30.0
+          HideInSeconds: 5.0
           Range: 32
         ENTER_EXIT:
           Edges: BLUE_WOOL
