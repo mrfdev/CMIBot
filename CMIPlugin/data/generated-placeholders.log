@@ -472,6 +472,12 @@
 # OP state
 %cmi_user_op%
 
+# Outputs 1 or 0 if defined feature is toggled on or off
+%cmi_user_options_[holograms|shiftedit|totembar|compass|tagsound|chatspy|cmdspy|signspy|msg|tp|pay|chatbubble|pmsound|rideme|pvenumbers|pvpnumbers|durability|receivepets|deathmessages|notarget|schest|staffchat|autoflightrecharge]%
+
+# Outputs formatted True or False if defined feature is toggled on or off
+%cmi_user_optionsname_[holograms|shiftedit|totembar|compass|tagsound|chatspy|cmdspy|signspy|msg|tp|pay|chatbubble|pmsound|rideme|pvenumbers|pvpnumbers|durability|receivepets|deathmessages|notarget|schest|staffchat|autoflightrecharge]%
+
 # Ping
 %cmi_user_ping%
 
@@ -564,12 +570,6 @@
 
 # Time in seconds for temp god mode
 %cmi_user_tgod%
-
-# Outputs 1 or 0 if defined feature is toggled on or off
-%cmi_user_toggle_[holograms|shiftedit|totembar|compass|tagsound|chatspy|cmdspy|signspy|msg|tp|pay|chatbubble|pmsound|rideme|pvenumbers|pvpnumbers|durability|receivepets|deathmessages|notarget|schest|staffchat|autoflightrecharge]%
-
-# Outputs formatted True or False if defined feature is toggled on or off
-%cmi_user_togglename_[holograms|shiftedit|totembar|compass|tagsound|chatspy|cmdspy|signspy|msg|tp|pay|chatbubble|pmsound|rideme|pvenumbers|pvpnumbers|durability|receivepets|deathmessages|notarget|schest|staffchat|autoflightrecharge]%
 
 # Total amount of exp player have
 %cmi_user_totalexp%
