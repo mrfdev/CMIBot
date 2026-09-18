@@ -1695,5 +1695,129 @@ SULFUR_SLAB: Sulfur Slab
 SULFUR_SPIKE: Sulfur Spike
 SULFUR_STAIRS: Sulfur Stairs
 SULFUR_WALL: Sulfur Wall
+ABANDONED_CAMP_MAP: Abandoned Camp Map
+BLACK_CONCRETE_SLAB: Black Concrete Slab
+BLACK_CONCRETE_STAIRS: Black Concrete Stairs
+BLACK_CUSHION: Black Cushion
+BLACK_WOOL_SLAB: Black Wool Slab
+BLACK_WOOL_STAIRS: Black Wool Stairs
+BLUE_CONCRETE_SLAB: Blue Concrete Slab
+BLUE_CONCRETE_STAIRS: Blue Concrete Stairs
+BLUE_CUSHION: Blue Cushion
+BLUE_WOOL_SLAB: Blue Wool Slab
+BLUE_WOOL_STAIRS: Blue Wool Stairs
+BROWN_CONCRETE_SLAB: Brown Concrete Slab
+BROWN_CONCRETE_STAIRS: Brown Concrete Stairs
+BROWN_CUSHION: Brown Cushion
+BROWN_WOOL_SLAB: Brown Wool Slab
+BROWN_WOOL_STAIRS: Brown Wool Stairs
+BURIED_ANCIENT_CITY_MAP: Buried Ancient City Map
+BURIED_MINESHAFT_MAP: Buried Mineshaft Map
+BURIED_TREASURE_MAP: Buried Treasure Map
+BURIED_TRIAL_CHAMBERS_MAP: Buried Trial Chambers Map
+CYAN_CONCRETE_SLAB: Cyan Concrete Slab
+CYAN_CONCRETE_STAIRS: Cyan Concrete Stairs
+CYAN_CUSHION: Cyan Cushion
+CYAN_WOOL_SLAB: Cyan Wool Slab
+CYAN_WOOL_STAIRS: Cyan Wool Stairs
+DESERT_PYRAMID_MAP: Desert Pyramid Map
+DESERT_VILLAGE_MAP: Desert Village Map
+GRAY_CONCRETE_SLAB: Gray Concrete Slab
+GRAY_CONCRETE_STAIRS: Gray Concrete Stairs
+GRAY_CUSHION: Gray Cushion
+GRAY_WOOL_SLAB: Gray Wool Slab
+GRAY_WOOL_STAIRS: Gray Wool Stairs
+GREEN_CONCRETE_SLAB: Green Concrete Slab
+GREEN_CONCRETE_STAIRS: Green Concrete Stairs
+GREEN_CUSHION: Green Cushion
+GREEN_WOOL_SLAB: Green Wool Slab
+GREEN_WOOL_STAIRS: Green Wool Stairs
+JUNGLE_PYRAMID_MAP: Jungle Pyramid Map
+LIGHT_BLUE_CONCRETE_SLAB: Light Blue Concrete Slab
+LIGHT_BLUE_CONCRETE_STAIRS: Light Blue Concrete Stairs
+LIGHT_BLUE_CUSHION: Light Blue Cushion
+LIGHT_BLUE_WOOL_SLAB: Light Blue Wool Slab
+LIGHT_BLUE_WOOL_STAIRS: Light Blue Wool Stairs
+LIGHT_GRAY_CONCRETE_SLAB: Light Gray Concrete Slab
+LIGHT_GRAY_CONCRETE_STAIRS: Light Gray Concrete Stairs
+LIGHT_GRAY_CUSHION: Light Gray Cushion
+LIGHT_GRAY_WOOL_SLAB: Light Gray Wool Slab
+LIGHT_GRAY_WOOL_STAIRS: Light Gray Wool Stairs
+LIME_CONCRETE_SLAB: Lime Concrete Slab
+LIME_CONCRETE_STAIRS: Lime Concrete Stairs
+LIME_CUSHION: Lime Cushion
+LIME_WOOL_SLAB: Lime Wool Slab
+LIME_WOOL_STAIRS: Lime Wool Stairs
+MAGENTA_CONCRETE_SLAB: Magenta Concrete Slab
+MAGENTA_CONCRETE_STAIRS: Magenta Concrete Stairs
+MAGENTA_CUSHION: Magenta Cushion
+MAGENTA_WOOL_SLAB: Magenta Wool Slab
+MAGENTA_WOOL_STAIRS: Magenta Wool Stairs
+OCEAN_MONUMENT_MAP: Ocean Monument Map
+ORANGE_CONCRETE_SLAB: Orange Concrete Slab
+ORANGE_CONCRETE_STAIRS: Orange Concrete Stairs
+ORANGE_CUSHION: Orange Cushion
+ORANGE_POPLAR_LEAVES: Orange Poplar Leaves
+ORANGE_WOOL_SLAB: Orange Wool Slab
+ORANGE_WOOL_STAIRS: Orange Wool Stairs
+PINK_CONCRETE_SLAB: Pink Concrete Slab
+PINK_CONCRETE_STAIRS: Pink Concrete Stairs
+PINK_CUSHION: Pink Cushion
+PINK_WOOL_SLAB: Pink Wool Slab
+PINK_WOOL_STAIRS: Pink Wool Stairs
+PLAINS_VILLAGE_MAP: Plains Village Map
+POPLAR_BOAT: Poplar Boat
+POPLAR_BUTTON: Poplar Button
+POPLAR_CHEST_BOAT: Poplar Chest Boat
+POPLAR_DOOR: Poplar Door
+POPLAR_FENCE: Poplar Fence
+POPLAR_FENCE_GATE: Poplar Fence Gate
+POPLAR_HANGING_SIGN: Poplar Hanging Sign
+POPLAR_LOG: Poplar Log
+POPLAR_PLANKS: Poplar Planks
+POPLAR_PRESSURE_PLATE: Poplar Pressure Plate
+POPLAR_SAPLING: Poplar Sapling
+POPLAR_SHELF: Poplar Shelf
+POPLAR_SIGN: Poplar Sign
+POPLAR_SLAB: Poplar Slab
+POPLAR_STAIRS: Poplar Stairs
+POPLAR_TRAPDOOR: Poplar Trapdoor
+POPLAR_WALL_HANGING_SIGN: Poplar Wall Hanging Sign
+POPLAR_WALL_SIGN: Poplar Wall Sign
+POPLAR_WOOD: Poplar Wood
+POTTED_POPLAR_SAPLING: Potted Poplar Sapling
+PURPLE_CONCRETE_SLAB: Purple Concrete Slab
+PURPLE_CONCRETE_STAIRS: Purple Concrete Stairs
+PURPLE_CUSHION: Purple Cushion
+PURPLE_WOOL_SLAB: Purple Wool Slab
+PURPLE_WOOL_STAIRS: Purple Wool Stairs
+RED_CONCRETE_SLAB: Red Concrete Slab
+RED_CONCRETE_STAIRS: Red Concrete Stairs
+RED_CUSHION: Red Cushion
+RED_POPLAR_LEAVES: Red Poplar Leaves
+RED_SHRUB: Red Shrub
+RED_WOOL_SLAB: Red Wool Slab
+RED_WOOL_STAIRS: Red Wool Stairs
+SAVANNA_VILLAGE_MAP: Savanna Village Map
+SHELF_MUSHROOM: Shelf Mushroom
+SNOWY_VILLAGE_MAP: Snowy Village Map
+STRAW_BED: Straw Bed
+STRIPPED_POPLAR_LOG: Stripped Poplar Log
+STRIPPED_POPLAR_WOOD: Stripped Poplar Wood
+SWAMP_HUT_MAP: Swamp Hut Map
+TAIGA_VILLAGE_MAP: Taiga Village Map
+WARM_OCEAN_RUINS_MAP: Warm Ocean Ruins Map
+WHITE_CONCRETE_SLAB: White Concrete Slab
+WHITE_CONCRETE_STAIRS: White Concrete Stairs
+WHITE_CUSHION: White Cushion
+WHITE_WOOL_SLAB: White Wool Slab
+WHITE_WOOL_STAIRS: White Wool Stairs
+WOODLAND_MANSION_MAP: Woodland Mansion Map
+YELLOW_CONCRETE_SLAB: Yellow Concrete Slab
+YELLOW_CONCRETE_STAIRS: Yellow Concrete Stairs
+YELLOW_CUSHION: Yellow Cushion
+YELLOW_POPLAR_LEAVES: Yellow Poplar Leaves
+YELLOW_WOOL_SLAB: Yellow Wool Slab
+YELLOW_WOOL_STAIRS: Yellow Wool Stairs
 SIGN: Sign
 GRASS: Grass
