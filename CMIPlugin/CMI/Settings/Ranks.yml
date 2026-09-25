@@ -19,6 +19,7 @@
 # Commands is list which will be performed on rankup. Can be additional actions, like message broadcast or anything alse
 # Main section is StatsRequirements and it can have allot of different values in it:
 #   In general format goes like this [mainStat](:optionalSubStat):amount
+#   Alternatively you can combine multiple ones into one, keep in mind that this requires for mainStat to be the same [mainStat](:optionalSubStat)(;SecondaryOptionalSubStat):amount
 #   In example MonsterKills:100 will require from player to have 100 monster kills while MonsterKills:Zombie:100 will require to have 100 zombie kills. Both of them can be used if needed.
 #     List of possible requirement and basic explanations:
 #       Distance in blocks:

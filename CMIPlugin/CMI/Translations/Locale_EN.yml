@@ -2808,6 +2808,7 @@ command:
         deathMessages: '{gcp}Do you want to show death messages'
         notarget: '{gcp}Do you want to be ignored by mobs'
         showVehicleSpeed: '{gcp}Do you want to show speed while inside vehicle'
+        tpauto: '{gcp}Do you want to automatically accept teleport requests'
   panimation:
     help:
       info: Play custom particle animation
@@ -4092,6 +4093,7 @@ command:
       NotOnline: '{gcp}Player is no longer online'
       accepted: '{gcs}[playerDisplayName] {gcp}accepted request'
       youAccepted: '{gcp}Teleportation accepted'
+      youAutoAccepted: '{gcp}Auto teleportation accepted'
   tpahere:
     help:
       info: Asks player to accept teleportation to your location

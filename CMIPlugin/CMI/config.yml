@@ -491,7 +491,7 @@ PlaytimeRewards:
   Enabled: false
   # When enabled, while player is in afk mode, repeatable playtime rewards will not increase in playtime
   # ATTENTION! this setting will not have any effect if you have Afk.StopPlayTime set to true
-  # When StopPlayTime set to true, afk will be expluded automatically
+  # When StopPlayTime set to true, afk will be excluded automatically
   ExcludeAfk: false
   # Defines time in minutes to inform player about pending reward which needs to be claimed
   RewardInform: 15
@@ -1587,6 +1587,7 @@ Player:
       deathMessages: true
       notarget: false
       showVehicleSpeed: false
+      tpauto: false
     Icons:
       visibleHolograms: BLACK_STAINED_GLASS
       shiftSignEdit: OAK_SIGN
@@ -1609,6 +1610,7 @@ Player:
       deathMessages: DEAD_BUSH
       notarget: BEDROCK
       showVehicleSpeed: MINECART
+      tpauto: ENDER_PEARL
 WarmUps:
   # You can enable any command warmup to prevent instant command usage
   # tp:5:false means that when player performs /tp command he will need to wait 5 sec and will not be able to move outside current block

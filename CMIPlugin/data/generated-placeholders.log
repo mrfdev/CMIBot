@@ -196,6 +196,9 @@
 # Returns random online player name
 %cmi_random_player_name%
 
+# Returns random player name in range, excluding current player
+%cmi_random_player_radius_[range]%
+
 # Left time until scheduler triggers last command
 %cmi_schedule_endat_[schedName]%
 
