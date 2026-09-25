@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-25T09:08:05.323Z",
+  "generatedAt": "2026-09-25T13:44:22.259Z",
   "sourceServer": "servers/Paper-26.2",
   "paper": {
     "id": "paper",
@@ -47,8 +47,8 @@
       "id": "cmilib",
       "label": "CMILib",
       "pluginName": "CMILib",
-      "version": "1.6.0.0",
-      "jar": "CMILib1.6.0.0.jar",
+      "version": "1.6.0.1",
+      "jar": "CMILib1.6.0.1.jar",
       "contextId": null,
       "shared": true,
       "tracked": true,
