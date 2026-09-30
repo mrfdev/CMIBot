@@ -1624,6 +1624,8 @@ WarmUps:
   # - cmi warp :3:false:GlyphHead
   Enabled: false
   InformOnNoMove: true
+  Disable:
+    OnInventoryOpen: true
   showCounterBarInfo: false
   BossBarInfo:
     Enabled: false
