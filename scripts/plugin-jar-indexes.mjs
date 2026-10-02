@@ -131,7 +131,7 @@ function addRuntimeWarning(runtimeData, warning) {
   runtimeData.warningsByPlugin.set(pluginId, warnings);
 }
 
-async function readRuntimeExport(serverDirectory) {
+export async function readRuntimeExport(serverDirectory) {
   const runtimeData = createEmptyRuntimeData();
   const exportPath = path.join(
     serverDirectory,
@@ -169,13 +169,23 @@ async function readRuntimeExport(serverDirectory) {
     }
 
     const normalizedPluginId = pluginId.toLowerCase();
+    let normalizedKey = key.trim();
+    if (
+      kind === "placeholder" &&
+      normalizedPluginId === "cmi" &&
+      normalizedKey.startsWith("%cmi_") &&
+      normalizedKey.endsWith("%")
+    ) {
+      // CMI 9.8.10.3 brackets argument names that getFull() wraps in brackets again.
+      normalizedKey = normalizedKey.replace(/\[\[([^\[\]]+)\]\]/g, "[$1]");
+    }
     const pluginRows = runtimeData.rowsByPlugin.get(normalizedPluginId) ?? {
       command: [],
       permission: [],
       placeholder: [],
     };
     pluginRows[kind].push({
-      key: key.trim(),
+      key: normalizedKey,
       description: description.trim(),
       arguments: argumentsValue.trim(),
       aliases: aliases
