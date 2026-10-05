@@ -6,11 +6,11 @@ import {
   assertJavaFeature,
   readRuntimeCompatibility,
   resolveJavaTool,
+  runtimeServerPaths,
 } from "./runtime-compatibility.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(scriptDirectory, "..");
-const serverDirectory = path.join(workspaceRoot, "servers", "Paper-26.2");
 const startupTimeoutMs = 180_000;
 const shutdownTimeoutMs = 30_000;
 
@@ -23,7 +23,7 @@ function stripAnsi(value) {
   return value.replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, "");
 }
 
-async function runSmoke(javaBinary, expectedFeature, paperJar, label) {
+async function runSmoke(serverDirectory, javaBinary, expectedFeature, paperJar, label) {
   const output = [];
   let outputTail = "";
   let ready = false;
@@ -117,6 +117,7 @@ async function runSmoke(javaBinary, expectedFeature, paperJar, label) {
 
 async function main() {
   const compatibility = await readRuntimeCompatibility(workspaceRoot);
+  const { serverDirectory } = runtimeServerPaths(workspaceRoot, compatibility);
   const javaHome = argumentValue("--java-home");
   const expectedFeature = Number(argumentValue("--expect") || compatibility.javaTarget);
   const label = argumentValue("--label") || `java${expectedFeature}`;
@@ -127,7 +128,7 @@ async function main() {
   });
   const javaVersion = await assertJavaFeature(javaBinary, expectedFeature);
   console.log(`[smoke] ${javaVersion.output.split("\n")[0]}`);
-  await runSmoke(javaBinary, expectedFeature, compatibility.paperJar, label);
+  await runSmoke(serverDirectory, javaBinary, expectedFeature, compatibility.paperJar, label);
 }
 
 await main();

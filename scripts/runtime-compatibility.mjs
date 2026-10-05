@@ -40,6 +40,19 @@ export async function readRuntimeCompatibility(workspaceRoot) {
   return compatibility;
 }
 
+export function runtimeServerPaths(workspaceRoot, compatibility) {
+  const version = compatibility.paperVersion;
+  if (typeof version !== "string" || !/^\d+\.\d+(?:\.\d+)?(?:-[a-z0-9-]+)?$/.test(version)) {
+    throw new Error("Invalid Paper version in runtime compatibility manifest.");
+  }
+  const serversRoot = path.join(workspaceRoot, "servers");
+  return {
+    serversRoot,
+    templateDirectory: path.join(serversRoot, `_template-Paper-${version}`),
+    serverDirectory: path.join(serversRoot, `Paper-${version}`),
+  };
+}
+
 export async function resolveJavaTool(
   compatibility,
   {

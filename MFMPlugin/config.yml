@@ -347,6 +347,9 @@ EntityTypes:
   CREEPER:
     Use: true
     Limit: 30
+  CUSHION:
+    Use: true
+    Limit: -1
   DARK_OAK_BOAT:
     Use: true
     Limit: -1
@@ -557,6 +560,12 @@ EntityTypes:
   POLAR_BEAR:
     Use: true
     Limit: 10
+  POPLAR_BOAT:
+    Use: true
+    Limit: -1
+  POPLAR_CHEST_BOAT:
+    Use: true
+    Limit: -1
   PUFFERFISH:
     Use: true
     Limit: 20

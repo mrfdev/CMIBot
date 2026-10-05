@@ -22,7 +22,7 @@ See [CHANGELOG.md](CHANGELOG.md) for dated summaries of shipped changes.
 - Bounded repeated-search LRU caching with aggregate hit/miss metrics and reload invalidation
 - Clean first-install plugin data generated from a disposable Paper server
 - Local version inventory, scheduled upstream checks, and private opt-in version differences with bounded release notes
-- Paper 26.2 stable/API drift checks plus Java 25 and Java 26 smoke commands
+- Paper 26.3 beta/API drift checks plus Java 25 and Java 26 smoke commands
 - One canonical CMILib cache composed into every supporting plugin context
 - Fail-closed startup validation for configuration, routes, indexes, cache summaries, and version-catalog drift
 - Layered user/channel/global rate limits, input validation, disabled mentions, role-ID access checks, JSONL audit logs, and bounded privacy-aware structured service logs
@@ -183,19 +183,19 @@ The bot's YAML data is generated from a clean first-install Paper server instead
 
 ```text
 servers/
-|- _template-Paper-26.2/
+|- _template-Paper-26.3/
 |  `- companions/
-`- Paper-26.2/
+`- Paper-26.3/
    `- companions/
 ```
 
-`servers/` is ignored by Git. Never start or modify `_template-Paper-26.2` directly. It is a reusable source containing Paper, its cache/libraries, and the plugin jars. Non-Paper companion artifacts belong in the template's `companions/` directory, which the refresh copies into the disposable server without loading those jars as plugins.
+`servers/` is ignored by Git. Never start or generate runtime state in `_template-Paper-26.3` directly. It is a reusable source containing Paper and the plugin jars, with optional cached libraries. Non-Paper companion artifacts belong in the template's `companions/` directory, which the refresh copies into the disposable server without loading those jars as plugins. Tooling derives both server directories from `runtime-exporter/compatibility.json`, so an older minor-version setup can remain untouched for rollback.
 
-For a plugin update, preserve or remove the superseded jar so `plugins/` contains exactly one active jar for that plugin, copy the verified replacement into `_template-Paper-26.2/plugins/`, and run `npm run refresh:data`. Download Residence releases from the official free listing at `https://zrips.net/Residence/`; a premium Spigot download is not required. Preserve superseded jars under the ignored `servers/plugin-archive/` tree when needed; that directory is outside the template, so archived jars are neither copied into the disposable server nor loaded by Paper.
+For a plugin update, preserve or remove the superseded jar so `plugins/` contains exactly one active jar for that plugin, copy the verified replacement into `_template-Paper-26.3/plugins/`, and run `npm run refresh:data`. Download Residence releases from the official free listing at `https://zrips.net/Residence/`; a premium Spigot download is not required. Preserve superseded jars under the ignored `servers/plugin-archive/` tree when needed; that directory is outside the template, so archived jars are neither copied into the disposable server nor loaded by Paper.
 
 `data/versions.json` is the authoritative record of the clean snapshot versions. It is regenerated from verified jar metadata during every successful refresh, so plugin versions are intentionally not hardcoded in this README.
 
-The maintained template uses PaperScript's `STABLE` channel, same-version build upgrades, and the fixed `Paper-{version}.jar` filename. Its broad process-name fallback is disabled because another project can legitimately run a jar with the same name; exact test-port detection remains enabled.
+The maintained test template uses PaperScript's `BETA` channel, same-version build upgrades, and the fixed `Paper-{version}.jar` filename. The refresh and smoke commands run the installed, pinned build without automatically upgrading it. Its broad process-name fallback is disabled because another project can legitimately run a jar with the same name; exact test-port detection remains enabled. This is a beta test setup, not a recommendation to upgrade a production Minecraft server.
 
 Run the complete refresh with:
 
@@ -205,10 +205,10 @@ npm run refresh:data
 
 The refresh script performs these steps:
 
-1. Moves the existing `servers/Paper-26.2` to a temporary backup.
-2. Clones `_template-Paper-26.2` into a new disposable working server, including its non-loaded `companions/` inventory.
+1. Moves the existing `servers/Paper-26.3` to a temporary backup.
+2. Clones `_template-Paper-26.3` into a new disposable working server, including its non-loaded `companions/` inventory.
 3. Removes generated plugin, world, log, and Paper config state from the clone only.
-4. Runs Paperclip's documented patch-only mode in the clone so the exact stable Paper API and runtime libraries are present without starting the template.
+4. Runs Paperclip's documented patch-only mode in the clone so the exact pinned Paper API and runtime libraries are present without starting the template.
 5. Builds `LookupRuntimeExporter` with JDK 25 against the API coordinate in `runtime-exporter/compatibility.json`, verifies Java 25 class bytecode, and places the jar in the disposable clone only.
 6. Starts Paper with a 2 GB ceiling and waits for the server's `Done` state.
 7. Runs the exporter after every plugin is initialized, waits for its explicit completion marker, then sends a clean `stop` and requires a successful shutdown.
@@ -217,7 +217,7 @@ The refresh script performs these steps:
 10. Writes `data/versions.json` from Paper state and every jar's `plugin.yml` metadata. The internal exporter is excluded from this catalog.
 11. Removes the temporary backup only after the entire refresh succeeds.
 
-Before synchronization, the workflow also backs up every managed repository plugin tree and `data/versions.json`. If startup, synchronization, index generation, or version generation fails, both the previous working server and repository lookup data are restored automatically; the failed clone is retained under `servers/Paper-26.2.failed-*` for diagnosis.
+Before synchronization, the workflow also backs up every managed repository plugin tree and `data/versions.json`. If startup, synchronization, index generation, or version generation fails, both the previous working server and repository lookup data are restored automatically; the failed clone is retained under `servers/Paper-26.3.failed-*` for diagnosis.
 
 Runtime databases, logs, backups, `.DS_Store`, and `security.key` are never synchronized. Curated files under each plugin's `data/` directory are preserved, including FAQ, detailed command, permission, placeholder, material, and tab-complete indexes. Only `generated-commands.log`, `generated-permissions.log`, and `generated-placeholders.log` are rebuilt automatically.
 
@@ -287,7 +287,7 @@ Discord autocomplete uses a separate, generation-aware metadata index. It propos
 
 `/lookup latest` privately shows the clean snapshot version for the active plugin, CMILib, and Paper. `/lookup latest public:true` posts a compact public response containing only the latest upstream versions for the active plugin and CMILib, followed by an upgrade recommendation. It never includes the local clean snapshot, Paper, internal generation timestamps, or other tracked resources.
 
-Private context and all-resources replies also show a separate **Paper beta/experimental** line. Each upstream refresh discovers the newest Paper version from the official Fill project listing and selects its highest-numbered `ALPHA` or `BETA` build. This is informational only: it does not change the clean server, the configured stable comparison, update alerts, release-note comparisons, or public plugin-only replies. If that version has no preview builds, the line says so. Preview failures are reported on this separate line, retaining a clearly marked last-known result across restarts when available, without degrading the stable tracked-resource checks.
+Private context and all-resources replies also show a separate **Paper beta/experimental** line. Each upstream refresh discovers the newest Paper version from the official Fill project listing and selects its highest-numbered `ALPHA` or `BETA` build. This is informational only: it does not change the clean server, the configured channel comparison, update alerts, release-note comparisons, or public plugin-only replies. If that version has no preview builds, the line says so. Preview failures are reported on this separate line, retaining a clearly marked last-known result across restarts when available, without degrading the tracked-resource checks.
 
 `/lookup latest scope:all` privately lists every jar in the clean reference server, support dependencies such as LuckPerms and PlaceholderAPI, and the tracked CMI companion resources. Public output is intentionally limited to the current channel context, so `scope:all public:true` is rejected privately.
 
@@ -295,7 +295,7 @@ Private context and all-resources replies also show a separate **Paper beta/expe
 
 The all-resources response is grouped for readability: the first private message lists the main Zrips plugins, and the second lists CMI companion resources followed by Paper and other third-party resources.
 
-The CMI companion section always tracks CMI-API, CMI-Bungee, CMI-Velocity, CMI-Vault, and CMI-E-Injector through their official GitHub or Zrips sources. Their local jars are stored in the ignored `servers/_template-Paper-26.2/companions/` directory and copied to `servers/Paper-26.2/companions/` during a refresh. They are inventoried for version comparisons but are never placed in Paper's `plugins/` directory or started by the clean server.
+The CMI companion section always tracks CMI-API, CMI-Bungee, CMI-Velocity, CMI-Vault, and CMI-E-Injector through their official GitHub or Zrips sources. Their local jars are stored in the ignored `servers/_template-Paper-26.3/companions/` directory and copied to `servers/Paper-26.3/companions/` during a refresh. They are inventoried for version comparisons but are never placed in Paper's `plugins/` directory or started by the clean server.
 
 Most tracked Spigot resource versions are checked through the public Spiget API. Residence is checked directly through its official free Zrips listing at `https://zrips.net/Residence/`, Paper builds through Paper's official Fill API, LuckPerms through its official metadata service, and PlaceholderAPI through its latest successful Jenkins artifact. Spiget and Zrips listing requests use a unique cache key because their cached pages can otherwise lag behind a plugin release. CMI companion downloads use their Zrips listings, while CMI-API uses its GitHub project version. PlaceholderAPI output includes both its plugin version and Jenkins build number. A failed or disabled network check never prevents the bot from starting; the command continues to show the local inventory.
 
@@ -313,16 +313,16 @@ Version controls:
 - `VERSION_CHECK_RETRY_MAX_MS=2000`
 - `VERSION_CHECK_CIRCUIT_FAILURE_THRESHOLD=3`
 - `VERSION_CHECK_CIRCUIT_COOLDOWN_SECONDS=300`
-- `PAPER_VERSION=26.2`
-- `PAPER_VERSION_CHANNELS=STABLE`
+- `PAPER_VERSION=26.3`
+- `PAPER_VERSION_CHANNELS=BETA,STABLE`
 
 The scheduled timer is in memory and starts with the bot. Restarting the bot resets the timer; no separate cron job is required.
 
 ### Paper Compatibility
 
-`runtime-exporter/compatibility.json` is the source of truth for the internal Paper tooling. It currently pins Paper `26.2` build `129` on `STABLE`, API `26.2.build.129-stable`, exporter `1.0.1`, and Java target `25`.
+`runtime-exporter/compatibility.json` is the source of truth for the internal Paper tooling. It currently pins Paper `26.3` build `152` on `BETA`, API `26.3.build.152-beta`, exporter `1.0.1`, and Java target `25`. Before deploying a refreshed minor-version snapshot, update any explicit bot environment overrides to `PAPER_VERSION=26.3` and `PAPER_VERSION_CHANNELS=BETA,STABLE`; startup rejects a snapshot/runtime version mismatch. `STABLE` remains accepted so the same line can graduate from beta without losing update checks.
 
-Verify the tracked metadata, PaperScript source/config, installed jar checksum, exact API jar, JDKs, and the live latest-stable build:
+Verify the tracked metadata, PaperScript source/config, installed jar checksum, exact API jar, JDKs, and the live latest build on the pinned channel:
 
 ```bash
 npm run check:paper
@@ -337,7 +337,7 @@ npm run smoke:java26
 
 The scripts prefer the JDK home paths from the compatibility manifest. If a patch-specific directory disappears after a JDK update, macOS falls back to `/usr/libexec/java_home -v <feature>` and uses the installed JDK from that feature line. `JAVA_HOME` or `JAVA_25_HOME`/`JAVA_26_HOME` can select another matching JDK installation; `JAVA_BIN`, `JAVAC_BIN`, and `JAR_BIN` can override individual tools. Feature mismatches fail before build or startup, and the exporter remains Java 25 bytecode even when tested on Java 26.
 
-`npm run check` performs syntax plus offline compatibility drift validation. `npm run check:paper` additionally contacts Paper's official Fill API and fails if the pinned build is no longer the latest stable 26.2 build.
+`npm run check` performs syntax plus offline compatibility drift validation. `npm run check:paper` additionally contacts Paper's official Fill API and fails if the pinned build is no longer the latest beta 26.3 build.
 
 ## Cache Behavior
 
@@ -420,7 +420,7 @@ npm run remote:ai-status
 - context/global cache totals and largest bucket
 - cache and version-check timestamps
 - clean version-catalog plugin count
-- Paper build, stable API coordinate, and exporter Java target
+- Paper build, exact API coordinate, and exporter Java target
 - Node and discord.js versions
 - process uptime, RSS, and heap usage
 - project and per-plugin disk footprints

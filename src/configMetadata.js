@@ -617,10 +617,10 @@ const environmentSections = [
           defaultValue: "300",
         },
       ),
-      variable("PAPER_VERSION", "Paper version line checked upstream.", { defaultValue: "26.2" }),
+      variable("PAPER_VERSION", "Paper version line checked upstream.", { defaultValue: "26.3" }),
       variable("PAPER_VERSION_CHANNELS", "Comma-separated accepted Paper release channels.", {
         type: "csv",
-        defaultValue: "STABLE",
+        defaultValue: "BETA,STABLE",
       }),
     ],
   },

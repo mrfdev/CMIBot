@@ -3,7 +3,24 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { resolveJavaTool } from "../scripts/runtime-compatibility.mjs";
+import { resolveJavaTool, runtimeServerPaths } from "../scripts/runtime-compatibility.mjs";
+
+test("runtime server paths follow the manifest across Paper minor versions", () => {
+  const root = path.join(os.tmpdir(), "cmibot-runtime-paths");
+  for (const paperVersion of ["26.2", "26.3", "26.4-rc-1"]) {
+    assert.deepEqual(runtimeServerPaths(root, { paperVersion }), {
+      serversRoot: path.join(root, "servers"),
+      templateDirectory: path.join(root, "servers", `_template-Paper-${paperVersion}`),
+      serverDirectory: path.join(root, "servers", `Paper-${paperVersion}`),
+    });
+  }
+});
+
+test("runtime server paths reject missing versions and path traversal", () => {
+  for (const paperVersion of [undefined, null, 26.3, "", "../26.3", "26.3/../../other", "26.3\\other"]) {
+    assert.throws(() => runtimeServerPaths(os.tmpdir(), { paperVersion }), /Invalid Paper version/);
+  }
+});
 
 test("resolveJavaTool follows an installed Java feature when a patch path rolls over", async () => {
   const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cmibot-java-home-"));

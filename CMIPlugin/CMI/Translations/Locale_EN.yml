@@ -4373,7 +4373,7 @@ command:
       info: Check top vote list
       args: (playerName)
     info:
-      topLine: '{gcp}----- TopVotes {gcp}-----'
+      title: '{gcp}----- TopVotes ([total]) {gcp}-----'
       list: '{gcp}[place]. {gcs}[playerDisplayName]{gcp}: {gcs}[votes]'
       ownLine: '{gcu}[place]. {gcs}[playerDisplayName]{gcp}: {gcs}[votes]'
   walkspeed:

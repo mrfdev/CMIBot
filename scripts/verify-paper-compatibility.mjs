@@ -7,6 +7,7 @@ import {
   expectedPaperApiJarName,
   readRuntimeCompatibility,
   resolveJavaTool,
+  runtimeServerPaths,
 } from "./runtime-compatibility.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -135,7 +136,7 @@ async function verifyJdks(compatibility) {
   await assertJavaFeature(java26, 26);
 }
 
-async function verifyLatestStable(compatibility) {
+async function verifyLatestBuild(compatibility) {
   const response = await fetch(
     `https://fill.papermc.io/v3/projects/paper/versions/${encodeURIComponent(compatibility.paperVersion)}/builds`,
     {
@@ -154,13 +155,13 @@ async function verifyLatestStable(compatibility) {
   if (!Array.isArray(builds)) {
     throw new Error("Paper Fill API returned an unexpected builds response.");
   }
-  const latestStable = builds
+  const latestBuild = builds
     .filter((build) => String(build.channel).toUpperCase() === compatibility.paperChannel)
     .sort((left, right) => Number(right.id) - Number(left.id))[0];
-  if (!latestStable) {
+  if (!latestBuild) {
     throw new Error(`No ${compatibility.paperChannel} build exists for Paper ${compatibility.paperVersion}.`);
   }
-  assertEqual(Number(latestStable.id), compatibility.paperBuild, "Latest stable Paper build");
+  assertEqual(Number(latestBuild.id), compatibility.paperBuild, `Latest ${compatibility.paperChannel} Paper build`);
 }
 
 async function main() {
@@ -168,7 +169,7 @@ async function main() {
   await verifyPluginMetadata(compatibility);
   await verifyJdks(compatibility);
 
-  const templateDirectory = path.join(workspaceRoot, "servers", "_template-Paper-26.2");
+  const { templateDirectory, serverDirectory: activeDirectory } = runtimeServerPaths(workspaceRoot, compatibility);
   if (!(await pathExists(templateDirectory))) {
     if (!offline) {
       throw new Error(`Maintained Paper template is missing: ${templateDirectory}`);
@@ -178,7 +179,6 @@ async function main() {
   }
 
   const templateSha256 = await verifyServer(templateDirectory, compatibility, { requireApi: false });
-  const activeDirectory = path.join(workspaceRoot, "servers", "Paper-26.2");
   if (await pathExists(activeDirectory)) {
     await verifyServer(activeDirectory, compatibility, { requireApi: true });
   } else if (!offline) {
@@ -186,7 +186,7 @@ async function main() {
   }
 
   if (!offline) {
-    await verifyLatestStable(compatibility);
+    await verifyLatestBuild(compatibility);
   }
 
   console.log(

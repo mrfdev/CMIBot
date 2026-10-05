@@ -299,6 +299,7 @@ info:
     cow: Cow
     creaking: Creaking
     creeper: Creeper
+    cushion: Cushion
     dark_oak_boat: Dark oak boat
     dark_oak_chest_boat: Dark oak chest boat
     dolphin: Dolphin
@@ -374,6 +375,8 @@ info:
     pillager: Pillager
     player: Player
     polar_bear: Polar bear
+    poplar_boat: Poplar boat
+    poplar_chest_boat: Poplar chest boat
     pufferfish: Pufferfish
     rabbit: Rabbit
     ravager: Ravager

@@ -938,8 +938,8 @@ export function loadConfig() {
           1,
           Math.min(86_400, parseInteger(process.env.VERSION_CHECK_CIRCUIT_COOLDOWN_SECONDS, 300)),
         ) * 1000,
-      paperVersion: process.env.PAPER_VERSION?.trim() || "26.2",
-      paperChannels: parseCsv(process.env.PAPER_VERSION_CHANNELS ?? "STABLE").map((item) => item.toUpperCase()),
+      paperVersion: process.env.PAPER_VERSION?.trim() || "26.3",
+      paperChannels: parseCsv(process.env.PAPER_VERSION_CHANNELS ?? "BETA,STABLE").map((item) => item.toUpperCase()),
     },
     attention: {
       intervalMs:

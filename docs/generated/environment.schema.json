@@ -472,14 +472,14 @@
       "description": "Paper version line checked upstream.",
       "x-value-type": "string",
       "x-sensitivity": "public",
-      "default": "26.2"
+      "default": "26.3"
     },
     "PAPER_VERSION_CHANNELS": {
       "type": "string",
       "description": "Comma-separated accepted Paper release channels.",
       "x-value-type": "csv",
       "x-sensitivity": "public",
-      "default": "STABLE"
+      "default": "BETA,STABLE"
     },
     "COMMAND_USER_RATE_LIMIT": {
       "type": "string",

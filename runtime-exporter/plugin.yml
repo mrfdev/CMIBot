@@ -1,7 +1,7 @@
 name: LookupRuntimeExporter
 version: 1.0.1
 main: dev.mrf.lookup.LookupRuntimeExporter
-api-version: '26.2'
+api-version: '26.3'
 load: POSTWORLD
 softdepend:
   - BottledExp

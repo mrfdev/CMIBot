@@ -9,6 +9,7 @@ import {
   expectedPaperApiJarName,
   readRuntimeCompatibility,
   resolveJavaTool,
+  runtimeServerPaths,
 } from "./runtime-compatibility.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -132,8 +133,8 @@ export async function buildRuntimeExporter(workspaceRoot, paperServerDirectory) 
 const scriptPath = fileURLToPath(import.meta.url);
 if (process.argv[1] && path.resolve(process.argv[1]) === scriptPath) {
   const workspaceRoot = path.resolve(path.dirname(scriptPath), "..");
-  const activeServer = path.join(workspaceRoot, "servers", "Paper-26.2");
-  const templateServer = path.join(workspaceRoot, "servers", "_template-Paper-26.2");
+  const compatibility = await readRuntimeCompatibility(workspaceRoot);
+  const { serverDirectory: activeServer, templateDirectory: templateServer } = runtimeServerPaths(workspaceRoot, compatibility);
   let paperServerDirectory = activeServer;
   try {
     await fs.access(path.join(activeServer, "libraries"));

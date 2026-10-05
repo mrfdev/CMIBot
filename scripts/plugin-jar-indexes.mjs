@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { PLUGIN_DEFINITIONS } from "./plugin-definitions.mjs";
+import { readRuntimeCompatibility, runtimeServerPaths } from "./runtime-compatibility.mjs";
 
 const execFileAsync = promisify(execFile);
 const generatedFileNames = {
@@ -377,7 +378,8 @@ export async function writeGeneratedJarIndexes(workspaceRoot, serverDirectory) {
 const scriptPath = fileURLToPath(import.meta.url);
 if (process.argv[1] && path.resolve(process.argv[1]) === scriptPath) {
   const workspaceRoot = path.resolve(path.dirname(scriptPath), "..");
-  const serverDirectory = path.join(workspaceRoot, "servers", "Paper-26.2");
+  const compatibility = await readRuntimeCompatibility(workspaceRoot);
+  const { serverDirectory } = runtimeServerPaths(workspaceRoot, compatibility);
   const results = await writeGeneratedJarIndexes(workspaceRoot, serverDirectory);
   for (const result of results) {
     console.log(

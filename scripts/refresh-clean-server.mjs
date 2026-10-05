@@ -10,15 +10,15 @@ import {
   assertJavaFeature,
   readRuntimeCompatibility,
   resolveJavaTool,
+  runtimeServerPaths,
 } from "./runtime-compatibility.mjs";
 import { writeVersionCatalog } from "./version-catalog.mjs";
 
 const execFileAsync = promisify(execFile);
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(scriptDirectory, "..");
-const serversRoot = path.join(workspaceRoot, "servers");
-const templateDirectory = path.join(serversRoot, "_template-Paper-26.2");
-const serverDirectory = path.join(serversRoot, "Paper-26.2");
+const compatibility = await readRuntimeCompatibility(workspaceRoot);
+const { serversRoot, templateDirectory, serverDirectory } = runtimeServerPaths(workspaceRoot, compatibility);
 const allowedExtensions = new Set([".json", ".png", ".txt", ".yaml", ".yml"]);
 const excludedDirectoryNames = new Set(["backup", "backups", "databasebackups", "filebackups", "logs"]);
 const excludedFileNames = new Set([".ds_store", "security.key"]);
@@ -428,14 +428,13 @@ async function retainFailedClone() {
 }
 
 async function main() {
-  const compatibility = await readRuntimeCompatibility(workspaceRoot);
   const javaBinary = await resolveJavaTool(compatibility, {
     feature: compatibility.javaTarget,
     tool: "java",
   });
   const javaVersion = await assertJavaFeature(javaBinary, compatibility.javaTarget);
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const backupDirectory = path.join(serversRoot, `.refresh-backup-Paper-26.2-${timestamp}`);
+  const backupDirectory = path.join(serversRoot, `.refresh-backup-Paper-${compatibility.paperVersion}-${timestamp}`);
   const repositoryBackupDirectory = path.join(serversRoot, `.refresh-backup-repository-${timestamp}`);
   let backupCreated = false;
   let repositoryBackupEntries = [];

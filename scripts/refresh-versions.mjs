@@ -1,10 +1,12 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { writeVersionCatalog } from "./version-catalog.mjs";
+import { readRuntimeCompatibility, runtimeServerPaths } from "./runtime-compatibility.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(scriptDirectory, "..");
-const serverDirectory = path.join(workspaceRoot, "servers", "Paper-26.2");
+const compatibility = await readRuntimeCompatibility(workspaceRoot);
+const { serverDirectory } = runtimeServerPaths(workspaceRoot, compatibility);
 const { catalog, outputPath } = await writeVersionCatalog(workspaceRoot, serverDirectory);
 
 console.log(
