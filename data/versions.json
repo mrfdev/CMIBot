@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-05T07:31:57.838Z",
+  "generatedAt": "2026-10-05T11:41:33.822Z",
   "sourceServer": "servers/Paper-26.3",
   "paper": {
     "id": "paper",
@@ -157,8 +157,8 @@
       "id": "trademe",
       "label": "TradeMe",
       "pluginName": "TradeMe",
-      "version": "6.2.3.2",
-      "jar": "TradeMe6.2.3.2.jar",
+      "version": "6.2.3.3",
+      "jar": "TradeMe6.2.3.3.jar",
       "contextId": "trademe",
       "shared": false,
       "tracked": true,
