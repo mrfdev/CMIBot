@@ -62,6 +62,21 @@ function linkedLabel(label, url) {
   return url ? `[${label}](<${url}>)` : label;
 }
 
+function paperDownloadUrl(value, version, build) {
+  if (typeof value !== "string" || value.length > 512) {
+    return null;
+  }
+  // Accept only Fill's immutable official object URL for this exact Paper build.
+  // A missing or unsafe link must not hide an otherwise valid version result.
+  const match = value.match(/^https:\/\/fill-data\.papermc\.io\/v1\/objects\/[0-9a-f]{64}\/(paper-[A-Za-z0-9._+-]+\.jar)$/);
+  return match?.[0] === value && match[1] === `paper-${version}-${build}.jar` ? value : null;
+}
+
+function withPaperDownload(record, value) {
+  const downloadUrl = paperDownloadUrl(value, record.version, record.build);
+  return downloadUrl ? { ...record, downloadUrl } : record;
+}
+
 function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -316,7 +331,8 @@ function formatPublicPaperVersionLine(snapshot, kind) {
   }
   const channelLabel = stable ? "stable" : channel === "BETA" ? "beta" : "alpha/experimental";
   const freshness = upstream.stale ? " **(last known; live refresh unavailable)**" : "";
-  return `${prefix} ${channelLabel} ${formatInlineVersion(`${version} build ${build}`, "Public Paper version")}${freshness}`;
+  const downloadLabel = linkedLabel("Paper", paperDownloadUrl(upstream.downloadUrl, version, build));
+  return `- **${downloadLabel}:** ${channelLabel} ${formatInlineVersion(`${version} build ${build}`, "Public Paper version")}${freshness}`;
 }
 
 function orderPlugins(plugins) {
@@ -564,7 +580,7 @@ export function createVersionService(config, dependencies = {}) {
 
   function sanitizePersistedVersion(
     value,
-    { requireBuild = false, requireChannel = false } = {},
+    { requireBuild = false, requireChannel = false, includePaperDownload = false } = {},
   ) {
     if (!value || typeof value !== "object" || !value.version) {
       return null;
@@ -605,15 +621,15 @@ export function createVersionService(config, dependencies = {}) {
     ) {
       record.lastSuccessfulCheckAt = value.lastSuccessfulCheckAt;
     }
-    return record;
+    return includePaperDownload ? withPaperDownload(record, value.downloadUrl) : record;
   }
 
-  function serializeVersion(value) {
+  function serializeVersion(value, { includePaperDownload = false } = {}) {
     if (!value?.version) {
       return null;
     }
 
-    return {
+    const record = {
       version: normalizeVersionIdentifier(value.version),
       ...(value.build != null ? { build: normalizeBuild(value.build) } : {}),
       ...(value.channel ? { channel: normalizeChannel(value.channel) } : {}),
@@ -621,6 +637,7 @@ export function createVersionService(config, dependencies = {}) {
         ? { lastSuccessfulCheckAt: String(value.lastSuccessfulCheckAt) }
         : {}),
     };
+    return includePaperDownload ? withPaperDownload(record, value.downloadUrl) : record;
   }
 
   function serializePersistentState(state) {
@@ -628,8 +645,8 @@ export function createVersionService(config, dependencies = {}) {
       schemaVersion: PERSISTED_STATE_SCHEMA_VERSION,
       savedAt: new Date().toISOString(),
       paper: serializeVersion(state.paper),
-      paperStable: serializeVersion(state.paperStable),
-      paperPreview: serializeVersion(state.paperPreview),
+      paperStable: serializeVersion(state.paperStable, { includePaperDownload: true }),
+      paperPreview: serializeVersion(state.paperPreview, { includePaperDownload: true }),
       plugins: Object.fromEntries(
         [...state.plugins.entries()]
           .map(([id, value]) => [id, serializeVersion(value)])
@@ -669,6 +686,7 @@ export function createVersionService(config, dependencies = {}) {
       const paperStable = sanitizePersistedVersion(parsed.paperStable, {
         requireBuild: true,
         requireChannel: true,
+        includePaperDownload: true,
       });
       if (paperStable?.channel === "STABLE" && PAPER_RELEASE_VERSION.test(paperStable.version)) {
         state.paperStable = paperStable;
@@ -676,6 +694,7 @@ export function createVersionService(config, dependencies = {}) {
       const paperPreview = sanitizePersistedVersion(parsed.paperPreview, {
         requireBuild: true,
         requireChannel: true,
+        includePaperDownload: true,
       });
       if (paperPreview && PAPER_PREVIEW_CHANNELS.has(paperPreview.channel)) {
         state.paperPreview = paperPreview;
@@ -840,11 +859,11 @@ export function createVersionService(config, dependencies = {}) {
     const candidates = [];
     for (const preview of previews) {
       try {
-        candidates.push({
+        candidates.push(withPaperDownload({
           version,
           build: normalizeBuild(preview.id, "Paper preview build"),
           channel: normalizeChannel(preview.channel, "Paper preview channel"),
-        });
+        }, preview.downloads?.["server:default"]?.url));
       } catch {
         // Ignore invalid rows without allowing them to become a displayed version.
       }
@@ -873,7 +892,11 @@ export function createVersionService(config, dependencies = {}) {
       const candidates = [];
       for (const build of stableBuilds) {
         try {
-          candidates.push({ version, build: normalizeBuild(build.id, "Paper stable build"), channel: "STABLE" });
+          candidates.push(withPaperDownload({
+            version,
+            build: normalizeBuild(build.id, "Paper stable build"),
+            channel: "STABLE",
+          }, build.downloads?.["server:default"]?.url));
         } catch {
           // Never substitute malformed metadata or a preview for a stable release.
         }

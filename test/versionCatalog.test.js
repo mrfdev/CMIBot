@@ -16,6 +16,22 @@ import { evaluateAttention } from "../src/attentionMonitor.js";
 const PAPER_API_ROOT = "https://fill.papermc.io/v3/projects/paper";
 const SILENT_LOGGER = { info() {}, warn() {}, error() {} };
 
+function makePaperBuild(version, id, channel, checksumCharacter = "a") {
+  const name = `paper-${version}-${id}.jar`;
+  const sha256 = checksumCharacter.repeat(64);
+  return {
+    id,
+    channel,
+    downloads: {
+      "server:default": {
+        name,
+        checksums: { sha256 },
+        url: `https://fill-data.papermc.io/v1/objects/${sha256}/${name}`,
+      },
+    },
+  };
+}
+
 function makeConfig(workspaceRoot) {
   return {
     workspaceRoot,
@@ -1037,4 +1053,142 @@ test("persisted and public stable metadata reject wrong channels and unsafe vers
     assert.throws(() => formatPublicLatestVersions({ ...snapshot, paperStable }, plugin), /metadata|safe version|safe integer/);
     assert.doesNotMatch(await fs.readFile(statePath, "utf8"), /@everyone/);
   }
+});
+
+test("public Paper labels link to the exact selected stable and beta server JARs", async (t) => {
+  const { service, upstream } = await createPaperPreviewFixture(t);
+  const stable = makePaperBuild("26.2", 129, "STABLE", "a");
+  const beta = makePaperBuild("26.3", 152, "BETA", "b");
+  upstream.paperBuildsByVersion["26.2"] = [stable, makePaperBuild("26.2", 128, "STABLE", "c")];
+  upstream.paperPreviewBuilds = [makePaperBuild("26.3", 151, "BETA", "d"), beta];
+  const snapshot = await service.start();
+  const stableUrl = stable.downloads["server:default"].url;
+  const betaUrl = beta.downloads["server:default"].url;
+  assert.equal(snapshot.paperStable.downloadUrl, stableUrl);
+  assert.equal(snapshot.paperPreview.downloadUrl, betaUrl);
+  const output = formatPublicLatestVersions(snapshot, { id: "cmi", label: "CMI" });
+  assert.ok(output.includes(`- **[Paper](<${stableUrl}>):** stable ` + "`26.2 build 129`"));
+  assert.ok(output.includes(`- **[Paper](<${betaUrl}>):** beta ` + "`26.3 build 152`"));
+  assert.match(output, /\[CMI\]\(<https:\/\/example\.test\/cmi>\)/);
+  assert.match(output, /\[CMILib\]\(<https:\/\/example\.test\/cmilib>\)/);
+  assert.equal((output.match(/\[Paper\]/g) ?? []).length, 2);
+  assert.doesNotMatch(output, /paper-26\.2-128|paper-26\.3-151|clean snapshot|<t:/);
+  assert.ok(output.length < 2000);
+  assert.equal(upstream.requests.some((url) => url.startsWith("https://fill-data.papermc.io")), false);
+});
+
+test("Paper download URLs persist with their release and refresh together without stale-link reuse", async (t) => {
+  const { service, createService, upstream, workspaceRoot } = await createPaperPreviewFixture(t);
+  const stable = makePaperBuild("26.2", 87, "STABLE", "a");
+  const beta = makePaperBuild("26.3", 143, "BETA", "b");
+  upstream.paperBuildsByVersion["26.2"] = [stable];
+  upstream.paperPreviewBuilds = [beta];
+  await service.start();
+  await service.flushPersistence();
+  service.stop();
+  const statePath = path.join(workspaceRoot, "logs/upstream-versions.json");
+  const persisted = JSON.parse(await fs.readFile(statePath, "utf8"));
+  assert.equal(persisted.paperStable.downloadUrl, stable.downloads["server:default"].url);
+  assert.equal(persisted.paperPreview.downloadUrl, beta.downloads["server:default"].url);
+  assert.equal(persisted.paper.downloadUrl, undefined);
+  upstream.failures.add("paperPreview");
+  const restarted = createService();
+  const retained = await restarted.start();
+  assert.equal(retained.paperStable.stale, true);
+  assert.equal(retained.paperPreview.stale, true);
+  const retainedOutput = formatPublicLatestVersions(retained, { id: "cmi", label: "CMI" });
+  assert.ok(retainedOutput.includes(stable.downloads["server:default"].url));
+  assert.ok(retainedOutput.includes(beta.downloads["server:default"].url));
+  assert.equal((retainedOutput.match(/last known; live refresh unavailable/g) ?? []).length, 2);
+
+  upstream.failures.clear();
+  const newerStable = makePaperBuild("26.2", 88, "STABLE", "c");
+  const newerBeta = makePaperBuild("26.3", 144, "BETA", "d");
+  upstream.paperBuildsByVersion["26.2"] = [newerStable];
+  upstream.paperPreviewBuilds = [newerBeta];
+  const recovered = await restarted.refreshUpstream();
+  const recoveredOutput = formatPublicLatestVersions(recovered, { id: "cmi", label: "CMI" });
+  assert.ok(recoveredOutput.includes(newerStable.downloads["server:default"].url));
+  assert.ok(recoveredOutput.includes(newerBeta.downloads["server:default"].url));
+  assert.doesNotMatch(recoveredOutput, /paper-26\.2-87|paper-26\.3-143|last known/);
+
+  upstream.paperBuildsByVersion["26.2"] = [{ id: 89, channel: "STABLE" }];
+  upstream.paperPreviewBuilds = [{ id: 145, channel: "BETA" }];
+  const missingLinks = await restarted.refreshUpstream();
+  assert.equal(missingLinks.paperStable.downloadUrl, undefined);
+  assert.equal(missingLinks.paperPreview.downloadUrl, undefined);
+  const unlinked = formatPublicLatestVersions(missingLinks, { id: "cmi", label: "CMI" });
+  assert.match(unlinked, /Paper:\*\* stable `26\.2 build 89`/);
+  assert.match(unlinked, /Paper:\*\* beta `26\.3 build 145`/);
+  assert.doesNotMatch(unlinked, /\[Paper\]|fill-data/);
+});
+
+test("unsafe, unofficial and mismatched Paper download URLs never become public links", async (t) => {
+  const { service, upstream, workspaceRoot } = await createPaperPreviewFixture(t);
+  const stable = makePaperBuild("26.2", 87, "STABLE");
+  const validUrl = stable.downloads["server:default"].url;
+  await service.start();
+  for (const url of [
+    undefined, null, 42, {}, "",
+    validUrl.replace("https:", "http:"),
+    validUrl.replace("fill-data.papermc.io", "evil.example"),
+    validUrl.replace("fill-data.papermc.io", "fill-data.papermc.io.evil.example"),
+    validUrl.replace("fill-data.papermc.io", "user@fill-data.papermc.io"),
+    validUrl.replace("fill-data.papermc.io", "fill-data.papermc.io:444"),
+    validUrl.replace("paper-26.2-87.jar", "paper-26.3-143.jar"),
+    validUrl.replace("paper-26.2-87.jar", "paper-26.2-88.jar"),
+    validUrl.replace("/v1/objects/", "/v1/../v1/objects/"),
+    validUrl.replace("paper-26.2", "paper-26%2e2"),
+    validUrl.replace("a".repeat(64), "not-a-sha256"),
+    `${validUrl}?download=latest`, `${validUrl}#fragment`,
+    `${validUrl}\n`, `${validUrl}\r\n`, `${validUrl}>)[click](<https://evil.example>) @everyone`,
+    "https://fill-data.papermc.io/" + "a".repeat(600),
+  ]) {
+    upstream.paperBuildsByVersion["26.2"] = [{ ...stable, downloads: { "server:default": { url } } }];
+    upstream.paperPreviewBuilds = [{ id: 144, channel: "BETA", downloads: { "server:default": { url } } }];
+    const snapshot = await service.refreshUpstream();
+    assert.equal(snapshot.paperStable.build, 87);
+    assert.equal(snapshot.paperStable.stale, false);
+    assert.equal(snapshot.paperStable.downloadUrl, undefined);
+    assert.equal(snapshot.paperPreview.downloadUrl, undefined);
+    const output = formatPublicLatestVersions(snapshot, { id: "cmi", label: "CMI" });
+    assert.doesNotMatch(output, /\[Paper\]|evil\.example|@everyone|fill-data/);
+    const poisoned = { ...snapshot, paperStable: { ...snapshot.paperStable, downloadUrl: url } };
+    assert.doesNotMatch(formatPublicLatestVersions(poisoned, { id: "cmi", label: "CMI" }), /\[Paper\]|evil\.example|@everyone|fill-data/);
+    assert.doesNotMatch(await fs.readFile(path.join(workspaceRoot, "logs/upstream-versions.json"), "utf8"), /downloadUrl|evil\.example|@everyone/);
+  }
+});
+
+test("persisted Paper download links are revalidated without discarding safe version history", async (t) => {
+  const { service, upstream, workspaceRoot } = await createPaperPreviewFixture(t);
+  const statePath = path.join(workspaceRoot, "logs/upstream-versions.json");
+  const wrongBuildUrl = makePaperBuild("26.3", 999, "BETA").downloads["server:default"].url;
+  await fs.mkdir(path.dirname(statePath), { recursive: true });
+  await fs.writeFile(statePath, JSON.stringify({
+    schemaVersion: 1,
+    paperStable: { version: "26.2", build: 87, channel: "STABLE", downloadUrl: "https://evil.example/download.jar" },
+    paperPreview: { version: "26.3", build: 143, channel: "BETA", downloadUrl: wrongBuildUrl },
+    plugins: {}, companions: {},
+  }), { mode: 0o600 });
+  upstream.failures.add("paperPreview");
+  const snapshot = await service.start();
+  await service.flushPersistence();
+  assert.equal(snapshot.paperStable.build, 87);
+  assert.equal(snapshot.paperPreview.build, 143);
+  assert.equal(snapshot.paperStable.downloadUrl, undefined);
+  assert.equal(snapshot.paperPreview.downloadUrl, undefined);
+  const output = formatPublicLatestVersions(snapshot, { id: "cmi", label: "CMI" });
+  assert.match(output, /last known; live refresh unavailable/);
+  assert.doesNotMatch(output, /\[Paper\]|evil\.example|fill-data/);
+  assert.doesNotMatch(await fs.readFile(statePath, "utf8"), /downloadUrl|evil\.example|fill-data/);
+});
+
+test("alpha prerelease Paper links still point to the exact preview filename", async (t) => {
+  const { service, upstream } = await createPaperPreviewFixture(t);
+  upstream.paperProject.versions = { "26.4": ["26.4-rc-1"], "26.2": ["26.2"] };
+  const alpha = makePaperBuild("26.4-rc-1", 2, "ALPHA");
+  upstream.paperPreviewBuilds = [alpha];
+  const snapshot = await service.start();
+  const output = formatPublicLatestVersions(snapshot, { id: "cmi", label: "CMI" });
+  assert.ok(output.includes(`- **[Paper](<${alpha.downloads["server:default"].url}>):** alpha/experimental ` + "`26.4-rc-1 build 2`"));
 });
