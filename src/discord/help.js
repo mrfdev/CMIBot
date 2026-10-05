@@ -63,7 +63,7 @@ export function formatHelpMessage(config, member, context, commandName) {
   lines.push(`- \`${prefix} files profile:config\` narrows that list to one fixed cache profile`);
   lines.push(`- \`${prefix} categories\` privately lists cache profiles and aggregate counts`);
   lines.push(`- \`${prefix} latest\` shows versions for this plugin and CMILib`);
-  lines.push(`- \`${prefix} latest public:true\` publicly shows the latest plugin, CMILib, and separate stable/beta Paper releases`);
+  lines.push(`- \`${prefix} latest public:true\` publicly shows the latest known plugin, CMILib, and separate stable/beta Paper releases`);
   lines.push(`- \`${prefix} latest scope:all\` shows every tracked resource and CMI companion`);
   lines.push(`- \`${prefix} latest changes:true\` privately shows what changed in pending updates`);
   if (aiEnabled && canUseAi) {

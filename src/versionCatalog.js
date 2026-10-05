@@ -215,6 +215,17 @@ export function getVersionAttentionSummary(snapshot) {
   };
 }
 
+function hasNewerVerifiedPluginRelease(plugin, upstream) {
+  const verifiedVersion = normalizeVersionIdentifier(plugin.version, "Clean snapshot version");
+  const upstreamVersion = normalizeVersionIdentifier(upstream.version);
+  // Only compare plain release numbers here; development/prerelease artifacts
+  // must not silently displace a published release in upgrade recommendations.
+  const releaseNumber = /^\d+(?:\.\d+)+$/;
+  return releaseNumber.test(verifiedVersion)
+    && releaseNumber.test(upstreamVersion)
+    && compareVersions(verifiedVersion, upstreamVersion) > 0;
+}
+
 function formatPluginVersionLine(plugin, upstream, checkEnabled) {
   const label = linkedLabel(plugin.label, plugin.resourceUrl || plugin.website);
   const prefix = `- **${label}:** clean snapshot ${formatInlineVersion(formatPluginRelease(plugin.version, plugin.build), "Clean snapshot version")}`;
@@ -234,6 +245,9 @@ function formatPluginVersionLine(plugin, upstream, checkEnabled) {
     version: normalizeVersionIdentifier(upstream.version),
     ...(upstream.build != null ? { build: normalizeBuild(upstream.build) } : {}),
   };
+  if (hasNewerVerifiedPluginRelease(plugin, safeUpstream)) {
+    return `- **${label}:** latest known ${formatInlineVersion(formatPluginRelease(plugin.version, plugin.build), "Verified release")} (verified clean snapshot) | upstream ${formatInlineVersion(formatPluginRelease(safeUpstream.version, safeUpstream.build), "Upstream version")} (listing behind verified release${formatFreshnessSuffix(safeUpstream)})`;
+  }
   const comparison = comparePluginRelease(plugin, safeUpstream);
   const status = comparison === 0 ? "current" : comparison < 0 ? "**update available**" : "snapshot newer than upstream listing";
   return `${prefix} | upstream ${formatInlineVersion(formatPluginRelease(safeUpstream.version, safeUpstream.build), "Upstream version")} (${status}${formatFreshnessSuffix(safeUpstream)})`;
@@ -305,10 +319,14 @@ function formatCompanionVersionLine(companion, upstream, checkEnabled) {
   return `${prefix} | upstream ${formatInlineVersion(upstreamVersion, "Upstream companion version")} (${status}${formatFreshnessSuffix(upstream)})`;
 }
 
-function formatPublicPluginVersionLine(plugin, upstream) {
+function formatPublicPluginVersionLine(plugin, upstream, verifiedNewer) {
   const label = linkedLabel(plugin.label, plugin.resourceUrl || plugin.website);
-  const freshness = upstream.stale ? " **(last known; live refresh unavailable)**" : "";
-  return `- **${label}:** ${formatInlineVersion(normalizeVersionIdentifier(upstream.version), "Upstream version")}${freshness}`;
+  const version = verifiedNewer ? plugin.version : upstream.version;
+  const source = verifiedNewer ? " (verified release; upstream listing is behind)" : "";
+  const freshness = upstream.stale
+    ? verifiedNewer ? " **(upstream refresh unavailable)**" : " **(last known; live refresh unavailable)**"
+    : "";
+  return `- **${label}:** ${formatInlineVersion(normalizeVersionIdentifier(version), "Latest known version")}${source}${freshness}`;
 }
 
 function formatPublicPaperVersionLine(snapshot, kind) {
@@ -443,22 +461,26 @@ export function formatPublicLatestVersions(snapshot, plugin) {
     );
   }
 
+  const releases = plugins.map((entry) => {
+    const upstream = snapshot.plugins.get(entry.id);
+    return { plugin: entry, upstream, verifiedNewer: hasNewerVerifiedPluginRelease(entry, upstream) };
+  });
   const lines = [`### Latest ${contextPlugin.label}, CMILib & Paper Versions`];
-  for (const entry of plugins) {
-    lines.push(formatPublicPluginVersionLine(entry, snapshot.plugins.get(entry.id)));
+  for (const release of releases) {
+    lines.push(formatPublicPluginVersionLine(release.plugin, release.upstream, release.verifiedNewer));
   }
   lines.push(formatPublicPaperVersionLine(snapshot, "stable"));
   lines.push(formatPublicPaperVersionLine(snapshot, "preview"));
-  const retained = plugins.filter((entry) => snapshot.plugins.get(entry.id)?.stale);
+  const retained = releases.filter((release) => release.upstream.stale && !release.verifiedNewer);
   if (retained.length) {
     lines.push(
       "",
-      `A live refresh failed for ${retained.map((entry) => entry.label).join(" and ")}; the marked ${retained.length === 1 ? "version is" : "versions are"} the last successfully checked result.`,
+      `A live refresh failed for ${retained.map((release) => release.plugin.label).join(" and ")}; the marked ${retained.length === 1 ? "version is" : "versions are"} the last successfully checked result.`,
     );
   }
   lines.push(
     "",
-    `We recommend updating both plugins to these ${retained.length ? "latest known" : "current"} releases before troubleshooting version-related issues.`,
+    `We recommend updating both plugins to these ${releases.some((release) => release.verifiedNewer || release.upstream.stale) ? "latest known" : "current"} releases before troubleshooting version-related issues.`,
   );
   if (snapshot.paperPreview) {
     lines.push("Paper beta/experimental builds are previews, not stable upgrade recommendations.");

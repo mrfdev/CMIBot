@@ -208,7 +208,7 @@ export function buildCommandTree(commandName, config) {
         .addBooleanOption((option) =>
           option
             .setName("public")
-            .setDescription("Post a compact upstream-only result publicly. Defaults to false."),
+            .setDescription("Post a compact latest-known release result publicly. Defaults to false."),
         )
         .addBooleanOption((option) =>
           option
