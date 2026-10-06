@@ -9,6 +9,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { OllamaProvider, normalizeLoopbackOllamaBaseUrl } from "../src/ollama.js";
+import { stableServiceExecutable } from "./service-executable.mjs";
 
 const execFileAsync = promisify(execFile);
 const OLLAMA_LABEL = "com.mrfdev.cmibot.ollama";
@@ -151,7 +152,7 @@ async function executableAt(candidate) {
     const stats = await fs.stat(real);
     if (!stats.isFile()) return "";
     await fs.access(real, constants.X_OK);
-    return real;
+    return stableServiceExecutable(path.normalize(candidate));
   } catch {
     return "";
   }

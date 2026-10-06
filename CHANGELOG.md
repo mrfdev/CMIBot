@@ -2,6 +2,17 @@
 
 This file records material LookupBot changes by ship date. User-facing examples intentionally omit private identifiers, infrastructure details, credentials, and host-specific paths.
 
+## 2026-10-06
+
+### Toolchain and dependency maintenance
+
+- Preserve verified stable Homebrew executable links in generated Node and Ollama service definitions so package cleanup does not strand a service on a removed Cellar version.
+- Update dotenv to 18.0.5 and the locked Undici dependency to 6.29.0, and align the declared Discord.js version with the existing 14.27.0 lockfile.
+- Replace fast-glob and its unpatched braces dependency with native Node file discovery, preserving profile exclusions and rejecting symlink files and directories.
+- Require Node 22.20+ on the 22.x line or 24.8+, and add the minimum supported version to CI alongside current 22, 24, and 26 releases.
+- Exercise runtime export during Paper smoke tests, read the exporter version from the compatibility manifest, and enforce separate startup, export, and shutdown deadlines.
+- Document that the bot uses Node directly, the reference exporter uses JDK 25's compiler and jar tool, and neither Gradle nor Python is a project dependency.
+
 ## 2026-08-27
 
 ### Zero-cost local AI

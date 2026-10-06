@@ -343,6 +343,8 @@ npm run smoke:java26
 
 The scripts prefer the JDK home paths from the compatibility manifest. If a patch-specific directory disappears after a JDK update, macOS falls back to `/usr/libexec/java_home -v <feature>` and uses the installed JDK from that feature line. `JAVA_HOME` or `JAVA_25_HOME`/`JAVA_26_HOME` can select another matching JDK installation; `JAVA_BIN`, `JAVAC_BIN`, and `JAR_BIN` can override individual tools. Feature mismatches fail before build or startup, and the exporter remains Java 25 bytecode even when tested on Java 26.
 
+Each smoke command requires Paper readiness, the manifest's exporter version, a completed `lookupexport`, and a successful shutdown. Startup, export, and shutdown have separate deadlines; a hung shutdown is terminated. The log retains plugin warnings and errors for review, including optional-integration warnings that do not prevent export.
+
 `npm run check` performs syntax plus offline compatibility drift validation. `npm run check:paper` additionally contacts Paper's official Fill API and fails if the pinned build is no longer the latest beta 26.3 build.
 
 ## Cache Behavior
@@ -499,7 +501,7 @@ Generated references are committed under `docs/generated/`. `npm run check:bot` 
 
 Requirements:
 
-- Node.js 22 or newer
+- Node.js 22.20+ on the 22.x line, or 24.8+ (stable native filesystem-glob and path-matching APIs)
 - Java 25 for Paper and Java 25 exporter bytecode
 - Java 26 for the optional forward-runtime smoke test
 - `unzip` for reading plugin metadata from jars
@@ -513,6 +515,14 @@ npm start
 ```
 
 `npm ci` installs the exact dependency versions recorded in `package-lock.json`, which is the recommended path for the live bot and fresh clones. Use `npm install` only when intentionally updating dependencies locally.
+
+### Toolchain responsibilities
+
+The Discord bot runs JavaScript directly with Node.js; there is no separate compilation step. CI covers Node.js 22, 24, and 26. Use a maintained Node release and its compatible npm version, and run `npm run check:bot` after updating either one.
+
+Only the clean-reference-data workflow needs Java. `npm run build:exporter` invokes JDK 25's `javac` and `jar` directly, with the exact Paper API and Java 25 bytecode target defined in `runtime-exporter/compatibility.json`. Java 26 is an additional smoke-test runtime. A newer system-default Java does not change the compiler target. Gradle, Maven, and Python are not project build or runtime dependencies, and the lightweight bot host does not need the Paper/JDK toolchain.
+
+After Homebrew upgrades, use the managed restart or deployment workflow to verify startup. Generated Node service definitions use a verified stable Homebrew formula link so removing an old Cellar version does not break the next launch; explicit executable overrides are preserved. The local AI installer also preserves its validated executable link. An existing Node service definition is refreshed by `restart` or `deploy`.
 
 Fill in the Discord token, application ID, guild ID, channel IDs, and role IDs in `.env`. The real `.env` is ignored and must be created independently on each machine. Startup, service installation, and deployment reject symbolic links, files owned by another account, and group- or world-accessible permissions. Existing installations can be corrected with `chmod 600 .env`.
 
@@ -593,7 +603,7 @@ The LaunchAgent points at `.deploy/current`. Each release is assembled with its 
 
 ## Continuous Integration
 
-GitHub Actions runs on pushes to `main`, pull requests, and manual dispatches. The macOS test matrix runs `npm ci` followed by `npm run check:bot` on Node.js 22 LTS, 24 LTS, and 26 Current, including generated-document drift, privacy checks, and validation of the launchd service definition. A separate Node.js 24 Ubuntu job installs the locked dependency tree without lifecycle scripts and runs the production dependency audit.
+GitHub Actions runs on pushes to `main`, pull requests, and manual dispatches. The macOS test matrix runs `npm ci` followed by `npm run check:bot` on the minimum Node.js 22.20.0 plus the latest 22 LTS, 24 LTS, and 26 Current releases, including generated-document drift, privacy checks, and validation of the launchd service definition. A separate Node.js 24 Ubuntu job installs the locked dependency tree without lifecycle scripts and runs the production dependency audit.
 
 The workflow has read-only repository permissions, receives no repository secrets, disables checkout credential persistence and automatic package-manager caching, and pins official actions to immutable commit SHAs. Dependabot monitors both npm packages and GitHub Actions references.
 

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import fg from "fast-glob";
+import { discoverSourceFiles } from "./sourceFiles.js";
 
 class ProfileSourceSafetyError extends Error {
   constructor(message) {
@@ -74,14 +74,7 @@ async function readSafeSourceFile(workspaceRoot, relativePath) {
 export async function loadProfileSourceSnapshot(profile, workspaceRoot) {
   let relativePaths;
   try {
-    relativePaths = await fg(profile.include, {
-      cwd: workspaceRoot,
-      ignore: profile.exclude,
-      onlyFiles: true,
-      unique: true,
-      dot: false,
-      followSymbolicLinks: false,
-    });
+    relativePaths = await discoverSourceFiles(workspaceRoot, profile.include, profile.exclude);
   } catch {
     throw new ProfileSourceSafetyError("Indexed source discovery failed safely.");
   }

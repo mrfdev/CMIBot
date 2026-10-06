@@ -54,6 +54,34 @@ test("environment reads reject broad permissions and symbolic links", async () =
   }
 });
 
+test("environment parsing preserves quoted credentials, multiline values, and literal variables", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-private-env-"));
+  const environmentPath = path.join(temporaryRoot, ".env");
+  try {
+    await fs.writeFile(environmentPath, [
+      '\uFEFFexport QUOTED="value # with spaces"',
+      "UNQUOTED=value # comment",
+      'MULTILINE="first\\nsecond"',
+      "LITERAL='${QUOTED}'",
+      'EXISTING_SETTING="file-value"',
+      "EMPTY=",
+      "",
+    ].join("\r\n"), { mode: 0o600 });
+    const target = { EXISTING_SETTING: "process-value" };
+    await loadPrivateEnvironment({ environmentPath, target });
+    assert.deepEqual(target, {
+      EXISTING_SETTING: "process-value",
+      QUOTED: "value # with spaces",
+      UNQUOTED: "value",
+      MULTILINE: "first\nsecond",
+      LITERAL: "${QUOTED}",
+      EMPTY: "",
+    });
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
 test("a missing optional environment file preserves environment-only startup", async () => {
   const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-private-env-"));
   try {

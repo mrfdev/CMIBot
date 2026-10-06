@@ -23,6 +23,7 @@ test("local AI installer enforces cloud-off loopback service and verifies the ap
   const loadedPath = path.join(temporaryRoot, "launchctl.loaded");
   const invocationPath = path.join(temporaryRoot, "ollama-arguments.txt");
   const ollamaPath = path.join(temporaryRoot, "ollama");
+  const originalOllamaPath = path.join(temporaryRoot, "ollama-original");
   const launchctlPath = path.join(temporaryRoot, "launchctl");
   const chatRequests = [];
   const fetchImpl = async (url, options = {}) => {
@@ -55,11 +56,12 @@ test("local AI installer enforces cloud-off loopback service and verifies the ap
       `${JSON.stringify({ unrelated_setting: "preserved" }, null, 2)}\n`,
       { mode: 0o644 },
     );
-    await createExecutable(ollamaPath, [
+    await createExecutable(originalOllamaPath, [
       "#!/bin/sh",
       "set -eu",
       "printf '%s\\n' \"$@\" > \"$CMIBOT_TEST_OLLAMA_ARGUMENTS\"",
     ]);
+    await fs.symlink(originalOllamaPath, ollamaPath);
     await createExecutable(launchctlPath, [
       "#!/bin/sh",
       "set -eu",
@@ -132,6 +134,17 @@ test("local AI installer enforces cloud-off loopback service and verifies the ap
     assert.match(plist, /<key>OLLAMA_NO_CLOUD<\/key>\s*<string>1<\/string>/);
     assert.match(plist, new RegExp(`<key>OLLAMA_HOST<\\/key>\\s*<string>127\\.0\\.0\\.1:${port}<\\/string>`));
     assert.doesNotMatch(plist, /__[A-Z0-9_]+__/);
+    assert.ok(plist.includes(`<string>${ollamaPath}</string>`));
+    assert.ok(!plist.includes(originalOllamaPath));
+
+    const upgradedOllamaPath = path.join(temporaryRoot, "ollama-upgraded");
+    await createExecutable(upgradedOllamaPath, ["#!/bin/sh", "printf '%s\\n' upgraded"]);
+    await fs.unlink(ollamaPath);
+    await fs.symlink(upgradedOllamaPath, ollamaPath);
+    await fs.rm(originalOllamaPath);
+    const installedExecutable = plist.match(/<key>ProgramArguments<\/key>\s*<array>\s*<string>([^<]+)<\/string>/)?.[1];
+    const upgraded = await execFileAsync(installedExecutable, ["--version"], { encoding: "utf8" });
+    assert.equal(upgraded.stdout, "upgraded\n");
 
     assert.equal(await fs.readFile(invocationPath, "utf8"), "pull\nqwen3:8b\n");
     assert.equal(chatRequests.length, 1);

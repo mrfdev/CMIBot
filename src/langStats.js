@@ -1,5 +1,5 @@
 import path from "node:path";
-import fg from "fast-glob";
+import { discoverSourceFiles } from "./sourceFiles.js";
 
 const KNOWN_CATEGORY_LABELS = new Map([
   ["CMIPlugin/CMI/Translations/Locale_EN.yml", "CMI (plugin locale)"],
@@ -90,14 +90,7 @@ function buildFallbackLabel(englishRelativePath) {
 }
 
 export async function buildLanguageCategoryStats(workspaceRoot, includeGlobs, excludeGlobs = []) {
-  const englishRelativePaths = await fg(includeGlobs, {
-    cwd: workspaceRoot,
-    ignore: excludeGlobs,
-    onlyFiles: true,
-    unique: true,
-    dot: false,
-    followSymbolicLinks: false,
-  });
+  const englishRelativePaths = await discoverSourceFiles(workspaceRoot, includeGlobs, excludeGlobs);
 
   const categories = [];
 
@@ -124,13 +117,7 @@ export async function buildLanguageCategoryStats(workspaceRoot, includeGlobs, ex
   for (const englishRelativePath of orderedEnglishPaths) {
     const normalizedEnglishPath = toPosixPath(englishRelativePath);
     const siblingPattern = buildSiblingPattern(normalizedEnglishPath);
-    const siblingPaths = await fg([siblingPattern], {
-      cwd: workspaceRoot,
-      onlyFiles: true,
-      unique: true,
-      dot: false,
-      followSymbolicLinks: false,
-    });
+    const siblingPaths = await discoverSourceFiles(workspaceRoot, [siblingPattern]);
 
     const languageCodes = siblingPaths
       .map((relativePath) => extractLanguageCode(toPosixPath(relativePath)))

@@ -16,7 +16,7 @@ test("CI covers supported Node versions, checks, and the production dependency a
   assert.match(workflow, /\n  pull_request:\n/);
   assert.match(workflow, /\n  workflow_dispatch:\n/);
   assert.match(workflow, /  test:\n[\s\S]*?    runs-on: macos-latest/);
-  assert.match(workflow, /node-version:\n\s+- "22\.x"\n\s+- "24\.x"\n\s+- "26\.x"/);
+  assert.match(workflow, /node-version:\n\s+- "22\.20\.0"\n\s+- "22\.x"\n\s+- "24\.x"\n\s+- "26\.x"/);
   assert.match(workflow, /run: npm ci\n/);
   assert.match(workflow, /run: npm run check:bot/);
   assert.match(workflow, /run: npm ci --ignore-scripts/);
@@ -44,5 +44,5 @@ test("Dependabot covers GitHub Actions and the package declares the supported ru
   const packageMetadata = JSON.parse(packageContents);
 
   assert.match(dependabot, /package-ecosystem: github-actions/);
-  assert.equal(packageMetadata.engines.node, ">=22");
+  assert.equal(packageMetadata.engines.node, "^22.20.0 || >=24.8.0");
 });

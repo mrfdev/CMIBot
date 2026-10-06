@@ -38,11 +38,10 @@
     "check": "npm run check:bot && node scripts/verify-paper-compatibility.mjs --offline"
   },
   "engines": {
-    "node": ">=22"
+    "node": "^22.20.0 || >=24.8.0"
   },
   "dependencies": {
-    "discord.js": "^14.20.0",
-    "dotenv": "^16.6.1",
-    "fast-glob": "^3.3.3"
+    "discord.js": "^14.27.0",
+    "dotenv": "^18.0.5"
   }
 }

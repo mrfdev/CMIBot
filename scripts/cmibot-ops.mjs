@@ -12,6 +12,7 @@ import { isLocalOllamaModelName, normalizeLoopbackOllamaBaseUrl } from "../src/o
 import {
   readPrivateEnvironmentFile as readValidatedPrivateEnvironmentFile,
 } from "../src/privateEnvironment.js";
+import { stableServiceExecutable } from "./service-executable.mjs";
 
 const execFileAsync = promisify(execFile);
 const label = "com.mrfdev.cmibot";
@@ -66,7 +67,7 @@ function xmlEscape(value) {
 async function renderServiceDefinition() {
   const root = path.resolve(projectRoot());
   const currentRelease = path.join(root, ".deploy", "current");
-  const node = process.env.CMIBOT_NODE || process.execPath;
+  const node = process.env.CMIBOT_NODE || await stableServiceExecutable(process.execPath);
   if (!path.isAbsolute(node)) {
     throw new Error("The configured Node executable must be absolute.");
   }
