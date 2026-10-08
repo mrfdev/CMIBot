@@ -60,6 +60,7 @@ jobs.command.admin.* - Grants player access to all commands; Default: false
 jobs.command.admin.archive - Grants access to the archive command on other players; Default: true
 jobs.command.admin.clearownership - Grants access to the ownedblocks command; Default: op
 jobs.command.admin.ownedblocks - Grants access to the ownedblocks command; Default: op
+jobs.command.admin.skipquest - Grants access to skipquest for other players; Default: op
 jobs.command.admin.stats - Grants access to the stats command on other players; Default: true
 jobs.command.archive - Grants access to the archive command; Default: true
 jobs.command.blockinfo - Grants access to the blockinfo command; Default: true

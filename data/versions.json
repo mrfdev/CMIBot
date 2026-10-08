@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-07T07:00:00.944Z",
+  "generatedAt": "2026-10-08T14:40:24.210Z",
   "sourceServer": "servers/Paper-26.3",
   "paper": {
     "id": "paper",
@@ -60,8 +60,8 @@
       "id": "jobs",
       "label": "Jobs",
       "pluginName": "Jobs",
-      "version": "5.2.6.6",
-      "jar": "Jobs5.2.6.6.jar",
+      "version": "5.2.6.7",
+      "jar": "Jobs5.2.6.7.jar",
       "contextId": "jobs",
       "shared": false,
       "tracked": true,
