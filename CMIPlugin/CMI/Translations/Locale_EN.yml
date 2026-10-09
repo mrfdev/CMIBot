@@ -1108,6 +1108,7 @@ command:
         (-s)
     info:
       color: '{gcp}Current color - {gcs}[red],[green],[blue] {gcp}Hex:&6#[hex]'
+      notCompatible: '{gcp}Not compatible with this item'
       custom: '{gcp}Enabled custom color mode: {gcs}[mode]'
       bound: '{gcp}SoulBound to: {gcs}'
       boundName: '[playerName]'
