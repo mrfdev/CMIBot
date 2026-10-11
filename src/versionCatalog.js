@@ -27,9 +27,7 @@ import {
 
 const SPIGET_API_ROOT = "https://api.spiget.org/v2";
 const PAPER_API_ROOT = "https://fill.papermc.io/v3/projects/paper";
-const PAPER_PREVIEW_CHANNELS = new Set(["ALPHA", "BETA"]);
 const PAPER_RELEASE_VERSION = /^\d+\.\d+(?:\.\d+)?$/;
-const MAX_PAPER_STABLE_VERSION_CHECKS = 10;
 const PERSISTED_STATE_SCHEMA_VERSION = 1;
 const MAX_PERSISTED_STATE_BYTES = 1024 * 1024;
 const MAX_PRIMARY_FETCH_CONCURRENCY = 4;
@@ -275,27 +273,6 @@ function formatPaperVersionLine(paper, upstream, checkEnabled) {
   return `${prefix} | upstream ${formatInlineVersion(`${upstreamVersion} build ${upstreamBuild} ${upstreamChannel}`, "Upstream Paper version")} (${status}${formatFreshnessSuffix(upstream)})`;
 }
 
-function formatPaperPreviewLine(snapshot) {
-  const prefix = "- **Paper beta/experimental:**";
-  if (!snapshot.checkEnabled) {
-    return `${prefix} upstream checks disabled`;
-  }
-  const preview = snapshot.paperPreview;
-  if (!preview) {
-    if (snapshot.paperPreviewStatus === "none") {
-      return `${prefix} no preview build listed for the latest Paper version`;
-    }
-    return `${prefix} ${snapshot.paperPreviewStatus === "unavailable" ? "upstream unavailable" : "check pending"}`;
-  }
-  const version = normalizeVersionIdentifier(preview.version, "Paper preview version");
-  const build = normalizeBuild(preview.build, "Paper preview build");
-  const channel = normalizeChannel(preview.channel, "Paper preview channel");
-  if (!PAPER_PREVIEW_CHANNELS.has(channel)) {
-    throw new Error("Paper preview metadata must use an ALPHA or BETA channel.");
-  }
-  return `${prefix} upstream ${formatInlineVersion(`${version} build ${build} ${channel}`, "Paper preview version")} (preview only; not a stable upgrade${formatFreshnessSuffix(preview)})`;
-}
-
 function formatCompanionVersionLine(companion, upstream, checkEnabled) {
   const label = linkedLabel(companion.label, companion.resourceUrl);
   const local = companion.version
@@ -329,28 +306,20 @@ function formatPublicPluginVersionLine(plugin, upstream, verifiedNewer) {
   return `- **${label}:** ${formatInlineVersion(normalizeVersionIdentifier(version), "Latest known version")}${source}${freshness}`;
 }
 
-function formatPublicPaperVersionLine(snapshot, kind) {
-  const stable = kind === "stable";
-  const upstream = stable ? snapshot.paperStable : snapshot.paperPreview;
-  const status = stable ? snapshot.paperStableStatus : snapshot.paperPreviewStatus;
-  const label = stable ? "stable" : "beta/experimental";
-  const prefix = "- **Paper:**";
+function formatPublicPaperVersionLine(snapshot) {
+  const upstream = snapshot.paper;
   if (!upstream) {
-    const message = !stable && status === "none"
-      ? "no preview build listed for the latest Paper version"
-      : status === "unavailable" ? "upstream unavailable" : "check pending";
-    return `${prefix} ${label} (${message})`;
+    return `- **Paper:** stable (${snapshot.checkedAt ? "upstream unavailable" : "check pending"})`;
   }
   const version = normalizeVersionIdentifier(upstream.version, "Public Paper version");
   const build = normalizeBuild(upstream.build, "Public Paper build");
   const channel = normalizeChannel(upstream.channel, "Public Paper channel");
-  if (stable ? channel !== "STABLE" || !PAPER_RELEASE_VERSION.test(version) : !PAPER_PREVIEW_CHANNELS.has(channel)) {
+  if (channel !== "STABLE" || !PAPER_RELEASE_VERSION.test(version) || version !== snapshot.catalog.paper.version) {
     throw new Error("Paper release metadata does not match its channel.");
   }
-  const channelLabel = stable ? "stable" : channel === "BETA" ? "beta" : "alpha/experimental";
   const freshness = upstream.stale ? " **(last known; live refresh unavailable)**" : "";
   const downloadLabel = linkedLabel("Paper", paperDownloadUrl(upstream.downloadUrl, version, build));
-  return `- **${downloadLabel}:** ${channelLabel} ${formatInlineVersion(`${version} build ${build}`, "Public Paper version")}${freshness}`;
+  return `- **${downloadLabel}:** stable ${formatInlineVersion(`${version} build ${build}`, "Public Paper version")}${freshness}`;
 }
 
 function orderPlugins(plugins) {
@@ -390,7 +359,6 @@ export function formatLatestVersions(snapshot, plugin, scope = "context") {
 
     lines.push("", "**Paper and third-party resources:**");
     lines.push(formatPaperVersionLine(catalog.paper, snapshot.paper, snapshot.checkEnabled));
-    lines.push(formatPaperPreviewLine(snapshot));
     for (const entry of thirdPartyPlugins) {
       lines.push(formatPluginVersionLine(entry, snapshot.plugins.get(entry.id), snapshot.checkEnabled));
     }
@@ -402,7 +370,6 @@ export function formatLatestVersions(snapshot, plugin, scope = "context") {
       lines.push(formatPluginVersionLine(entry, snapshot.plugins.get(entry.id), snapshot.checkEnabled));
     }
     lines.push(formatPaperVersionLine(catalog.paper, snapshot.paper, snapshot.checkEnabled));
-    lines.push(formatPaperPreviewLine(snapshot));
   }
 
   lines.push("", `Clean data generated ${formatDiscordTimestamp(catalog.generatedAt)}.`);
@@ -469,8 +436,7 @@ export function formatPublicLatestVersions(snapshot, plugin) {
   for (const release of releases) {
     lines.push(formatPublicPluginVersionLine(release.plugin, release.upstream, release.verifiedNewer));
   }
-  lines.push(formatPublicPaperVersionLine(snapshot, "stable"));
-  lines.push(formatPublicPaperVersionLine(snapshot, "preview"));
+  lines.push(formatPublicPaperVersionLine(snapshot));
   const retained = releases.filter((release) => release.upstream.stale && !release.verifiedNewer);
   if (retained.length) {
     lines.push(
@@ -482,9 +448,6 @@ export function formatPublicLatestVersions(snapshot, plugin) {
     "",
     `We recommend updating both plugins to these ${releases.some((release) => release.verifiedNewer || release.upstream.stale) ? "latest known" : "current"} releases before troubleshooting version-related issues.`,
   );
-  if (snapshot.paperPreview) {
-    lines.push("Paper beta/experimental builds are previews, not stable upgrade recommendations.");
-  }
   return lines.join("\n");
 }
 
@@ -589,10 +552,6 @@ export function createVersionService(config, dependencies = {}) {
     return {
       catalog,
       paper: null,
-      paperStable: null,
-      paperStableStatus: "pending",
-      paperPreview: null,
-      paperPreviewStatus: "pending",
       plugins: new Map(),
       companions: new Map(),
       checkedAt: null,
@@ -666,9 +625,7 @@ export function createVersionService(config, dependencies = {}) {
     return {
       schemaVersion: PERSISTED_STATE_SCHEMA_VERSION,
       savedAt: new Date().toISOString(),
-      paper: serializeVersion(state.paper),
-      paperStable: serializeVersion(state.paperStable, { includePaperDownload: true }),
-      paperPreview: serializeVersion(state.paperPreview, { includePaperDownload: true }),
+      paper: serializeVersion(state.paper, { includePaperDownload: true }),
       plugins: Object.fromEntries(
         [...state.plugins.entries()]
           .map(([id, value]) => [id, serializeVersion(value)])
@@ -698,29 +655,18 @@ export function createVersionService(config, dependencies = {}) {
       }
 
       const state = createEmptyState(catalog);
-      const paper = sanitizePersistedVersion(parsed.paper, {
-        requireBuild: true,
-        requireChannel: true,
-      });
-      if (paper && String(paper.version) === String(config.versions.paperVersion)) {
-        state.paper = paper;
-      }
-      const paperStable = sanitizePersistedVersion(parsed.paperStable, {
-        requireBuild: true,
-        requireChannel: true,
-        includePaperDownload: true,
-      });
-      if (paperStable?.channel === "STABLE" && PAPER_RELEASE_VERSION.test(paperStable.version)) {
-        state.paperStable = paperStable;
-      }
-      const paperPreview = sanitizePersistedVersion(parsed.paperPreview, {
-        requireBuild: true,
-        requireChannel: true,
-        includePaperDownload: true,
-      });
-      if (paperPreview && PAPER_PREVIEW_CHANNELS.has(paperPreview.channel)) {
-        state.paperPreview = paperPreview;
-      }
+      // Migrate the former public stable cache only when it matches the tracked
+      // version and channels. Historical releases and previews cannot reappear.
+      state.paper = [parsed.paper, parsed.paperStable]
+        .map((value) => sanitizePersistedVersion(value, {
+          requireBuild: true,
+          requireChannel: true,
+          includePaperDownload: true,
+        }))
+        .filter(matchesTrackedPaper)
+        .sort((left, right) =>
+          right.build - left.build || Number(Boolean(right.downloadUrl)) - Number(Boolean(left.downloadUrl)),
+        )[0] ?? null;
 
       const trackedPluginIds = new Set(
         catalog.plugins
@@ -785,10 +731,6 @@ export function createVersionService(config, dependencies = {}) {
     return {
       catalog: state.catalog,
       paper: state.paper,
-      paperStable: state.paperStable,
-      paperStableStatus: state.paperStableStatus,
-      paperPreview: state.paperPreview,
-      paperPreviewStatus: state.paperPreviewStatus,
       plugins: new Map(state.plugins),
       companions: new Map(state.companions),
       checkedAt: state.checkedAt,
@@ -810,8 +752,14 @@ export function createVersionService(config, dependencies = {}) {
     });
   }
 
-  async function checkPaper(fetchPaperJson) {
-    const builds = await fetchPaperJson(
+  function matchesTrackedPaper(paper) {
+    return paper &&
+      paper.version === config.versions.paperVersion &&
+      config.versions.paperChannels.includes(paper.channel);
+  }
+
+  async function checkPaper() {
+    const builds = await fetchJson(
       "paper",
       `${PAPER_API_ROOT}/versions/${encodeURIComponent(config.versions.paperVersion)}/builds`,
     );
@@ -826,109 +774,20 @@ export function createVersionService(config, dependencies = {}) {
         continue;
       }
       try {
-        matchingBuilds.push({
-          id: normalizeBuild(build.id, "Paper build"),
+        matchingBuilds.push(withPaperDownload({
+          version: normalizeVersionIdentifier(config.versions.paperVersion, "Paper version"),
+          build: normalizeBuild(build.id, "Paper build"),
           channel: normalizeChannel(channel, "Paper channel"),
-        });
+        }, build.downloads?.["server:default"]?.url));
       } catch {
         continue;
       }
     }
-    const latest = matchingBuilds.sort((left, right) => right.id - left.id)[0];
+    const latest = matchingBuilds.sort((left, right) => right.build - left.build)[0];
     if (!latest) {
       throw new Error(`No Paper builds matched channels ${config.versions.paperChannels.join(", ")}.`);
     }
-    return {
-      version: normalizeVersionIdentifier(config.versions.paperVersion, "Paper version"),
-      build: latest.id,
-      channel: latest.channel,
-    };
-  }
-
-  async function listPaperVersions(fetchPaperJson) {
-    const project = await fetchPaperJson("paper-project", PAPER_API_ROOT);
-    if (
-      project?.project?.id !== "paper" ||
-      !project.versions || typeof project.versions !== "object" || Array.isArray(project.versions)
-    ) {
-      throw new Error("Paper returned an unexpected project response.");
-    }
-    const groups = Object.values(project.versions);
-    if (groups.length > MAX_PROVIDER_ITEMS || groups.some((group) => !Array.isArray(group))) {
-      throw new Error("Paper returned an unexpected version list.");
-    }
-    const versions = groups.flat();
-    if (!versions.length || versions.length > MAX_PROVIDER_ITEMS) {
-      throw new Error("Paper returned an unexpected version list.");
-    }
-    // Fill's documented project response lists the newest version first.
-    return versions.map((version) => normalizeVersionIdentifier(version, "Paper version"));
-  }
-
-  async function checkPaperPreview(fetchPaperJson) {
-    const [version] = await listPaperVersions(fetchPaperJson);
-    const builds = await fetchPaperJson(
-      "paper-preview-builds",
-      `${PAPER_API_ROOT}/versions/${encodeURIComponent(version)}/builds`,
-    );
-    if (!Array.isArray(builds) || builds.length > MAX_PROVIDER_ITEMS) {
-      throw new Error("Paper returned an unexpected preview builds response.");
-    }
-    const previews = builds.filter((build) => PAPER_PREVIEW_CHANNELS.has(build?.channel));
-    if (!previews.length) {
-      return null;
-    }
-    const candidates = [];
-    for (const preview of previews) {
-      try {
-        candidates.push(withPaperDownload({
-          version,
-          build: normalizeBuild(preview.id, "Paper preview build"),
-          channel: normalizeChannel(preview.channel, "Paper preview channel"),
-        }, preview.downloads?.["server:default"]?.url));
-      } catch {
-        // Ignore invalid rows without allowing them to become a displayed version.
-      }
-    }
-    if (!candidates.length) {
-      throw new Error("Paper returned no valid preview build metadata.");
-    }
-    return candidates.sort((left, right) => right.build - left.build)[0];
-  }
-
-  async function checkPaperStable(fetchPaperJson) {
-    const versions = await listPaperVersions(fetchPaperJson);
-    const releases = [...new Set(versions.filter((version) => PAPER_RELEASE_VERSION.test(version)))];
-    for (const version of releases.slice(0, MAX_PAPER_STABLE_VERSION_CHECKS)) {
-      const builds = await fetchPaperJson(
-        `paper-stable:${version}`,
-        `${PAPER_API_ROOT}/versions/${encodeURIComponent(version)}/builds`,
-      );
-      if (!Array.isArray(builds) || builds.length > MAX_PROVIDER_ITEMS) {
-        throw new Error("Paper returned an unexpected stable builds response.");
-      }
-      const stableBuilds = builds.filter((build) => build?.channel === "STABLE");
-      if (!stableBuilds.length) {
-        continue;
-      }
-      const candidates = [];
-      for (const build of stableBuilds) {
-        try {
-          candidates.push(withPaperDownload({
-            version,
-            build: normalizeBuild(build.id, "Paper stable build"),
-            channel: "STABLE",
-          }, build.downloads?.["server:default"]?.url));
-        } catch {
-          // Never substitute malformed metadata or a preview for a stable release.
-        }
-      }
-      if (!candidates.length) {
-        throw new Error("Paper returned no valid stable build metadata.");
-      }
-      return candidates.sort((left, right) => right.build - left.build)[0];
-    }
-    throw new Error("No stable Paper build was found within the bounded version search.");
+    return latest;
   }
 
   async function checkPlugin(plugin) {
@@ -1017,21 +876,10 @@ export function createVersionService(config, dependencies = {}) {
     const startedAt = performance.now();
     const trackedPlugins = catalog.plugins.filter((entry) => entry.resourceId || entry.versionSource);
     const trackedCompanions = catalog.companions.filter((entry) => entry.versionSource);
-    // Share requests only within this refresh, including failures, so the configured
-    // comparison and public channel discovery use one response per Paper endpoint.
-    const paperRequests = new Map();
-    const fetchPaperJson = (resourceKey, url) => {
-      if (!paperRequests.has(url)) {
-        paperRequests.set(url, fetchJson(resourceKey, url));
-      }
-      return paperRequests.get(url);
-    };
     const tasks = [
-      () => checkPaper(fetchPaperJson),
+      () => checkPaper(),
       ...trackedPlugins.map((entry) => () => checkPlugin(entry)),
       ...trackedCompanions.map((entry) => () => checkCompanion(entry)),
-      () => checkPaperPreview(fetchPaperJson),
-      () => checkPaperStable(fetchPaperJson),
     ];
     const results = await settleWithConcurrency(tasks, MAX_PRIMARY_FETCH_CONCURRENCY);
     const checkedAt = new Date().toISOString();
@@ -1046,7 +894,7 @@ export function createVersionService(config, dependencies = {}) {
       nextState.errorCount += 1;
       if (
         previousState.paper?.build &&
-        String(previousState.paper.version) === String(config.versions.paperVersion)
+        matchesTrackedPaper(previousState.paper)
       ) {
         nextState.paper = {
           ...previousState.paper,
@@ -1098,33 +946,11 @@ export function createVersionService(config, dependencies = {}) {
       }
     }
 
-    // Public channel discovery is informational; tracked alerts still compare only
-    // the configured Paper version/channels against the clean snapshot.
-    for (const [key, event, result] of [
-      ["paperPreview", "paper_preview", results.at(-2)],
-      ["paperStable", "paper_stable", results.at(-1)],
-    ]) {
-      if (result.status === "fulfilled") {
-        nextState[`${key}Status`] = result.value ? "available" : "none";
-        nextState[key] = result.value
-          ? { ...result.value, stale: false, lastSuccessfulCheckAt: checkedAt }
-          : null;
-        logger.info(`versions.${event}_checked`, {
-          available: Boolean(result.value),
-          ...(result.value ?? {}),
-        });
-      } else {
-        nextState[`${key}Status`] = "unavailable";
-        nextState[key] = previousState[key] ? { ...previousState[key], stale: true } : null;
-        logger.warn(`versions.${event}_unavailable`, { retained: Boolean(nextState[key]) });
-      }
-    }
-
     nextState.checkedAt = checkedAt;
     metrics?.recordUpstream({
       durationMs: performance.now() - startedAt,
       outcome: nextState.errorCount ? "error" : "success",
-      resourceCount: results.length - 2,
+      resourceCount: results.length,
       errorCount: nextState.errorCount,
       retainedCount: countRetainedUpstreams(nextState),
     });

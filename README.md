@@ -22,7 +22,7 @@ See [CHANGELOG.md](CHANGELOG.md) for dated summaries of shipped changes.
 - Bounded repeated-search LRU caching with aggregate hit/miss metrics and reload invalidation
 - Clean first-install plugin data generated from a disposable Paper server
 - Local version inventory, scheduled upstream checks, and private opt-in version differences with bounded release notes
-- Paper 26.3 beta/API drift checks plus Java 25 and Java 26 smoke commands
+- Paper 26.3 stable/API drift checks plus Java 25 and Java 26 smoke commands
 - One canonical CMILib cache composed into every supporting plugin context
 - Fail-closed startup validation for configuration, routes, indexes, cache summaries, and version-catalog drift
 - Layered user/channel/global rate limits, input validation, disabled mentions, role-ID access checks, JSONL audit logs, and bounded privacy-aware structured service logs
@@ -195,7 +195,7 @@ For a plugin update, preserve or remove the superseded jar so `plugins/` contain
 
 `data/versions.json` is the authoritative record of the clean snapshot versions. It is regenerated from verified jar metadata during every successful refresh, so plugin versions are intentionally not hardcoded in this README.
 
-The maintained test template uses PaperScript's `BETA` channel, same-version build upgrades, and the fixed `Paper-{version}.jar` filename. The refresh and smoke commands run the installed, pinned build without automatically upgrading it. Its broad process-name fallback is disabled because another project can legitimately run a jar with the same name; exact test-port detection remains enabled. This is a beta test setup, not a recommendation to upgrade a production Minecraft server.
+The maintained test template uses PaperScript's `STABLE` channel, same-version build upgrades, and the fixed `Paper-{version}.jar` filename. Cross-version automatic upgrades are disabled to keep the template on the maintained 26.3 line. The refresh and smoke commands run the installed, pinned build without automatically upgrading it. Its broad process-name fallback is disabled because another project can legitimately run a jar with the same name; exact test-port detection remains enabled. This remains a disposable compatibility test setup.
 
 Run the complete refresh with:
 
@@ -285,15 +285,15 @@ Discord autocomplete uses a separate, generation-aware metadata index. It propos
 
 ## Version Checks
 
-`/lookup latest` privately shows the clean snapshot version for the active plugin, CMILib, and Paper. `/lookup latest public:true` posts a compact public response containing the latest known releases for the active plugin and CMILib, plus separate `Paper: stable` and `Paper: beta` lines (or `alpha/experimental` when applicable). The plugin upgrade recommendation does not recommend experimental Paper builds as stable upgrades. Public output never includes private snapshot details, internal generation timestamps, or unrelated tracked resources.
+`/lookup latest` privately shows the clean snapshot version for the active plugin, CMILib, and Paper. `/lookup latest public:true` posts a compact public response containing the latest known releases for the active plugin and CMILib, plus one `Paper: stable` line for the tracked 26.3 release. Public output never includes private snapshot details, internal generation timestamps, or unrelated tracked resources.
 
 When a verified plugin release in the clean catalog is newer than the upstream listing, public replies show that newer version with a `verified release; upstream listing is behind` label. Private replies lead with the latest known verified release and retain the actual upstream value for comparison. This applies to plain numeric release versions, including four-part Zrips versions; development/prerelease artifacts do not override the feed. A newer or matching upstream release automatically resumes normal output. Feed history, update alerts, and release-note comparisons remain unchanged. Failed refreshes remain marked, and public replies still require an available upstream result for both plugins with version checks enabled.
 
-In each public Paper line, the word **Paper** links directly to that exact build's server JAR using the `server:default` download URL supplied by Fill. Only HTTPS object URLs on the official `fill-data.papermc.io` host with the matching Paper version/build filename are accepted. The link is stored alongside its release metadata, so last-known results keep their matching download across restarts. Missing or invalid download metadata leaves the label unlinked; it never substitutes a different build or a moving latest-download URL.
+In the public Paper line, the word **Paper** links directly to that exact build's server JAR using the `server:default` download URL supplied by Fill. Only HTTPS object URLs on the official `fill-data.papermc.io` host with the matching Paper version/build filename are accepted. The link is stored alongside its release metadata, so last-known results keep their matching download across restarts. Missing or invalid download metadata leaves the label unlinked; it never substitutes a different build or a moving latest-download URL.
 
-The public stable Paper line is discovered independently of the clean-server version and configured comparison channels. Each refresh checks the official Fill project listing in newest-first order, skips prerelease version names, and finds the highest-numbered `STABLE` build for the first qualifying release, with a maximum of ten release-version checks. Requests shared by the configured comparison, stable discovery, and preview discovery are fetched once per refresh. A failed or malformed lookup stops discovery rather than silently claiming an older release is current. Last-known stable metadata survives restarts and is clearly marked during an outage; without history, the line says upstream unavailable. This informational lookup does not change the clean server, tracked update alerts, or release-note comparisons.
+Paper replies, update alerts, and release-note comparisons use the same upstream result for `PAPER_VERSION=26.3` with `PAPER_VERSION_CHANNELS=STABLE`. Each refresh requests that version's builds once from the official Fill API and selects the highest valid stable build. Older release lines and alpha/beta builds are not discovered or displayed. Private context and all-resources replies also show only the tracked Paper line.
 
-Private context and all-resources replies also show a separate **Paper beta/experimental** line, using the same preview result as public replies. Each upstream refresh discovers the newest Paper version from the official Fill project listing and selects its highest-numbered `ALPHA` or `BETA` build. This is informational only: it does not change the clean server, the configured channel comparison, update alerts, or release-note comparisons. If that version has no preview builds, the line says so instead of listing a historical beta from an older version. Preview failures are reported on this separate line, retaining a clearly marked last-known result across restarts when available, without degrading the tracked-resource checks.
+Last-known Paper metadata and its exact download link survive restarts only when the version and channel still match the configured tracking policy. A matching record from the former separate stable cache is migrated; old 26.2 and beta records are discarded. Failed checks retain a clearly marked matching result, or show upstream unavailable when there is no suitable history.
 
 `/lookup latest scope:all` privately lists every jar in the clean reference server, support dependencies such as LuckPerms and PlaceholderAPI, and the tracked CMI companion resources. Public output is intentionally limited to the current channel context, so `scope:all public:true` is rejected privately.
 
@@ -320,13 +320,13 @@ Version controls:
 - `VERSION_CHECK_CIRCUIT_FAILURE_THRESHOLD=3`
 - `VERSION_CHECK_CIRCUIT_COOLDOWN_SECONDS=300`
 - `PAPER_VERSION=26.3`
-- `PAPER_VERSION_CHANNELS=BETA,STABLE`
+- `PAPER_VERSION_CHANNELS=STABLE`
 
 The scheduled timer is in memory and starts with the bot. Restarting the bot resets the timer; no separate cron job is required.
 
 ### Paper Compatibility
 
-`runtime-exporter/compatibility.json` is the source of truth for the internal Paper tooling. It currently pins Paper `26.3` build `167` on `BETA`, API `26.3.build.167-beta`, exporter `1.0.1`, and Java target `25`. Before deploying a refreshed minor-version snapshot, update any explicit bot environment overrides to `PAPER_VERSION=26.3` and `PAPER_VERSION_CHANNELS=BETA,STABLE`; startup rejects a snapshot/runtime version mismatch. `STABLE` remains accepted so the same line can graduate from beta without losing update checks.
+`runtime-exporter/compatibility.json` is the source of truth for the internal Paper tooling. It currently pins Paper `26.3` build `175` on `STABLE`, API `26.3.build.175-stable`, exporter `1.0.1`, and Java target `25`. Before deploying a refreshed minor-version snapshot, update any explicit bot environment overrides to `PAPER_VERSION=26.3` and `PAPER_VERSION_CHANNELS=STABLE`; startup rejects a snapshot/runtime version mismatch.
 
 Verify the tracked metadata, PaperScript source/config, installed jar checksum, exact API jar, JDKs, and the live latest build on the pinned channel:
 
@@ -345,7 +345,7 @@ The scripts prefer the JDK home paths from the compatibility manifest. If a patc
 
 Each smoke command requires Paper readiness, the manifest's exporter version, a completed `lookupexport`, and a successful shutdown. Startup, export, and shutdown have separate deadlines; a hung shutdown is terminated. The log retains plugin warnings and errors for review, including optional-integration warnings that do not prevent export.
 
-`npm run check` performs syntax plus offline compatibility drift validation. `npm run check:paper` additionally contacts Paper's official Fill API and fails if the pinned build is no longer the latest beta 26.3 build.
+`npm run check` performs syntax plus offline compatibility drift validation. `npm run check:paper` additionally contacts Paper's official Fill API and fails if the pinned build is no longer the latest stable 26.3 build.
 
 ## Cache Behavior
 

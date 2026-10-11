@@ -2,6 +2,14 @@
 
 This file records material LookupBot changes by ship date. User-facing examples intentionally omit private identifiers, infrastructure details, credentials, and host-specific paths.
 
+## 2026-10-11
+
+### Paper stable tracking
+
+- Track only stable builds of Paper 26.3 and show one Paper line in public, private, and all-resources version replies.
+- Share the same Paper result across replies and update alerts, preserve its exact download link across restarts, and discard cached older-version or preview results.
+- Refresh the clean snapshot and exporter compatibility metadata to Paper 26.3 build 175 stable, verified on Java 25 and Java 26.
+
 ## 2026-10-06
 
 ### Toolchain and dependency maintenance

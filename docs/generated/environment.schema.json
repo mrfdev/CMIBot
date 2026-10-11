@@ -479,7 +479,7 @@
       "description": "Comma-separated accepted Paper release channels.",
       "x-value-type": "csv",
       "x-sensitivity": "public",
-      "default": "BETA,STABLE"
+      "default": "STABLE"
     },
     "COMMAND_USER_RATE_LIMIT": {
       "type": "string",

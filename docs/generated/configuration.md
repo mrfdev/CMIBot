@@ -85,7 +85,7 @@ Only a loopback Ollama service and local model are supported. External and paid 
 | `VERSION_CHECK_CIRCUIT_FAILURE_THRESHOLD` | integer | no | public | `3` | Consecutive failed refreshes before a resource circuit opens. |
 | `VERSION_CHECK_CIRCUIT_COOLDOWN_SECONDS` | integer | no | public | `300` | Cooldown before an open resource circuit permits a recovery probe. |
 | `PAPER_VERSION` | string | no | public | `26.3` | Paper version line checked upstream. |
-| `PAPER_VERSION_CHANNELS` | csv | no | public | `BETA,STABLE` | Comma-separated accepted Paper release channels. |
+| `PAPER_VERSION_CHANNELS` | csv | no | public | `STABLE` | Comma-separated accepted Paper release channels. |
 
 ## Rate limits and cooldowns
 

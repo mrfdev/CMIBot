@@ -84,3 +84,22 @@ test("configuration metadata covers runtime environment access and plugin profil
     }
   }
 });
+
+test("Paper tracking defaults to 26.3 stable in runtime config and generated documentation", () => {
+  const names = ["PAPER_VERSION", "PAPER_VERSION_CHANNELS"];
+  const previous = Object.fromEntries(names.map((name) => [name, process.env[name]]));
+  try {
+    for (const name of names) delete process.env[name];
+    const config = loadConfig();
+    assert.equal(config.versions.paperVersion, "26.3");
+    assert.deepEqual(config.versions.paperChannels, ["STABLE"]);
+    const artifacts = renderConfigArtifacts();
+    assert.match(artifacts[".env.example"], /^PAPER_VERSION=26\.3$/m);
+    assert.match(artifacts[".env.example"], /^PAPER_VERSION_CHANNELS=STABLE$/m);
+  } finally {
+    for (const [name, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
+});
