@@ -86,11 +86,16 @@ Language:
     TooHigh: '&cWarning, selection went above top of map, limiting.'
     TooLow: '&cWarning, selection went below bottom of map, limiting.'
     TotalSize: '&eSelection total size: &6%1'
-    AutoEnabled: '&eAuto selection mode turned &6ON&e. To disable it write &6/res
-      select auto'
-    AutoDisabled: '&eAuto selection mode turned &6OFF&e. To enable it again write
-      &6/res select auto'
     Disabled: '&cYou don''t have access to selections commands'
+    AutoMoveDisabled: '&eAuto selection mode on move turned &6OFF'
+    MoveExpand: '&6Expand on move: %1'
+    RangeInteract: '&6Range interact: %1'
+    MouseScroll: '&6Mouse scroll: %1'
+    SmartTool: '&6Smart tool selection: %1'
+    GroupLimits: '&6Consider group limits: %1'
+    ComboEnabled: '&6Combo active: %1'
+    BossBar: '%1Move &6| %2Interact &6| %3Mouse &6| %4Group &6| %5Smart'
+    Show: '&6Show selection'
   Schematic:
     NoSchematic: '&6No Residence schematic found!'
     Saved: '&6Residence schematic saved!'
@@ -1113,6 +1118,11 @@ CommandHelp:
               Description: Allows or denys players to use looms
               Info:
               - '&eUsage: &6/res set/pset <residence> loom true/false/remove'
+            lunge:
+              Translated: lunge
+              Description: Allows or denys players to use lunge enchant
+              Info:
+              - '&eUsage: &6/res set/pset <residence> lunge true/false/remove'
             minecartsuction:
               Translated: minecartsuction
               Description: Allow or deny derailed hopper minecarts from sucking items
@@ -1218,6 +1228,11 @@ CommandHelp:
                 build flag
               Info:
               - '&eUsage: &6/res set/pset <residence> place true/false/remove'
+            potionthrowing:
+              Translated: potionthrowing
+              Description: Allow or deny player throwing potions
+              Info:
+              - '&eUsage: &6/res set/pset <residence> potionthrowing true/false/remove'
             push:
               Translated: push
               Description: Allow or deny players pushing entities(not for player-player)
@@ -1248,6 +1263,11 @@ CommandHelp:
               Description: Prevent riding a horse
               Info:
               - '&eUsage: &6/res set/pset <residence> riding true/false/remove'
+            riptide:
+              Translated: riptide
+              Description: Allow or deny players to use riptide enchant
+              Info:
+              - '&eUsage: &6/res set/pset <residence> riptide true/false/remove'
             shoot:
               Translated: shoot
               Description: Allows or denys shooting projectile in area
@@ -1759,10 +1779,38 @@ CommandHelp:
               Description: Display selected size
               Info:
               - '&eUsage: &6/res select size'
-            auto:
-              Description: Turns on auto selection tool
+            move:
+              Description: Turns on move selection tool
               Info:
-              - '&eUsage: &6/res select auto [playername]'
+              - '&eUsage: &6/res select move [playername]'
+            considerlimits:
+              Description: Toggles considerlimits selection
+              Info:
+              - '&eUsage: &6/res select considerlimits [playername]'
+            togglecombo:
+              Description: Toggles combo selection
+              Info:
+              - '&eUsage: &6/res select togglecombo [playername]'
+            options:
+              Description: Opens selection GUI
+              Info:
+              - '&eUsage: &6/res select options [playername]'
+            outward:
+              Description: Expands selection outward by a specified amount
+              Info:
+              - '&eUsage: &6/res select outward [playername]'
+            aim:
+              Description: Turns on aim selection tool
+              Info:
+              - '&eUsage: &6/res select aim [playername]'
+            clear:
+              Description: Clears selection
+              Info:
+              - '&eUsage: &6/res select clear [playername]'
+            quickbar:
+              Description: Turns on quickbar selection tool
+              Info:
+              - '&eUsage: &6/res select quickbar [playername]'
             cost:
               Description: Display selection cost
               Info:
