@@ -11,6 +11,10 @@ ExploitPatcher:
       # By default we are blocking PAPI %checkitem_...% placeholder to avoid potential serious issues with it
       # Only disable this if you have dedicated protection for it
       checkItem: true
+# When enabled plugin will use legacy raw message system instead of new one
+# Responsible for clikable messages, hover messages
+# Recommended to keep it disabled if you are running Paper 1.16+ server
+LegacyRawMessage: false
 Skins:
   # Defines time in minutes how often we want to update skin information from online Mojang servers
   # Keep in mind that your server can only send 1 request every minute, so keep it at a decent amount, hour or more
