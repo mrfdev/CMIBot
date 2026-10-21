@@ -38,7 +38,7 @@
     "check": "npm run check:bot && node scripts/verify-paper-compatibility.mjs --offline"
   },
   "engines": {
-    "node": "^22.20.0 || >=24.8.0"
+    "node": "^26.12.1"
   },
   "dependencies": {
     "discord.js": "^14.27.0",

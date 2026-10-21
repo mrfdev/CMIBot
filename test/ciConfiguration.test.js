@@ -8,15 +8,18 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const workflowPath = path.join(repositoryRoot, ".github", "workflows", "ci.yml");
 const dependabotPath = path.join(repositoryRoot, ".github", "dependabot.yml");
 const packagePath = path.join(repositoryRoot, "package.json");
+const lockfilePath = path.join(repositoryRoot, "package-lock.json");
+const nodeVersionPath = path.join(repositoryRoot, ".node-version");
 
-test("CI covers supported Node versions, checks, and the production dependency audit", async () => {
+test("CI uses the selected Node 26 runtime for checks and the production dependency audit", async () => {
   const workflow = await fs.readFile(workflowPath, "utf8");
 
   assert.match(workflow, /push:\n\s+branches:\n\s+- main/);
   assert.match(workflow, /\n  pull_request:\n/);
   assert.match(workflow, /\n  workflow_dispatch:\n/);
   assert.match(workflow, /  test:\n[\s\S]*?    runs-on: macos-latest/);
-  assert.match(workflow, /node-version:\n\s+- "22\.20\.0"\n\s+- "22\.x"\n\s+- "24\.x"\n\s+- "26\.x"/);
+  assert.equal((workflow.match(/node-version-file: \.node-version/g) ?? []).length, 2);
+  assert.doesNotMatch(workflow, /matrix:|node-version:/);
   assert.match(workflow, /run: npm ci\n/);
   assert.match(workflow, /run: npm run check:bot/);
   assert.match(workflow, /run: npm ci --ignore-scripts/);
@@ -37,12 +40,17 @@ test("CI uses a least-privilege, secret-free action configuration", async () => 
 });
 
 test("Dependabot covers GitHub Actions and the package declares the supported runtime floor", async () => {
-  const [dependabot, packageContents] = await Promise.all([
+  const [dependabot, packageContents, lockfileContents, nodeVersion] = await Promise.all([
     fs.readFile(dependabotPath, "utf8"),
     fs.readFile(packagePath, "utf8"),
+    fs.readFile(lockfilePath, "utf8"),
+    fs.readFile(nodeVersionPath, "utf8"),
   ]);
   const packageMetadata = JSON.parse(packageContents);
+  const lockfileMetadata = JSON.parse(lockfileContents);
 
   assert.match(dependabot, /package-ecosystem: github-actions/);
-  assert.equal(packageMetadata.engines.node, "^22.20.0 || >=24.8.0");
+  assert.equal(nodeVersion.trim(), "26.12.1");
+  assert.equal(packageMetadata.engines.node, "^26.12.1");
+  assert.equal(lockfileMetadata.packages[""].engines.node, packageMetadata.engines.node);
 });

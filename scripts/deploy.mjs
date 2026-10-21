@@ -198,7 +198,7 @@ async function deploy() {
   const sourceRoot = projectRoot();
   const git = process.env.CMIBOT_GIT || "/usr/bin/git";
   const node = process.env.CMIBOT_NODE || process.execPath;
-  const npm = process.env.CMIBOT_NPM || "/opt/homebrew/bin/npm";
+  const npm = process.env.CMIBOT_NPM || path.join(path.dirname(node), "npm");
   const tar = process.env.CMIBOT_TAR || "/usr/bin/tar";
   const operationEnvironment = createOperationEnvironment(node, npm);
   const deployRoot = process.env.CMIBOT_DEPLOY_ROOT || path.join(sourceRoot, ".deploy");

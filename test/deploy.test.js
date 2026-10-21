@@ -64,6 +64,7 @@ async function createDeploymentBoundaries(temporaryRoot, sourceRoot) {
       "#!/bin/sh",
       "set -eu",
       "case \":$PATH:\" in *\":$CMIBOT_TEST_BIN:\"*) ;; *) exit 65 ;; esac",
+      "if [ -n \"${CMIBOT_TEST_NPM_LOG:-}\" ]; then printf '%s\\n' \"$*\" >> \"$CMIBOT_TEST_NPM_LOG\"; fi",
       "case \"$*\" in",
       "  ci) exit 0 ;;",
       "  'run check:bot')",
@@ -159,6 +160,39 @@ test("deploy switches to a verified release while preserving shared environment 
     assert.equal(path.basename(currentRelease), commit);
     assert.equal(await fs.readFile(path.join(currentRelease, ".env"), "utf8"), "shared environment sentinel\n");
     assert.equal(await fs.readFile(path.join(currentRelease, "logs", "usage.jsonl"), "utf8"), '{"preserved":true}\n');
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("deploy uses npm beside the selected Node executable without an npm override", async () => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lookupbot-deploy-runtime-"));
+
+  try {
+    const { sourceRoot, commit } = await createSourceRepository(temporaryRoot);
+    const { environment } = await createDeploymentBoundaries(temporaryRoot, sourceRoot);
+    const selectedNode = path.join(environment.CMIBOT_TEST_BIN, "node");
+    const npmLog = path.join(temporaryRoot, "npm-invocations.log");
+    await fs.symlink(process.execPath, selectedNode);
+    delete environment.CMIBOT_NPM;
+    environment.CMIBOT_NODE = selectedNode;
+    environment.CMIBOT_TEST_NPM_LOG = npmLog;
+
+    const result = await runDeploy([], {
+      cwd: sourceRoot,
+      encoding: "utf8",
+      env: environment,
+    });
+
+    assert.match(result.stdout, new RegExp(`Deployed ${commit}\\.`));
+    assert.deepEqual((await fs.readFile(npmLog, "utf8")).trim().split("\n"), ["ci", "run check:bot"]);
+    const currentRelease = await fs.realpath(path.join(sourceRoot, ".deploy", "current"));
+    assert.equal(path.basename(currentRelease), commit);
+    const serviceDefinition = await fs.readFile(
+      path.join(environment.CMIBOT_LAUNCH_AGENTS_DIR, "com.mrfdev.cmibot.plist"),
+      "utf8",
+    );
+    assert.ok(serviceDefinition.includes(`<string>${selectedNode}</string>`));
   } finally {
     await fs.rm(temporaryRoot, { recursive: true, force: true });
   }

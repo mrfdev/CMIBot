@@ -501,7 +501,7 @@ Generated references are committed under `docs/generated/`. `npm run check:bot` 
 
 Requirements:
 
-- Node.js 22.20+ on the 22.x line, or 24.8+ (stable native filesystem-glob and path-matching APIs)
+- Node.js 26.12.1 or newer on the 26.x line; `.node-version` records the selected development and CI version
 - Java 25 for Paper and Java 25 exporter bytecode
 - Java 26 for the optional forward-runtime smoke test
 - `unzip` for reading plugin metadata from jars
@@ -518,7 +518,7 @@ npm start
 
 ### Toolchain responsibilities
 
-The Discord bot runs JavaScript directly with Node.js; there is no separate compilation step. CI covers Node.js 22, 24, and 26. Use a maintained Node release and its compatible npm version, and run `npm run check:bot` after updating either one.
+The Discord bot runs JavaScript directly with Node.js; there is no separate compilation step. Development, CI, and production target Node.js 26. Use the version in `.node-version` and its compatible npm version. When adopting a newer Node 26 release, update that pin, update the `engines.node` security floor in both package files when needed, and run `npm run check:bot` before deploying it. Node.js 26.12.1 includes the [October 2026 security fixes](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases).
 
 Only the clean-reference-data workflow needs Java. `npm run build:exporter` invokes JDK 25's `javac` and `jar` directly, with the exact Paper API and Java 25 bytecode target defined in `runtime-exporter/compatibility.json`. Java 26 is an additional smoke-test runtime. A newer system-default Java does not change the compiler target. Gradle, Maven, and Python are not project build or runtime dependencies, and the lightweight bot host does not need the Paper/JDK toolchain.
 
@@ -603,7 +603,7 @@ The LaunchAgent points at `.deploy/current`. Each release is assembled with its 
 
 ## Continuous Integration
 
-GitHub Actions runs on pushes to `main`, pull requests, and manual dispatches. The macOS test matrix runs `npm ci` followed by `npm run check:bot` on the minimum Node.js 22.20.0 plus the latest 22 LTS, 24 LTS, and 26 Current releases, including generated-document drift, privacy checks, and validation of the launchd service definition. A separate Node.js 24 Ubuntu job installs the locked dependency tree without lifecycle scripts and runs the production dependency audit.
+GitHub Actions runs on pushes to `main`, pull requests, and manual dispatches. A single macOS test job runs `npm ci` followed by `npm run check:bot`, including generated-document drift, privacy checks, and validation of the launchd service definition. A separate Ubuntu job installs the locked dependency tree without lifecycle scripts and runs the production dependency audit. Both jobs use the same Node.js 26 version from `.node-version`.
 
 The workflow has read-only repository permissions, receives no repository secrets, disables checkout credential persistence and automatic package-manager caching, and pins official actions to immutable commit SHAs. Dependabot monitors both npm packages and GitHub Actions references.
 
