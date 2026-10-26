@@ -326,7 +326,7 @@ The scheduled timer is in memory and starts with the bot. Restarting the bot res
 
 ### Paper Compatibility
 
-`runtime-exporter/compatibility.json` is the source of truth for the internal Paper tooling. It currently pins Paper `26.3` build `218` on `STABLE`, API `26.3.build.218-stable`, exporter `1.0.1`, and Java target `25`. Before deploying a refreshed minor-version snapshot, update any explicit bot environment overrides to `PAPER_VERSION=26.3` and `PAPER_VERSION_CHANNELS=STABLE`; startup rejects a snapshot/runtime version mismatch.
+`runtime-exporter/compatibility.json` is the source of truth for the internal Paper tooling. It currently pins Paper `26.3` build `223` on `STABLE`, API `26.3.build.223-stable`, exporter `1.0.1`, Java bytecode target `25`, and test JVM `27`. Before deploying a refreshed minor-version snapshot, update any explicit bot environment overrides to `PAPER_VERSION=26.3` and `PAPER_VERSION_CHANNELS=STABLE`; startup rejects a snapshot/runtime version mismatch.
 
 Verify the tracked metadata, PaperScript source/config, installed jar checksum, exact API jar, JDKs, and the live latest build on the pinned channel:
 
@@ -337,11 +337,14 @@ npm run check:paper
 Run maintained-server startup, plugin-list, exporter-enable, and clean-shutdown checks:
 
 ```bash
-npm run smoke:java25
-npm run smoke:java26
+npm run smoke:java27
 ```
 
-The scripts prefer the JDK home paths from the compatibility manifest. If a patch-specific directory disappears after a JDK update, macOS falls back to `/usr/libexec/java_home -v <feature>` and uses the installed JDK from that feature line. `JAVA_HOME` or `JAVA_25_HOME`/`JAVA_26_HOME` can select another matching JDK installation; `JAVA_BIN`, `JAVAC_BIN`, and `JAR_BIN` can override individual tools. Feature mismatches fail before build or startup, and the exporter remains Java 25 bytecode even when tested on Java 26.
+The maintenance scripts discover installed Oracle JDKs on every invocation using `/usr/libexec/java_home -F -v 25` for compilation and `/usr/libexec/java_home -F -v 27` for tests. Patch installation paths are not stored in the project. `ONE_MB_BUILD_JAVA_HOME` and `ONE_MB_TEST_JAVA_HOME` can deliberately select installed homes on another machine; the smoke command also accepts a validated `--java-home`. Each selected tool must report the expected major and vendor `Oracle Corporation`. Missing JDKs, wrong vendors, and invalid explicit selections fail without downloading or falling back to a different installation.
+
+`npm run build:exporter` deletes the previous exporter build output and compiles with Oracle JDK 25 and `--release 25`; the resulting class major must be `69`. `npm run refresh:data` performs that clean build against the exact Paper API, then exports clean metadata using Oracle JDK 27. `npm run smoke:java27` also runs Paper on Oracle JDK 27. Build and smoke output reports the selected executable, actual version and vendor. Ambient `JAVA_HOME` does not select the toolchain. Legacy individual `JAVA_BIN`/`JAVAC_BIN`/`JAR_BIN` overrides are rejected, and Java option injection variables and `CLASSPATH` are removed from child environments so they cannot override compiler or JVM flags. There is no Gradle/Maven wrapper or automatic toolchain provisioning in this project.
+
+Run `npm run check` for the full Node.js test suite, documentation drift, and offline Paper compatibility checks, followed by `npm run check:paper` and `npm run smoke:java27` for live build verification and the installed Paper integration test. The bot and its automated unit tests are Node.js, not JVM applications; the Java verification covers clean exporter compilation, metadata export, and test-server startup/shutdown, not interactive player behavior.
 
 Each smoke command requires Paper readiness, the manifest's exporter version, a completed `lookupexport`, and a successful shutdown. Startup, export, and shutdown have separate deadlines; a hung shutdown is terminated. The log retains plugin warnings and errors for review, including optional-integration warnings that do not prevent export.
 

@@ -7,6 +7,7 @@ import {
   assertJavaFeature,
   classMajorForJava,
   expectedPaperApiJarName,
+  javaProcessEnvironment,
   readRuntimeCompatibility,
   resolveJavaTool,
   runtimeServerPaths,
@@ -102,7 +103,7 @@ export async function buildRuntimeExporter(workspaceRoot, paperServerDirectory) 
       classesDirectory,
       sourcePath,
     ],
-    { encoding: "utf8", maxBuffer: 4 * 1024 * 1024 },
+    { encoding: "utf8", maxBuffer: 4 * 1024 * 1024, env: javaProcessEnvironment() },
   );
   if (compileResult.stderr.trim()) {
     process.stderr.write(compileResult.stderr);
@@ -121,11 +122,12 @@ export async function buildRuntimeExporter(workspaceRoot, paperServerDirectory) 
   await execFileAsync(
     jar,
     ["--create", "--file", outputPath, "-C", classesDirectory, ".", "-C", path.dirname(pluginYamlPath), "plugin.yml"],
-    { maxBuffer: 4 * 1024 * 1024 },
+    { maxBuffer: 4 * 1024 * 1024, env: javaProcessEnvironment() },
   );
   console.log(
     `[exporter] Built ${compatibility.exporterVersion} for Paper API ${compatibility.paperApiCoordinate} ` +
-      `and Java ${compatibility.javaTarget} with ${javaVersion.output.split("\n")[0]}.`,
+      `and Java ${compatibility.javaTarget} bytecode (class ${actualClassMajor}) with ` +
+      `${javac} (${javaVersion.version}, ${javaVersion.vendor}).`,
   );
   return outputPath;
 }

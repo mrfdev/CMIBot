@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   assertJavaFeature,
+  javaProcessEnvironment,
   readRuntimeCompatibility,
   resolveJavaTool,
   runtimeServerPaths,
@@ -58,7 +59,7 @@ export async function runPaperSmoke({
       compatibility.paperJar,
       "--nogui",
     ],
-    { cwd: serverDirectory, stdio: ["pipe", "pipe", "pipe"] },
+    { cwd: serverDirectory, stdio: ["pipe", "pipe", "pipe"], env: javaProcessEnvironment() },
   );
 
   const schedule = (callback, delay) => {
@@ -160,15 +161,19 @@ async function main() {
   const compatibility = await readRuntimeCompatibility(workspaceRoot);
   const { serverDirectory } = runtimeServerPaths(workspaceRoot, compatibility);
   const javaHome = argumentValue("--java-home");
-  const expectedFeature = Number(argumentValue("--expect") || compatibility.javaTarget);
+  const expectedFeature = Number(argumentValue("--expect") || compatibility.javaTestTarget);
+  if (expectedFeature !== compatibility.javaTestTarget) {
+    throw new Error(`Paper smoke tests require Oracle JDK ${compatibility.javaTestTarget}.`);
+  }
   const label = argumentValue("--label") || `java${expectedFeature}`;
+  if (!/^[a-z0-9-]+$/i.test(label)) throw new Error("Invalid smoke-test label.");
   const javaBinary = await resolveJavaTool(compatibility, {
     feature: expectedFeature,
     javaHome,
     tool: "java",
   });
   const javaVersion = await assertJavaFeature(javaBinary, expectedFeature);
-  console.log(`[smoke] ${javaVersion.output.split("\n")[0]}`);
+  console.log(`[smoke] ${javaBinary} (${javaVersion.version}, ${javaVersion.vendor})`);
   const logPath = path.join(workspaceRoot, "servers", `smoke-${label}-last.log`);
   const { warningCount, errorCount } = await runPaperSmoke({ serverDirectory, javaBinary, compatibility, logPath });
   console.log(

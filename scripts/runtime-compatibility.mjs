@@ -21,9 +21,10 @@ async function resolveMacOsJavaHome(feature, command) {
   }
 
   try {
-    const { stdout } = await execFileAsync(command, ["-v", String(feature)], {
+    const { stdout } = await execFileAsync(command, ["-F", "-v", String(feature)], {
       encoding: "utf8",
       maxBuffer: 1024 * 1024,
+      timeout: 10_000,
     });
     return stdout.trim();
   } catch {
@@ -37,7 +38,19 @@ export async function readRuntimeCompatibility(workspaceRoot) {
   if (compatibility.schemaVersion !== 1) {
     throw new Error(`Unsupported runtime compatibility schema in ${manifestPath}`);
   }
+  if (compatibility.javaTarget !== 25 || compatibility.javaTestTarget !== 27) {
+    throw new Error("The exporter requires Oracle JDK 25 compilation and Oracle JDK 27 testing.");
+  }
   return compatibility;
+}
+
+// JVM/compiler environment hooks must not override the validated toolchain or --release.
+export function javaProcessEnvironment(environment = process.env) {
+  const clean = { ...environment };
+  for (const key of ["JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS", "JDK_JAVAC_OPTIONS", "CLASSPATH"]) {
+    delete clean[key];
+  }
+  return clean;
 }
 
 export function runtimeServerPaths(workspaceRoot, compatibility) {
@@ -63,64 +76,67 @@ export async function resolveJavaTool(
     javaHomeCommand = macOsJavaHomeCommand,
   } = {},
 ) {
-  const explicitTool = environment[`${tool.toUpperCase()}_BIN`] || (tool === "java" ? environment.JAVA_BIN : "");
-  if (explicitTool) {
-    if (!(await pathExists(explicitTool))) {
-      throw new Error(`${tool.toUpperCase()}_BIN does not exist: ${explicitTool}`);
-    }
-    return explicitTool;
+  if (![25, 27].includes(feature) || !["java", "javac", "jar"].includes(tool)) {
+    throw new Error("Only Oracle JDK 25 build tools and Oracle JDK 27 test tools are supported.");
   }
-
-  const configuredHome =
-    javaHome ||
-    environment.JAVA_HOME ||
-    environment[`JAVA_${feature}_HOME`] ||
-    compatibility[`jdk${feature}Home`];
-  if (!configuredHome) {
-    throw new Error(`No JDK home is configured for Java ${feature}. Set JAVA_HOME or JAVA_${feature}_HOME.`);
+  const override = feature === 25 ? "ONE_MB_BUILD_JAVA_HOME" : "ONE_MB_TEST_JAVA_HOME";
+  if (["JAVA_BIN", "JAVAC_BIN", "JAR_BIN"].some(key => environment[key])) {
+    throw new Error(`Individual Java binary overrides are unsupported; select an installed Oracle JDK with ${override}.`);
   }
-
-  const binary = path.join(configuredHome, "bin", tool);
-  if (await pathExists(binary)) {
-    return binary;
+  // Deliberate selections fail closed; never fall back when an override is invalid.
+  const selectedHome = javaHome || environment[override] || await resolveMacOsJavaHome(feature, javaHomeCommand);
+  if (!selectedHome || !path.isAbsolute(selectedHome)) {
+    throw new Error(`Installed Oracle JDK ${feature} not found. Set ${override} to a valid installed Oracle JDK home; automatic downloads are disabled.`);
   }
-
-  const discoveredHome = await resolveMacOsJavaHome(feature, javaHomeCommand);
-  if (discoveredHome) {
-    const discoveredBinary = path.join(discoveredHome, "bin", tool);
-    if (await pathExists(discoveredBinary)) {
-      return discoveredBinary;
-    }
+  const binary = path.join(selectedHome, "bin", tool);
+  try {
+    await fs.access(binary, fs.constants.X_OK);
+  } catch {
+    throw new Error(`Installed Oracle JDK ${feature} ${tool} is missing or not executable. Check ${override}.`);
   }
-
-  throw new Error(
-    `Java ${feature} ${tool} was not found at ${binary}; no installed Java ${feature} ${tool} ` +
-      `was resolved through ${javaHomeCommand}`,
-  );
+  await assertJavaFeature(binary, feature, environment);
+  return binary;
 }
 
-export async function readJavaFeature(javaTool) {
-  const { stdout, stderr } = await execFileAsync(javaTool, ["-version"], {
+export async function readJavaFeature(javaTool, environment = process.env) {
+  const tool = path.basename(javaTool);
+  const args = tool === "java"
+    ? ["-XshowSettings:properties", "-version"]
+    : ["-J-XshowSettings:properties", tool === "jar" ? "--version" : "-version"];
+  const { stdout, stderr } = await execFileAsync(javaTool, args, {
     encoding: "utf8",
     maxBuffer: 1024 * 1024,
+    timeout: 10_000,
+    env: javaProcessEnvironment(environment),
   });
   const output = `${stdout}\n${stderr}`;
-  const match = output.match(/(?:version\s+"|javac\s+)(\d+)(?:\.(\d+))?/i);
-  if (!match) {
+  const version = output.match(/^\s*java\.version\s*=\s*(\S+)/m)?.[1];
+  const vendor = output.match(/^\s*java\.vendor\s*=\s*(.+)/m)?.[1]?.trim();
+  const match = version?.match(/^(\d+)(?:\.(\d+))?/);
+  if (!match || !vendor) {
     throw new Error(`Could not determine the Java version from ${javaTool}`);
   }
+  const feature = Number(match[1] === "1" ? match[2] : match[1]);
+  if (tool !== "java" && !new RegExp(`^${tool} ${feature}(?:[.\\s]|$)`, "m").test(output)) {
+    throw new Error(`The ${tool} version does not match its JVM feature ${feature}.`);
+  }
   return {
-    feature: Number(match[1] === "1" ? match[2] : match[1]),
+    feature,
+    version,
+    vendor,
     output: output.trim(),
   };
 }
 
-export async function assertJavaFeature(javaTool, expectedFeature) {
-  const version = await readJavaFeature(javaTool);
+export async function assertJavaFeature(javaTool, expectedFeature, environment = process.env) {
+  const version = await readJavaFeature(javaTool, environment);
   if (version.feature !== Number(expectedFeature)) {
     throw new Error(
       `${javaTool} reports Java ${version.feature}, but this operation requires Java ${expectedFeature}.`,
     );
+  }
+  if (version.vendor !== "Oracle Corporation") {
+    throw new Error(`${javaTool} reports vendor ${version.vendor}; Oracle Corporation is required.`);
   }
   return version;
 }

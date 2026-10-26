@@ -115,25 +115,19 @@ async function verifyServer(serverDirectory, compatibility, { requireApi }) {
 async function verifyJdks(compatibility) {
   const java25 = await resolveJavaTool(compatibility, {
     feature: compatibility.javaTarget,
-    javaHome: compatibility.jdk25Home,
     tool: "java",
-    environment: {},
   });
   const javac25 = await resolveJavaTool(compatibility, {
     feature: compatibility.javaTarget,
-    javaHome: compatibility.jdk25Home,
     tool: "javac",
-    environment: {},
   });
-  const java26 = await resolveJavaTool(compatibility, {
-    feature: 26,
-    javaHome: compatibility.jdk26Home,
+  const java27 = await resolveJavaTool(compatibility, {
+    feature: compatibility.javaTestTarget,
     tool: "java",
-    environment: {},
   });
   await assertJavaFeature(java25, compatibility.javaTarget);
   await assertJavaFeature(javac25, compatibility.javaTarget);
-  await assertJavaFeature(java26, 26);
+  await assertJavaFeature(java27, compatibility.javaTestTarget);
 }
 
 async function verifyLatestBuild(compatibility) {
@@ -191,7 +185,7 @@ async function main() {
 
   console.log(
     `[paper-check] Paper ${compatibility.paperVersion} build ${compatibility.paperBuild} ` +
-      `${compatibility.paperChannel}, API ${compatibility.paperApiCoordinate}, Java ${compatibility.javaTarget}.`,
+      `${compatibility.paperChannel}, API ${compatibility.paperApiCoordinate}, Oracle build Java ${compatibility.javaTarget}, test Java ${compatibility.javaTestTarget}.`,
   );
   console.log(`[paper-check] Verified SHA-256 ${templateSha256}.`);
   console.log(`[paper-check] PaperScript source commit ${compatibility.paperScriptCommit}.`);

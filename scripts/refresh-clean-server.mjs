@@ -8,6 +8,7 @@ import { PLUGIN_DEFINITIONS } from "./plugin-definitions.mjs";
 import { writeGeneratedJarIndexes } from "./plugin-jar-indexes.mjs";
 import {
   assertJavaFeature,
+  javaProcessEnvironment,
   readRuntimeCompatibility,
   resolveJavaTool,
   runtimeServerPaths,
@@ -115,6 +116,7 @@ async function patchPaperLibraries(javaBinary, paperJar) {
     {
       cwd: serverDirectory,
       encoding: "utf8",
+      env: javaProcessEnvironment(),
       maxBuffer: 64 * 1024 * 1024,
     },
   );
@@ -154,6 +156,7 @@ function runCleanServer(javaBinary, paperJar) {
       ],
       {
         cwd: serverDirectory,
+        env: javaProcessEnvironment(),
         stdio: ["pipe", "pipe", "pipe"],
       },
     );
@@ -429,10 +432,10 @@ async function retainFailedClone() {
 
 async function main() {
   const javaBinary = await resolveJavaTool(compatibility, {
-    feature: compatibility.javaTarget,
+    feature: compatibility.javaTestTarget,
     tool: "java",
   });
-  const javaVersion = await assertJavaFeature(javaBinary, compatibility.javaTarget);
+  const javaVersion = await assertJavaFeature(javaBinary, compatibility.javaTestTarget);
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const backupDirectory = path.join(serversRoot, `.refresh-backup-Paper-${compatibility.paperVersion}-${timestamp}`);
   const repositoryBackupDirectory = path.join(serversRoot, `.refresh-backup-repository-${timestamp}`);
@@ -459,7 +462,7 @@ async function main() {
     );
     console.log(
       `[refresh] Starting Paper ${compatibility.paperVersion} build ${compatibility.paperBuild} ` +
-        `${compatibility.paperChannel} with ${javaVersion.output.split("\n")[0]}...`,
+        `${compatibility.paperChannel} with ${javaBinary} (${javaVersion.version}, ${javaVersion.vendor})...`,
     );
     await runCleanServer(javaBinary, compatibility.paperJar);
     await validateGeneratedData();
