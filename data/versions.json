@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-26T13:26:57.376Z",
+  "generatedAt": "2026-10-27T16:59:51.451Z",
   "sourceServer": "servers/Paper-26.3",
   "paper": {
     "id": "paper",
@@ -126,8 +126,8 @@
       "id": "residence",
       "label": "Residence",
       "pluginName": "Residence",
-      "version": "6.0.4.1",
-      "jar": "Residence6.0.4.1.jar",
+      "version": "6.0.4.2",
+      "jar": "Residence6.0.4.2.jar",
       "contextId": "residence",
       "shared": false,
       "tracked": true,

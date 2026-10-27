@@ -559,6 +559,8 @@ Global:
     Use: false
     # How often in seconds to check for monsters in residences. Keep it at reasonable amount
     Interval: 5
+    # If this true, flag nomobs ignores removing name-tag-named mobs
+    IgnoreNamedMobs: false
   EnforceAreaInsideArea: false
   EnableSpout: false
   EnableLeaseMoneyAccount: true
