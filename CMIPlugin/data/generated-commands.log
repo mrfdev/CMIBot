@@ -51,6 +51,7 @@
 /cmi customrecipe - Manages item custom recipes
 /cmi database [action] (playerName) (dataType) (fileName) - Manage backup data
 /cmi dback (playerName) (-s) - Returns to death location
+/cmi delivery [playerName] (-s) - Deliver item to player
 /cmi dialogs [dialogName] (playerName) ([variableName]:value) (-s) - Shows specified dialog
 /cmi disableenchant (enchant/id) (disable/enable) - Disable enchantment
 /cmi dispose (playerName) - Dispose of unneeded items; Aliases: trash

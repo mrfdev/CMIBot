@@ -11,6 +11,9 @@ ExploitPatcher:
       # By default we are blocking PAPI %checkitem_...% placeholder to avoid potential serious issues with it
       # Only disable this if you have dedicated protection for it
       checkItem: true
+# Responsible to automatically detect links inside text
+# Default: (?i)(?<![a-z0-9_&])(?:(?:https?|ftps?):\/\/[a-z0-9.-]+\.[a-z]{2,}|[a-z0-9.-]+\.[a-z]{2,3})(?::\d+)?(?:\/[^\s]*)?(?=$|[\s<>()])
+LinkRegex: (?i)(?<![a-z0-9_&])(?:(?:https?|ftps?):\/\/[a-z0-9.-]+\.[a-z]{2,}|[a-z0-9.-]+\.[a-z]{2,3})(?::\d+)?(?:\/[^\s]*)?(?=$|[\s<>()])
 # When enabled plugin will use legacy raw message system instead of new one
 # Responsible for clikable messages, hover messages
 # Recommended to keep it disabled if you are running Paper 1.16+ server
