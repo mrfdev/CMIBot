@@ -151,6 +151,9 @@
 # Returns player online status
 %cmi_p_[playerName]_online%
 
+# Player server name
+%cmi_p_[playerName]_servername%
+
 # Left jail time in seconds. Example: 2365
 %cmi_p_[playerName]_sjailtime%
 
@@ -543,6 +546,9 @@
 
 # Remaining cooldown on random teleportation
 %cmi_user_rt_cooldown%
+
+# Player server name
+%cmi_user_servername%
 
 # Sign spy state
 %cmi_user_signspy%

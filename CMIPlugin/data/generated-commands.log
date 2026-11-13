@@ -293,7 +293,7 @@
 /cmi vanish (playerName/list) (on/off) (-s) - Vanish player; Aliases: v
 /cmi vanishedit (playerName) (action) (true/false) - Edit vanish mode for player
 /cmi version - Show plugin version
-/cmi viewdistance [range] (playerName/worldName/reset) (view/simulation) - Change view distance
+/cmi viewdistance [range/update/reset] (playerName/worldName) (view/simulation) - Change view distance
 /cmi voteedit (playerName) [add/set/take/clear] [amount] (-s) - Manage players votes
 /cmi votes (playerName) - Check players vote count
 /cmi votetop (playerName) - Check top vote list

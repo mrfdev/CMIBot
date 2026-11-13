@@ -187,10 +187,6 @@ Optimizations:
   ShowBeeHiveInformation: true
   # When enabled you will see decorated pot contents information in action bar when right clicking it
   ShowDecoratedPotInformation: true
-  # Sets indicator when creating elevator signs. Its case insensitive
-  ElevatorIndicator:
-  - '[CMIElevator]'
-  - '[Elevator]'
   SignEdit:
     # Defines sign top line by which player will not be able to edit sign with /cmi se command
     BlackList:
@@ -200,8 +196,6 @@ Optimizations:
     - '[AdminShop]'
     - '[ChestShop]'
     - '[CMIElevator]'
-  # Defines elevator type. If this is used on second line of sing, then player will be teleported directly in front of it instead of keeping original players x and z coordinates
-  ElevatorStaticIndicator: '[*]'
   # Used to show date in places like mail, checkban, infopage and similar locations
   LongDateFormat2: dd/MM/yy HH:mm:ss
   # Used to show date in places like inv gui and similar locations
@@ -501,6 +495,15 @@ PlaytimeRewards:
   OneTimeAmount: 2
   # When set to true, the player will be required to have cmi.prewards.[name] permission node to get particular playtime reward
   RequiresPermission: false
+Elevator:
+  # Sets indicator when creating elevator signs. Its case insensitive
+  Indicators:
+  - '[CMIElevator]'
+  - '[Elevator]'
+  # Defines elevator type. If this is used on second line of sign, then player will be teleported directly in front of it instead of keeping original players x and z coordinates
+  StaticIndicator: '[*]'
+  # Defines max height for elevator in the Nether dimension
+  NetherHeight: 127
 Sleeping:
   Speedup:
     # When set to true, players can speedup night by sleeping in bed

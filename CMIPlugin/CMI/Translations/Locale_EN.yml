@@ -77,6 +77,7 @@ info:
   ClickSpawner: '!actionbar!{gcs}[percent]% {gcp}Drop chance'
   Elevator:
     created: '{gcp}Created elevator sign'
+    invalidLocation: '{gcp}Invalid location for elevator sign'
   CantPlaceSpawner: '{gcp}Can''t place spawner so close to another spawner ({gcs}[range]{gcp})'
   ChunksLoading: '{gcp}World chunk data is still being loaded. Please wait a bit and
     try again.'
@@ -4341,7 +4342,7 @@ command:
   viewdistance:
     help:
       info: Change view distance
-      args: '[range] (playerName/worldName/reset) (view/simulation)'
+      args: '[range/update/reset] (playerName/worldName) (view/simulation)'
     info:
       output: '{gcp}View: {gcs}[view] {gcp}Simulation: {gcs}[simulation] {gcn}[type]'
   voteedit:
