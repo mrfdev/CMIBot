@@ -32,7 +32,7 @@ const SUPPORT_PLUGIN_METADATA = new Map([
       versionSource: {
         type: "jenkins-artifact",
         url: "https://ci.extendedclip.com/job/PlaceholderAPI/lastSuccessfulBuild/api/json",
-        artifactPattern: "^PlaceholderAPI-([0-9]+(?:\\.[0-9]+)+)\\.jar$",
+        artifactPattern: "^PlaceholderAPI-([0-9]+(?:\\.[0-9]+)+(?:-DEV-[0-9]+)?)\\.jar$",
       },
       releaseNotesSource: {
         type: "github-releases",
