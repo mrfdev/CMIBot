@@ -51,7 +51,7 @@
 /cmi customrecipe - Manages item custom recipes
 /cmi database [action] (playerName) (dataType) (fileName) - Manage backup data
 /cmi dback (playerName) (-s) - Returns to death location
-/cmi delivery [playerName] (-s) - Deliver item to player
+/cmi delivery [send playerName|inbox|outbox|admin recover|admin searchlogs|admin searchlogs preview deliveryId] - Send, receive, and review deliveries
 /cmi dialogs [dialogName] (playerName) ([variableName]:value) (-s) - Shows specified dialog
 /cmi disableenchant (enchant/id) (disable/enable) - Disable enchantment
 /cmi dispose (playerName) - Dispose of unneeded items; Aliases: trash
@@ -238,6 +238,7 @@
 /cmi silentchest - Toggles silent chest
 /cmi sit (playerName) (-persistent) (-s) (location) (on/off) - Sit in your position
 /cmi skin [skinName/off/update] (playerName) (-s) - Changes players skin
+/cmi slowmode [on/off/reset] (messages) (interval) (duration) (-s) - Manage public chat slow mode
 /cmi smite (playerName/location) (-safe) (-s) - Strike ground or player with lightning; Aliases: lightning, thor
 /cmi smithingtable (playerName) - Open smithing table
 /cmi solve [equation] - Solve equation

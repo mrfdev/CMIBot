@@ -46,6 +46,10 @@ ChatPriorities:
   # Default priority: LOW
   PlayerShadowMute: LOW
   #  
+  # Public message slow mode handling
+  # Default priority: NORMAL
+  SlowMode: NORMAL
+  #
   # Chat room message handling to be sent to public if ! used
   # Default priority: LOWEST
   ChatRoom: LOWEST

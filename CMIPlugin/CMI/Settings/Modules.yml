@@ -177,6 +177,10 @@ kits: true
 # Applies for servers from 1.7.x and up
 schedule: true
 #  
+# Handles delivery system
+# Applies for servers from 1.7.x and up
+delivery: true
+#
 # Handles player name plates
 # Applies for servers from 1.7.x and up
 namePlates: true

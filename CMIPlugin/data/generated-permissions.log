@@ -16,6 +16,10 @@ cmi.chat.head - Allows to include heads into chat messages
 cmi.chat.rangebypass - Allows to send messages over greater distances
 cmi.chat.rangespy - Allows to see all messages over greater distances
 cmi.chat.shout - Allows to send messges over greater distances
+cmi.chat.slowmode.bypass - Allows to bypass chat slow mode
+cmi.chat.slowmode.interval.$1 - Chat slow mode interval in seconds for player, lowest value is used
+cmi.chat.slowmode.messages.$1 - Max messages player can send within chat slow mode interval, highest value is used
+cmi.chat.slowmode.notify - Receives reports about players who keep hitting chat slow mode
 cmi.chat.sprite - Allows to include sprites into chat messages
 cmi.chatbubblegroup.$1 - Defines player custom chat bubble group for public messages
 cmi.chatfilter.bypass.$1 - Allows to bypass particular chat filter group
@@ -26,7 +30,7 @@ cmi.chatgroup.$1 - Defines player custom chat group for public message format
 cmi.chatmessagegroup.$1 - Defines player custom chat message group for public message format
 cmi.chorusteleport - Allows to use chorus to teleport around; Default: true
 cmi.colors.$1.* - Allows all color usage in particular areas
-cmi.colors.$1.$2 - Allows color usage in particular areas. Types: publicmessage, privatemessage, nickname, signs, books, me
+cmi.colors.$1.$2 - Allows color usage in particular areas. Types: publicmessage, privatemessage, nickname, signs, books, me. Use font or font.[fontName] to allow {@font} tags
 cmi.command - Gives access to base usage of commands; Default: true
 cmi.command.$1
 cmi.command.$1.others - Allows to perform command on another player
@@ -84,6 +88,20 @@ cmi.command.counter.time - Allows to change counter default time
 cmi.command.ctext - Shows custom text; Default: true
 cmi.command.ctext.$1 - Allows to see defined custom message
 cmi.command.cuff.bypass - Allows command usage while cuffed
+cmi.command.delivery - Allows to use the delivery command; Default: true
+cmi.command.delivery.limit.$1 - Maximum editable item slots in delivery composer
+cmi.command.delivery.limit.1 - Allows 1 editable delivery item slot; Default: true
+cmi.command.delivery.limit.10 - Allows 10 editable delivery item slots; Default: op
+cmi.command.delivery.limit.2 - Allows 2 editable delivery item slots; Default: op
+cmi.command.delivery.limit.3 - Allows 3 editable delivery item slots; Default: op
+cmi.command.delivery.limit.4 - Allows 4 editable delivery item slots; Default: op
+cmi.command.delivery.limit.5 - Allows 5 editable delivery item slots; Default: op
+cmi.command.delivery.limit.6 - Allows 6 editable delivery item slots; Default: op
+cmi.command.delivery.limit.7 - Allows 7 editable delivery item slots; Default: op
+cmi.command.delivery.limit.8 - Allows 8 editable delivery item slots; Default: op
+cmi.command.delivery.limit.9 - Allows 9 editable delivery item slots; Default: op
+cmi.command.delivery.recover - Allows to recover interrupted deliveries; Default: op
+cmi.command.delivery.searchlogs - Allows to search delivery history logs
 cmi.command.dialog.disabled - Allows to see disabled dialogs
 cmi.command.donate.accept - Allows you to accept items sent throw donate command
 cmi.command.donate.bypass - Prevents you from getting items with donate command

@@ -116,6 +116,23 @@ info:
     {gcs}[id]'
   noSpam: '!title!{gcw}No spamming!'
   noCmdSpam: '!title!{gcw}No command spamming!'
+  # This line can have extra variables: [amount] [interval]
+  chatSlowMode: '!actionbar!{gcw}Slow mode is enabled. You can send another message
+    in {gcs}[time]'
+  chatSlowModeRestore: '{gcw}Message blocked by slow mode. {gcs}[Click to restore
+    it]'
+  chatSlowModeRestoreHover: '{gcp}Puts your message back into the chat box'
+  chatSlowModeWarning: '{gcw}Slow down! Continuing to spam chat may get you muted.'
+  chatSlowModeStaffNotify: '{gcw}[playerName] {gcp}keeps hitting chat slow mode ({gcs}[amount]
+    {gcp}blocked messages in {gcs}[time]{gcp})'
+  chatSlowModeMuted: '{gcw}You were muted for {gcs}[time] {gcw}for ignoring chat slow
+    mode'
+  chatSlowModeMutedStaff: '{gcs}[playerName] {gcp}was muted for {gcs}[time] {gcp}for
+    ignoring chat slow mode'
+  chatSlowModeMuteReason: Ignoring chat slow mode
+  chatSlowModeAutoOn: '{gcp}Chat is busy, slow mode enabled: {gcs}[amount] {gcp}messages
+    per {gcs}[interval]'
+  chatSlowModeAutoOff: '{gcp}Chat calmed down, automatic slow mode disabled'
   spamConsoleInform: '{gcw}Player ({gcs}[playerName]{gcw}) triggered ({gcs}[rules]{gcw})
     chat filter with:&r [message]'
   # This line can have extra variables: [totalUsers] [onlinePlayers]
@@ -1030,6 +1047,100 @@ command:
     info:
       noinfo: '{gcw}There is no saved location to return to!'
       feedback: '{gcp}Returned to last saved location ([world],[x],[y],[z])!'
+  delivery:
+    help:
+      info: Send, receive, and review deliveries
+      args: '[send playerName|inbox|outbox|admin recover|admin searchlogs|admin searchlogs
+        preview deliveryId]'
+    info:
+      pendingLogin: '{gcp}You have {gcs}[amount] {gcp}pending deliveries. Use {gcs}/cmi
+        delivery {gcp}to view them.'
+      newDeliveryReceived: '{gcp}A new delivery was sent to you. You now have {gcs}[amount]
+        {gcp}pending deliveries.'
+      historyLoggingDisabled: '{gcp}Delivery history logging is disabled. Showing
+        any records already saved.'
+      historySearchFailed: '{gcp}Could not search delivery history.'
+      historyInvalidFilter: '{gcp}Use sender, receiver, or item as the history filter.'
+      historyNoItem: '{gcp}Hold an item to search by exact item.'
+      historyNoResults: '{gcp}No matching delivery history records.'
+      historyHeader: '{gcp}Delivery history page {gcs}[page]{gcp}/{gcs}[pages]'
+      historyEntry: '{gcp}[date] {gcs}[action] {gcp}[sender]>{gcs}[receiver] {gcp}[items]'
+      historyPreviewHover: '{gcs}Click to preview delivery; shift-click to insert
+        its ID'
+      recoverError: '{gcp}Could not recover delivery: {gcs}[error]'
+      recoverCompleted: '{gcp}Interrupted claim marked complete.'
+      recoverRetry: '{gcp}Interrupted claim restored for retry.'
+      guiSendTitle: '{gcp}Send delivery to {gcs}[player]'
+      guiMessageButton: '{gcs}Add message'
+      guiMessageSetButton: '{gcs}Message: [message]'
+      guiSendButton: '{gcs}Send delivery'
+      guiSendButtonCost: '{gcs}Send delivery for {gcs}[amount]'
+      guiSendCostTitle: '{gcp}Delivery to {gcs}[player] {gcp}| Cost: {gcs}[amount]'
+      guiCancelButton: '{gcs}Cancel'
+      chatMessagePrompt: '{gcp}Type an optional delivery message, or ''cancel''.'
+      dialogMessageTitle: '{gcp}Delivery message'
+      dialogMessagePrompt: '{gcp}Enter an optional message for the recipient'
+      dialogMessageConfirm: '{gcs}Confirm'
+      guiRequestPaymentButton: '{gcs}Request payment: [amount]'
+      dialogPriceTitle: '{gcp}Delivery price'
+      dialogPricePrompt: '{gcp}Enter the amount the receiver will pay, or 0 for no
+        charge'
+      chatPricePrompt: '{gcp}Enter the amount the receiver will pay, or 0 for no charge.
+        Type ''cancel'' to clear it.'
+      invalidRequestedPrice: '{gcp}Enter a valid non-negative price.'
+      emptyDelivery: '{gcp}Place at least one item in the delivery.'
+      sendFailed: '{gcp}Delivery could not be saved; items and fee were returned.'
+      sendSuccess: '{gcp}Delivery sent to {gcs}[player]{gcp}.'
+      inboxLoadFailed: '{gcp}Could not load deliveries.'
+      outboxLoadFailed: '{gcp}Could not load sent deliveries.'
+      inboxTitle: '{gcp}Deliveries for you'
+      outboxTitle: '{gcp}Sent deliveries'
+      deliveryFrom: '{gcp}From: {gcs}[sender]'
+      deliveryTo: '{gcp}To: {gcs}[receiver]'
+      deliveryMessage: '{gcp}Message: {gcs}[message]'
+      cancelCooldown: '{gcp}Cancel available in {gcs}[seconds]{gcp}s'
+      cancelAvailable: '{gcs}Click to cancel and reclaim'
+      cancelSelectedButton: '{gcs}Cancel selected delivery'
+      cancelSelectDelivery: '{gcp}Left-click to mark for cancellation'
+      cancelSelected: '{gcs}Selected for cancellation'
+      cancelRightClick: '{gcp}Right-click to cancel and reclaim this delivery'
+      returnRequested: '{gcp}A delivery recipient requested a return. Check your outbox
+        to reclaim it after the cooldown.'
+      returnRequestedSuccess: '{gcp}Delivery marked for return. The sender can reclaim
+        it from their outbox after the cooldown.'
+      returnFailed: '{gcp}Could not mark this delivery for return.'
+      returnReclaimFailed: '{gcp}This return cannot be reclaimed yet.'
+      returnRequestedOutbox: '{gcp}Return requested by recipient'
+      returnSelect: '{gcp}Left-click to mark return for reclaim'
+      returnRightClick: '{gcp}Right-click to reclaim returned items'
+      returnCooldown: '{gcp}Return reclaim available in {gcs}[seconds]{gcp}s'
+      previewReturnButton: '{gcs}Return to sender'
+      cancelNoSelection: '{gcp}Select a sent delivery first.'
+      claimAvailable: '{gcs}Click to claim'
+      cancelFailed: '{gcp}Delivery cannot be cancelled yet.'
+      cancelMissing: '{gcp}Delivery is no longer pending.'
+      claimFailed: '{gcp}Delivery could not be claimed: {gcs}[reason]'
+      claimRecoveryNeeded: '{gcp}Items were granted; an administrator may need to
+        resolve the saved claim.'
+      claimMessage: '{gcp}Message from {gcs}[sender]{gcp}: {gcs}[message]'
+      previewTitle: '{gcp}Delivery details'
+      previewSender: '{gcp}From: {gcs}[sender]'
+      previewMessage: '{gcp}Message: {gcs}[message]'
+      previewExpires: '{gcp}Expires in: {gcs}[time]'
+      previewNoExpiry: '{gcp}This delivery does not expire.'
+      previewReceiveCost: '{gcp}Receiving these items will cost {gcs}[amount]'
+      previewBackButton: '{gcs}Back to deliveries'
+      previewClaimButton: '{gcs}Claim delivery'
+      paymentConfirmTitle: '{gcp}Confirm delivery payment'
+      paymentConfirmInfo: '{gcp}From {gcs}[sender]{gcp}. Claiming this delivery will
+        pay {gcs}[amount]{gcp} to the sender.'
+      paymentAcceptButton: '{gcs}Accept and pay'
+      paymentCancelButton: '{c}Cancel'
+      receiverChargeInsufficient: '{gcp}You need {gcs}[amount] {gcp}to accept this
+        delivery.'
+      receiverChargeSenderMissing: '{gcp}The sender account is unavailable, so this
+        delivery could not be claimed.'
+      previewCloseButton: '{gcs}Close'
   dialogs:
     help:
       info: Shows specified dialog
@@ -3123,6 +3234,8 @@ command:
       info: Reloads plugins config and locale files
       args: ''
     info:
+      reloaded: '{gcs}[type] {gcp}config file reloaded! Took {gcs}[ms]ms'
+      failed: '{gcw}[type] config failed to reload! Check spelling!'
       feedback: '{gcp}CMI Configs and locale files reloaded! Took {gcs}[ms]ms'
       failedConfig: '{gcw}Failed to load {gcs}config {gcw}file! Check spelling!'
       failedLocale: '{gcw}Failed to load {gcs}locale {gcw}file! Check spelling!'
@@ -3596,6 +3709,38 @@ command:
       resetSteve: '{gcp}Removed skin'
       reset: '{gcp}Applied default skin'
       update: '{gcp}Updated skin'
+  slowmode:
+    help:
+      info: Manage public chat slow mode
+      args: '[on/off/reset] (messages) (interval) (duration) (-s)'
+      explanation:
+      - Without arguments shows current state
+      - on (messages) (interval) (duration) - enables slow mode, missing values default
+        to config
+      - off (duration) - disables slow mode, even if enabled in config
+      - reset - clears command set values and uses config again
+      - When duration is given, settings return to config after it passes
+      - 'Examples:'
+      - /cmi slowmode on 1 5s 10m
+      - /cmi slowmode off 30m
+      - /cmi slowmode reset
+    info:
+      statusOn: '{gcp}Chat slow mode is {gcs}enabled{gcp}: {gcs}[amount] {gcp}messages
+        per {gcs}[interval]'
+      statusOff: '{gcp}Chat slow mode is {gcs}disabled'
+      statusSource: '{gcp}Source: {gcs}[source]'
+      sourceConfig: config
+      sourceCommand: command
+      sourceAuto: automatic, chat is busy
+      sourceCommandTimed: command, ends in [time]
+      enabled: '{gcp}Chat slow mode enabled: {gcs}[amount] {gcp}messages per {gcs}[interval]'
+      enabledFor: '{gcp}Chat slow mode enabled for {gcs}[time]{gcp}: {gcs}[amount]
+        {gcp}messages per {gcs}[interval]'
+      disabled: '{gcp}Chat slow mode disabled'
+      disabledFor: '{gcp}Chat slow mode disabled for {gcs}[time]'
+      reset: '{gcp}Chat slow mode returned to config settings'
+      ended: '{gcp}Timed chat slow mode change ended, config settings are used again'
+      invalidNumber: '{gcp}Invalid value: {gcs}[value]'
   smite:
     help:
       info: Strike ground or player with lightning

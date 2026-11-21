@@ -244,6 +244,10 @@ Alias:
   dback:
     Enabled: true
     Tab: true
+  # /cmi delivery $1-
+  delivery:
+    Enabled: true
+    Tab: true
   # /cmi dialogs $1-
   dialogs:
     Enabled: true
@@ -1101,6 +1105,10 @@ Alias:
     Tab: true
   # /cmi skin $1-
   skin:
+    Enabled: true
+    Tab: true
+  # /cmi slowmode $1-
+  slowmode:
     Enabled: true
     Tab: true
   # /cmi smite $1-

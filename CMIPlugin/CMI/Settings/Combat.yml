@@ -33,6 +33,12 @@ Combat:
     - cmi reply
     # When set to true AllowedCommands become black list which will define which commands player cant use
     MakeBlackList: false
+    # When enabled, pvp combat ends right away once players you were fighting with die
+    # Every player you fight with is tracked separately, so if you are still in combat with another player, pvp combat continues
+    # with remaining time based on your most recent interaction with players who are still in combat with you
+    # Only pvp combat timer is affected, mob combat continues with its own remaining time
+    # Projectiles are attributed to the player who shot them
+    EndOnOpponentDeath: false
   Mob:
     # If set to true, then player who gets placed into combat mode will get its fly mode disabled
     # Can be bypassed with cmi.pvp.MFlyBypass permission node
@@ -63,3 +69,7 @@ Combat:
     - cmi reply
     # When set to true AllowedCommands become black list which will define which commands player cant use
     MakeBlackList: false
+    # When enabled, mob combat ends right away once the mob you were last fighting with dies
+    # Only mob combat timer is affected, pvp combat continues with its own remaining time
+    # So killing a mob while in pvp combat will not end pvp combat
+    EndOnOpponentDeath: false

@@ -16,7 +16,7 @@ cmi.anvil.bypassitalic - Allows to bypass italic when renaming item
 cmi.title.colors - Allows to use colors in titlemsg command
 cmi.tag.color - Tagged player name gets colorized
 cmi.colors.[type].* - Allows all color usage in particular areas
-cmi.colors.[type].[colorname/hex] - Allows color usage in particular areas. Types: publicmessage, privatemessage, nickname, signs, books, me
+cmi.colors.[type].[colorname/hex] - Allows color usage in particular areas. Types: publicmessage, privatemessage, nickname, signs, books, me. Use font or font.[fontName] to allow {@font} tags
 cmi.seevanished - Allows to see vanished people
 cmi.vanishlevel.[1-10] - Defines players possible max vanish level
 cmi.messages.disablelogin - Disables login message

@@ -130,6 +130,23 @@ Economy:
       # If its set to false tax will be subtracted from transfered amount, so if player transfers 100 and tax is 10 then receiving player receives 90 and sender player pays 100
       # Recommended to keep it at true just to avoid confusion why receiving player got less money
       DeductOnTop: true
+Delivery:
+  # Minimum time in seconds before a sender may cancel a delivery
+  CancelCooldownSeconds: 60
+  # Time in seconds before an unclaimed delivery expires; 0 disables expiration
+  Expiration: 604800
+  History:
+    # Whether delivery events are recorded for staff history searches
+    Enabled: true
+  # Delay before reminding players about pending deliveries after login
+  LoginNotificationDelaySeconds: 5
+  Charge:
+    # NONE, FLAT, PER_ITEM, or WORTH (WorthPercentage of item worth, with DeliveryPrice per-item fallback)
+    Mode: NONE
+    # Sender fee; Charge.Mode determines whether it is per delivery or per item
+    DeliveryPrice: 0
+    # Percentage of item worth charged in WORTH mode; items without a configured worth use DeliveryPrice per item
+    WorthPercentage: 100.0
 FileSave:
   # Change this to true only if you have issues with drives I/O and you need to save players files in async mode to lower waiting time for mc server
   Async: false

@@ -108,6 +108,69 @@ Chat:
   # Time in seconds you want to keep chat rooms alive before removing them
   # This only applies to empty rooms after last user leaves it
   ChatRoomLife: 3600
+  SlowMode:
+    # When enabled, limits how many public chat messages player can send within defined time span
+    # Can be bypassed with cmi.chat.slowmode.bypass permission node
+    # Only works with paper chat listeners (Chat.UsePaperType)
+    Enabled: false
+    # Max amount of messages player can send within defined interval
+    # Can be replaced per player with cmi.chat.slowmode.messages.[amount] permission node, highest value is used
+    # Permission values are ignored while slow mode values are set with the slowmode command
+    Messages: 3
+    # Time span in seconds
+    # Can be replaced per player with cmi.chat.slowmode.interval.[seconds] permission node, lowest value is used
+    Interval: 10
+    Auto:
+      # When enabled, slow mode turns on by itself when public chat gets busy and turns off once it calms down
+      # Does not engage while slow mode values are set with the slowmode command
+      # Messages from players with cmi.chat.slowmode.bypass do not count towards the trigger
+      Enabled: false
+      # Amount of public messages from all players within Window seconds which turns automatic slow mode on
+      Trigger: 20
+      # Time span in seconds used to measure chat activity
+      Window: 5
+      # Max amount of messages player can send within Interval while automatic slow mode is on
+      # Permission based values are ignored while automatic slow mode is on
+      Messages: 1
+      # Time span in seconds while automatic slow mode is on
+      Interval: 5
+      # Automatic slow mode turns off after chat activity stays below half of Trigger for this many seconds
+      QuietSeconds: 60
+      # Announce to everyone when automatic slow mode turns on and off
+      Announce: true
+    NewPlayers:
+      # When enabled, players with low play time get their own limits
+      # These apply even when slow mode is off. When slow mode is on, the stricter of both is used
+      Enabled: false
+      # Play time in minutes below which player is treated as new
+      PlayTime: 30
+      # Max amount of messages new player can send within Interval
+      Messages: 1
+      # Time span in seconds for new players
+      Interval: 10
+    Weight:
+      # How many messages a repeated message counts as, when it matches previous message within slow mode interval
+      # Comparison ignores case, colors, spaces and symbols. Set to 1 to disable
+      Repeat: 2
+      # Messages with at least this many characters count as LongWeight messages. Set to 0 to disable
+      LongLength: 150
+      # How many messages a long message counts as
+      LongWeight: 2
+    Escalation:
+      # When enabled, players who keep hitting slow mode get warned, reported to staff and muted
+      # Staff with cmi.chat.slowmode.notify permission receive reports
+      # Players with cmi.command.mute.bypass permission are never muted by this
+      Enabled: false
+      # Time span in seconds in which blocked messages are counted
+      Window: 120
+      # Amount of blocked messages within Window before player gets a warning. Set to 0 to disable
+      WarnAt: 3
+      # Amount of blocked messages within Window before staff gets notified. Set to 0 to disable
+      NotifyStaffAt: 5
+      # Amount of blocked messages within Window before player gets muted. Set to 0 to disable
+      MuteAt: 10
+      # Mute duration in seconds
+      MuteDuration: 300
   # Defines suggested commands when you click on public, private and similar messages. [playerName], [playerDisplayName] and [playerNickName]  can be used to include players name
   ClickSuggestions:
     pubmsg: '/msg [playerNickName] '
