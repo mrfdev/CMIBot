@@ -126,6 +126,7 @@ function createFetchFixture(t) {
   const state = {
     paperBuild: 87,
     paperBuildsByVersion: {},
+    paperVersions: { "26.3": ["26.3"] },
     cmiVersion: "1.0.0",
     cmilibVersion: "1.0.0",
     residenceVersion: "6.0.3.0",
@@ -140,7 +141,10 @@ function createFetchFixture(t) {
     let key;
     let body;
 
-    if (url.startsWith(`${PAPER_API_ROOT}/versions/`)) {
+    if (url === PAPER_API_ROOT) {
+      key = "paper-versions";
+      body = { versions: state.paperVersions };
+    } else if (url.startsWith(`${PAPER_API_ROOT}/versions/`)) {
       const version = decodeURIComponent(url.slice(`${PAPER_API_ROOT}/versions/`.length).split("/")[0]);
       key = "paper";
       body = state.paperBuildsByVersion[version] ?? [{ id: state.paperBuild, channel: "STABLE" }];
@@ -228,6 +232,9 @@ test("version checks recover from temporary HTTP failures through the resilience
     sleep: async (delayMs) => delays.push(delayMs),
     logger: { info() {}, warn() {}, error() {} },
     async fetch(input) {
+      if (input === PAPER_API_ROOT) {
+        return Response.json({ versions: { "26.3": ["26.3"] } });
+      }
       attempts += 1;
       if (attempts < 3) {
         return new Response("unavailable", { status: 503 });
@@ -487,7 +494,10 @@ test("primary metadata rejects oversized streams without retrying and refuses re
   const service = createVersionService(config, {
     logger: { info() {}, warn() {}, error() {} },
     sleep: async () => {},
-    async fetch(_input, options) {
+    async fetch(input, options) {
+      if (input === PAPER_API_ROOT) {
+        return Response.json({ versions: { "26.3": ["26.3"] } });
+      }
       calls += 1;
       optionsSeen.push(options);
       return new Response("x".repeat(1024 * 1024 + 1));
@@ -631,6 +641,9 @@ test("primary version refreshes use bounded concurrency", async () => {
       peak = Math.max(peak, active);
       await new Promise((resolve) => setTimeout(resolve, 5));
       active -= 1;
+      if (input === PAPER_API_ROOT) {
+        return Response.json({ versions: { "26.3": ["26.3"] } });
+      }
       return String(input).includes("fill.papermc.io")
         ? Response.json([{ id: 87, channel: "STABLE" }])
         : Response.json({ name: "1.1.0" });
@@ -688,22 +701,24 @@ test("latest shows one tracked stable Paper release in every scope without publi
   assert.equal(snapshot.paper.build, 87);
   assert.equal(snapshot.paper.channel, "STABLE");
   assert.equal(snapshot.paper.stale, false);
+  assert.equal(snapshot.paperNext, null);
   assert.equal(snapshot.paperPreview, undefined);
   assert.equal(snapshot.paperStable, undefined);
   assert.deepEqual(upstream.requests.filter((url) => url.startsWith(PAPER_API_ROOT)), [
     `${PAPER_API_ROOT}/versions/26.3/builds`,
+    PAPER_API_ROOT,
   ]);
   const plugin = { id: "cmi", label: "CMI" };
   for (const scope of ["context", "all"]) {
     const output = formatLatestVersionMessages(snapshot, plugin, scope).join("\n");
     assert.match(output, /upstream `26\.3 build 87 STABLE` \(current\)/);
     assert.equal(output.split("\n").filter((line) => line.startsWith("- **") && line.includes("Paper")).length, 1);
-    assert.doesNotMatch(output, /beta|experimental|26\.2/i);
+    assert.doesNotMatch(output, /beta|experimental|26\.2|26\.4/i);
   }
   const output = formatPublicLatestVersions(snapshot, plugin);
   assert.match(output, /Paper:\*\* stable `26\.3 build 87`/);
   assert.equal((output.match(/Paper:\*\*/g) ?? []).length, 1);
-  assert.doesNotMatch(output, /beta|experimental|26\.2|clean snapshot|Clean data generated|Upstream refresh attempted|<t:/i);
+  assert.doesNotMatch(output, /beta|experimental|26\.2|26\.4|clean snapshot|Clean data generated|Upstream refresh attempted|<t:/i);
   assert.equal(evaluateAttention(snapshot).needsAttention, false);
   assert.deepEqual(getVersionAttentionSummary(snapshot).updateKeys, []);
   assert.equal(snapshot.errorCount, 0);
@@ -729,8 +744,93 @@ test("Paper selects the highest valid stable build only within the tracked versi
   assert.deepEqual(getVersionAttentionSummary(snapshot).updateKeys, ["paper"]);
   assert.deepEqual(upstream.requests.filter((url) => url.startsWith(PAPER_API_ROOT)), [
     `${PAPER_API_ROOT}/versions/26.3/builds`,
+    PAPER_API_ROOT,
   ]);
   assert.match(formatPublicLatestVersions(snapshot, { id: "cmi" }), /stable `26\.3 build 176`/);
+});
+
+test("Paper 26.4 is an independent linked release in private, all-resources and public lookup", async (t) => {
+  const { service, upstream } = await createPaperFixture(t);
+  const plugin = { id: "cmi", label: "CMI" };
+  const preview = makePaperBuild("26.4-rc-2", 2, "ALPHA");
+  upstream.paperVersions = {
+    "26.3": ["26.3"],
+    "26.4": ["26.40", "26.4-rc-2", "26.4-rc-1"],
+    "26.5": ["26.5"],
+  };
+  upstream.paperBuildsByVersion["26.4-rc-1"] = [makePaperBuild("26.4-rc-1", 15, "BETA")];
+  upstream.paperBuildsByVersion["26.4-rc-2"] = [makePaperBuild("26.4-rc-2", 1, "ALPHA"), preview];
+
+  const first = await service.start();
+  assert.deepEqual(upstream.requests.filter((url) => url.startsWith(PAPER_API_ROOT)), [
+    `${PAPER_API_ROOT}/versions/26.3/builds`,
+    PAPER_API_ROOT,
+    `${PAPER_API_ROOT}/versions/26.4-rc-2/builds`,
+  ]);
+  assert.equal(first.catalog.paper.version, "26.3");
+  assert.equal(first.paper.build, 87);
+  assert.equal(first.paperNext.version, "26.4-rc-2");
+  const line = `- **[Paper 26.4](<${preview.downloads["server:default"].url}>):** \`26.4-rc-2 build 2\` ALPHA (upstream only)`;
+  for (const output of [
+    formatLatestVersions(first, plugin),
+    formatLatestVersionMessages(first, plugin, "all").join("\n"),
+    formatPublicLatestVersions(first, plugin),
+  ]) {
+    assert.ok(output.includes(line));
+    assert.match(output, /26\.3 build 87/);
+    assert.doesNotMatch(output, /update available|26\.4-rc-1|26\.40|26\.5/i);
+  }
+  assert.equal(evaluateAttention(first).needsAttention, false);
+  assert.deepEqual((await service.getVersionChanges(plugin, "all")).changes, []);
+
+  upstream.paperVersions["26.4"].unshift("26.4");
+  for (const [index, channel] of ["BETA", "EXPERIMENTAL", "STABLE"].entries()) {
+    upstream.paperBuildsByVersion["26.4"] = [makePaperBuild("26.4", index + 1, channel)];
+    const next = await service.refreshUpstream();
+    assert.ok(formatPublicLatestVersions(next, plugin).includes(`\`26.4 build ${index + 1}\` ${channel}`));
+    assert.equal(next.paper.version, "26.3");
+    assert.deepEqual(getVersionAttentionSummary(next).updateKeys, []);
+  }
+});
+
+test("26.4 metadata outages retain the matching link and do not affect tracked release health", async (t) => {
+  const { service, upstream, createService, workspaceRoot } = await createPaperFixture(t);
+  const plugin = { id: "cmi", label: "CMI" };
+  const preview = makePaperBuild("26.4", 3, "EXPERIMENTAL");
+  const url = preview.downloads["server:default"].url;
+  upstream.paperVersions["26.4"] = ["26.4"];
+  upstream.paperBuildsByVersion["26.4"] = [preview];
+  await service.start();
+  service.stop();
+  await service.flushPersistence();
+  const statePath = path.join(workspaceRoot, "logs/upstream-versions.json");
+  assert.equal(JSON.parse(await fs.readFile(statePath, "utf8")).paperNext.downloadUrl, url);
+
+  upstream.failures.add("paper-versions");
+  const restarted = createService();
+  const retained = await restarted.start();
+  assert.equal(retained.paperNext.stale, true);
+  assert.equal(retained.errorCount, 0);
+  assert.equal(retained.retainedCount, 0);
+  assert.equal(evaluateAttention(retained).needsAttention, false);
+  assert.ok(formatPublicLatestVersions(retained, plugin).includes(url));
+  assert.match(formatLatestVersions(retained, plugin), /EXPERIMENTAL \(upstream only\).*last known/);
+
+  upstream.failures.clear();
+  upstream.paperBuildsByVersion["26.4"] = [
+    { ...preview, id: 4, channel: "BETA" }, // URL still points at build 3.
+  ];
+  const recovered = await restarted.refreshUpstream();
+  assert.equal(recovered.paperNext.stale, false);
+  const output = formatPublicLatestVersions(recovered, plugin);
+  assert.match(output, /Paper 26\.4:\*\* `26\.4 build 4` BETA/);
+  assert.ok(!output.includes(url));
+  assert.doesNotMatch(await fs.readFile(statePath, "utf8"), /paper-26\.4-3\.jar/);
+
+  delete upstream.paperVersions["26.4"];
+  const absent = await restarted.refreshUpstream();
+  assert.equal(absent.paperNext, null);
+  assert.doesNotMatch(formatPublicLatestVersions(absent, plugin), /26\.4/);
 });
 
 test("Paper unavailability never falls back to another version or a preview", async (t) => {
